@@ -2,26 +2,36 @@ import streamlit as st
 import duckdb
 import pandas as pd
 import re
+import requests
+import os
 
 # -----------------------------
 # CONFIG
 # -----------------------------
+PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
+MAP_FILE = "map.xlsx"
+
 st.set_page_config(layout="wide")
 st.title("Brand Health Dashboard")
 
 # -----------------------------
-# LOAD DATA FROM GITHUB RELEASE ?
+# LOAD PARQUET FROM RELEASE ✅
 # -----------------------------
-PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
-
 @st.cache_data
 def load_data():
-    return pd.read_parquet(PARQUET_URL)
+    file_path = "data.parquet"
+
+    if not os.path.exists(file_path):
+        r = requests.get(PARQUET_URL)
+        with open(file_path, "wb") as f:
+            f.write(r.content)
+
+    return pd.read_parquet(file_path)
 
 df = load_data()
 
 # -----------------------------
-# DUCKDB CONNECTION
+# DB CONNECTION
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -31,18 +41,18 @@ con = get_connection()
 con.register("df", df)
 
 # -----------------------------
-# LOAD MAP FILE ?
+# LOAD MAP FILE ✅
 # -----------------------------
 @st.cache_data
 def load_map():
-    map_df = pd.read_excel("map.xlsx", header=1)
+    map_df = pd.read_excel(MAP_FILE, header=1)
     map_df.columns = map_df.columns.astype(str).str.strip()
     return map_df
 
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTER VALUES
+# LOAD FILTERS
 # -----------------------------
 @st.cache_data
 def load_filters():
@@ -106,10 +116,14 @@ if where_clause:
 # -----------------------------
 # WEIGHT COLUMN
 # -----------------------------
-weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+weight_col = (
+    "Weight_Post"
+    if selected_countries and len(selected_countries) == 1
+    else "Global_weight_Stacked"
+)
 
 # -----------------------------
-# KPI COLUMN NAMES ? FIXED
+# COLUMN NAMES ✅ FIXED
 # -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 favorability_col = f"Brand_Favorability_{code}_slice"
@@ -165,7 +179,7 @@ c3.metric("Consideration", f"{consideration}%")
 c4.metric("Consideration Effect", f"{consideration_effect}%")
 
 # -----------------------------
-# ATTRIBUTE TABLE ? FIXED
+# ATTRIBUTE TABLE
 # -----------------------------
 attribute_cols = [
     f"Attributes_New_DP_{code}_Q12a_{i}_slice"
