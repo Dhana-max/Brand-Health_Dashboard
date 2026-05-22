@@ -10,10 +10,10 @@ st.set_page_config(layout="wide")
 st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
-MAP_FILE = "map.xlsx"
+MAP_FILE = "Map.xlsx"   # ✅ FIXED (capital M)
 
 # -----------------------------
-# DUCKDB CONNECTION ✅ (READ DIRECTLY FROM URL)
+# DUCKDB CONNECTION ✅
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -153,7 +153,7 @@ consideration = get_top2_metric(consideration_col)
 consideration_effect = get_top2_metric(effect_col)
 
 # -----------------------------
-# DISPLAY KPI
+# DISPLAY KPIs
 # -----------------------------
 st.subheader("Key Metrics")
 
