@@ -10,7 +10,7 @@ st.set_page_config(layout="wide")
 st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
-MAP_FILE = "Map.xlsx"   # ✅ FIXED (capital M)
+MAP_FILE = "Map.xlsx"   # ✅ correct case
 
 # -----------------------------
 # DUCKDB CONNECTION ✅
@@ -27,7 +27,7 @@ def get_connection():
 con = get_connection()
 
 # -----------------------------
-# LOAD MAP FILE ✅
+# LOAD MAP FILE
 # -----------------------------
 @st.cache_data
 def load_map():
@@ -109,7 +109,7 @@ weight_col = (
 )
 
 # -----------------------------
-# KPI COLUMN NAMES ✅
+# KPI COLUMN NAMES
 # -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 favorability_col = f"Brand_Favorability_{code}_slice"
@@ -117,13 +117,23 @@ consideration_col = f"Consideration_{code}_slice"
 effect_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# TOP2 FUNCTION
+# ✅ FIXED TOP2 FUNCTION (MAIN FIX)
 # -----------------------------
 def get_top2_metric(col):
     query = f"""
     SELECT 
-        SUM(CASE WHEN TRY_CAST({col} AS INTEGER) IN (4,5) THEN {weight_col} ELSE 0 END),
-        SUM(CASE WHEN TRY_CAST({col} AS INTEGER) BETWEEN 1 AND 5 THEN {weight_col} ELSE 0 END)
+        SUM(
+            CASE 
+                WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
+                THEN {weight_col} ELSE 0 
+            END
+        ),
+        SUM(
+            CASE 
+                WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
+                THEN {weight_col} ELSE 0 
+            END
+        )
     FROM df
     {where_clause}
     """
@@ -137,7 +147,8 @@ query_awareness = f"""
 SELECT 
     SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes' THEN {weight_col} ELSE 0 END),
     SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN 
-        ('yes','no','dont know','don''t know') THEN {weight_col} ELSE 0 END)
+        ('yes','no','dont know','don''t know') 
+        THEN {weight_col} ELSE 0 END)
 FROM df
 {where_clause}
 """
@@ -146,7 +157,7 @@ yes_wt, total_wt = con.execute(query_awareness).fetchone()
 awareness = round((yes_wt / total_wt) * 100, 1) if total_wt else 0
 
 # -----------------------------
-# KPI METRICS
+# KPI METRICS ✅
 # -----------------------------
 favorability = get_top2_metric(favorability_col)
 consideration = get_top2_metric(consideration_col)
@@ -165,7 +176,7 @@ c3.metric("Consideration", f"{consideration}%")
 c4.metric("Consideration Effect", f"{consideration_effect}%")
 
 # -----------------------------
-# ATTRIBUTES
+# ATTRIBUTES ✅ FIXED
 # -----------------------------
 attribute_cols = [
     f"Attributes_New_DP_{code}_Q12a_{i}_slice"
