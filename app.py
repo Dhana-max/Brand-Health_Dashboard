@@ -2,8 +2,6 @@ import streamlit as st
 import duckdb
 import pandas as pd
 import re
-import requests
-import os
 
 # -----------------------------
 # CONFIG
@@ -15,39 +13,21 @@ PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/down
 MAP_FILE = "map.xlsx"
 
 # -----------------------------
-# LOAD DATA FROM GITHUB RELEASE ✅ (STABLE)
-# -----------------------------
-@st.cache_data
-def load_data():
-    file_path = "data.parquet"
-
-    if not os.path.exists(file_path):
-        st.info("Downloading data... ⏳")
-
-        headers = {"User-Agent": "Mozilla/5.0"}  # ✅ prevent blocking
-        r = requests.get(PARQUET_URL, headers=headers, stream=True)
-
-        with open(file_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1024 * 1024):  # ✅ chunk download
-                if chunk:
-                    f.write(chunk)
-
-    return pd.read_parquet(file_path)
-
-df = load_data()
-
-# -----------------------------
-# DUCKDB CONNECTION
+# DUCKDB CONNECTION ✅ (READ DIRECTLY FROM URL)
 # -----------------------------
 @st.cache_resource
 def get_connection():
-    return duckdb.connect()
+    con = duckdb.connect()
+    con.execute(f"""
+        CREATE VIEW df AS 
+        SELECT * FROM read_parquet('{PARQUET_URL}')
+    """)
+    return con
 
 con = get_connection()
-con.register("df", df)
 
 # -----------------------------
-# LOAD MAP FILE
+# LOAD MAP FILE ✅
 # -----------------------------
 @st.cache_data
 def load_map():
@@ -58,13 +38,13 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTERS
+# LOAD FILTER VALUES
 # -----------------------------
 @st.cache_data
 def load_filters():
     temp = con.execute("""
         SELECT DISTINCT Month, Country_New FROM df
-        """).df()
+    """).df()
 
     return (
         sorted(temp["Month"].dropna().unique()),
@@ -173,7 +153,7 @@ consideration = get_top2_metric(consideration_col)
 consideration_effect = get_top2_metric(effect_col)
 
 # -----------------------------
-# DISPLAY KPIs
+# DISPLAY KPI
 # -----------------------------
 st.subheader("Key Metrics")
 
@@ -185,7 +165,7 @@ c3.metric("Consideration", f"{consideration}%")
 c4.metric("Consideration Effect", f"{consideration_effect}%")
 
 # -----------------------------
-# ATTRIBUTE TABLE
+# ATTRIBUTES
 # -----------------------------
 attribute_cols = [
     f"Attributes_New_DP_{code}_Q12a_{i}_slice"
