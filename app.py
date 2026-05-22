@@ -8,30 +8,36 @@ import os
 # -----------------------------
 # CONFIG
 # -----------------------------
-PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
-MAP_FILE = "map.xlsx"
-
 st.set_page_config(layout="wide")
 st.title("Brand Health Dashboard")
 
+PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
+MAP_FILE = "map.xlsx"
+
 # -----------------------------
-# LOAD PARQUET FROM RELEASE ✅
+# LOAD DATA FROM GITHUB RELEASE ✅ (STABLE)
 # -----------------------------
 @st.cache_data
 def load_data():
     file_path = "data.parquet"
 
     if not os.path.exists(file_path):
-        r = requests.get(PARQUET_URL)
+        st.info("Downloading data... ⏳")
+
+        headers = {"User-Agent": "Mozilla/5.0"}  # ✅ prevent blocking
+        r = requests.get(PARQUET_URL, headers=headers, stream=True)
+
         with open(file_path, "wb") as f:
-            f.write(r.content)
+            for chunk in r.iter_content(chunk_size=1024 * 1024):  # ✅ chunk download
+                if chunk:
+                    f.write(chunk)
 
     return pd.read_parquet(file_path)
 
 df = load_data()
 
 # -----------------------------
-# DB CONNECTION
+# DUCKDB CONNECTION
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -41,7 +47,7 @@ con = get_connection()
 con.register("df", df)
 
 # -----------------------------
-# LOAD MAP FILE ✅
+# LOAD MAP FILE
 # -----------------------------
 @st.cache_data
 def load_map():
@@ -58,7 +64,7 @@ map_df = load_map()
 def load_filters():
     temp = con.execute("""
         SELECT DISTINCT Month, Country_New FROM df
-    """).df()
+        """).df()
 
     return (
         sorted(temp["Month"].dropna().unique()),
@@ -123,7 +129,7 @@ weight_col = (
 )
 
 # -----------------------------
-# COLUMN NAMES ✅ FIXED
+# KPI COLUMN NAMES ✅
 # -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 favorability_col = f"Brand_Favorability_{code}_slice"
