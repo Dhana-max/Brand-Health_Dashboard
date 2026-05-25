@@ -39,31 +39,27 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTERS (ORDER SAFE)
+# LOAD FILTERS (ORDER PRESERVED)
 # -----------------------------
 @st.cache_data
 def load_filters():
 
     temp = con.execute("""
-        SELECT Month
-        FROM (
-            SELECT Month, ROW_NUMBER() OVER () AS rn
+        SELECT Month FROM (
+            SELECT Month, ROW_NUMBER() OVER() rn
             FROM df WHERE Month IS NOT NULL
         )
-        GROUP BY Month
-        ORDER BY MIN(rn)
+        GROUP BY Month ORDER BY MIN(rn)
     """).df()
 
     months = temp["Month"].tolist()
 
     ctemp = con.execute("""
-        SELECT Country_New
-        FROM (
-            SELECT Country_New, ROW_NUMBER() OVER () AS rn
+        SELECT Country_New FROM (
+            SELECT Country_New, ROW_NUMBER() OVER() rn
             FROM df WHERE Country_New IS NOT NULL
         )
-        GROUP BY Country_New
-        ORDER BY MIN(rn)
+        GROUP BY Country_New ORDER BY MIN(rn)
     """).df()
 
     countries = ctemp["Country_New"].tolist()
@@ -75,7 +71,9 @@ months, countries = load_filters()
 # -----------------------------
 # BRAND MAP
 # -----------------------------
-brand_rows = map_df[map_df["Variable"].str.contains("Aided_Awareness_", na=False)]
+brand_rows = map_df[
+    map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
+]
 
 brand_map = {
     str(r["Label"]).split(" - ")[-1].strip():
@@ -84,14 +82,14 @@ brand_map = {
 }
 
 # -----------------------------
-# DASHBOARD FILTERS (UNCHANGED)
+# SIDEBAR FILTERS (DASHBOARD)
 # -----------------------------
 st.sidebar.header("Filters")
 
 selected_brand = st.sidebar.selectbox("Brand", sorted(brand_map.keys()))
 selected_months = st.sidebar.multiselect("Month", months)
 selected_countries = st.sidebar.multiselect("Country", countries)
-segment = st.sidebar.selectbox("Segment", ["Total", "Male", "Female"])
+segment = st.sidebar.selectbox("Segment", ["Total","Male","Female"])
 
 code = brand_map[selected_brand]
 
@@ -118,11 +116,7 @@ if where_clause:
 # -----------------------------
 # WEIGHT
 # -----------------------------
-weight_col = (
-    "Weight_Post"
-    if selected_countries and len(selected_countries) == 1
-    else "Global_weight_Stacked"
-)
+weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
 # KPI COLS
 awareness_col = f"Aided_Awareness_{code}_slice"
@@ -131,7 +125,7 @@ cons_col = f"Consideration_{code}_slice"
 eff_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# KPI FUNCTION
+# KPI FUNCTION (UNCHANGED)
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -149,12 +143,12 @@ def get_top2_metric(col):
         return 0
 
 # -----------------------------
-# AWARENESS
+# AWARENESS KPI
 # -----------------------------
 query_awareness = f"""
 SELECT 
 SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes' THEN {weight_col} ELSE 0 END),
-SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN ('yes','no','dont know','don''t know') 
+SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN ('yes','no','dont know','don''t know')
     THEN {weight_col} ELSE 0 END)
 FROM df {where_clause}
 """
@@ -186,19 +180,20 @@ with tab1:
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
 # -----------------------------
-# ✅ GRAPH TAB (NEW FILTERS + ALL BRANDS)
+# ✅ GRAPH TAB (EXCEL STYLE + FILTERS)
 # -----------------------------
 with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
 
+    # ✅ Graph-specific filters
     g_country = st.multiselect("Country", countries)
-    g_segment = st.selectbox("Segment", ["Total", "Male", "Female"])
+    g_segment = st.selectbox("Segment", ["Total","Male","Female"])
 
     graph_filters = []
 
     if g_country:
-        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country])))
+        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}' for c in g_country])))
 
     if g_segment == "Male":
         graph_filters.append("Sex = 1")
@@ -228,16 +223,39 @@ with tab2:
 
     if not trend_df.empty:
 
-        chart = alt.Chart(trend_df).mark_line(
-            interpolate="monotone",
-            strokeWidth=2,
-            opacity=0.7   # ✅ light lines
-        ).encode(
+        highlight_brand = selected_brand
+
+        base = alt.Chart(trend_df).encode(
             x=alt.X("Month:N", sort=months),
-            y="Awareness:Q",
-            color="Brand",
+            y=alt.Y("Awareness:Q", scale=alt.Scale(domain=[0,100])),
             tooltip=["Month","Brand","Awareness"]
         )
+
+        background = base.transform_filter(
+            alt.datum.Brand != highlight_brand
+        ).mark_line(
+            color="lightgray",
+            strokeWidth=1.5,
+            opacity=0.5,
+            interpolate="monotone"
+        )
+
+        highlight = base.transform_filter(
+            alt.datum.Brand == highlight_brand
+        ).mark_line(
+            strokeWidth=3,
+            color="#1f77b4",
+            interpolate="monotone"
+        )
+
+        points = base.transform_filter(
+            alt.datum.Brand == highlight_brand
+        ).mark_circle(
+            size=80,
+            color="#1f77b4"
+        )
+
+        chart = background + highlight + points
 
         st.altair_chart(chart, use_container_width=True)
 
