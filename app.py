@@ -39,7 +39,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTERS (ORDER FIXED)
+# LOAD FILTERS (ORDER PRESERVED)
 # -----------------------------
 @st.cache_data
 def load_filters():
@@ -119,7 +119,7 @@ if where_clause:
 weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
 # -----------------------------
-# KPI COLS
+# KPI COLUMNS
 # -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 fav_col = f"Brand_Favorability_{code}_slice"
@@ -127,7 +127,7 @@ cons_col = f"Consideration_{code}_slice"
 eff_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# KPI FUNCTION
+# KPI FUNCTION (UNCHANGED)
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -145,7 +145,7 @@ def get_top2_metric(col):
         return 0
 
 # -----------------------------
-# AWARENESS
+# AWARENESS KPI
 # -----------------------------
 query_awareness = f"""
 SELECT 
@@ -181,7 +181,7 @@ with tab1:
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
-    # ✅ ATTRIBUTES BACK
+    # ✅ ATTRIBUTES (RESTORED)
     attribute_cols = [
         f"Attributes_New_DP_{code}_Q12a_{i}_slice"
         for i in range(1, 18)
@@ -198,11 +198,34 @@ with tab1:
     st.dataframe(attr_df)
 
 # -----------------------------
-# GRAPH TAB (SIMPLIFIED)
+# GRAPH TAB
 # -----------------------------
 with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
+
+    # ✅ GRAPH FILTERS (Independent)
+    col1, col2 = st.columns(2)
+
+    with col1:
+        g_country = st.multiselect("Country", countries)
+
+    with col2:
+        g_segment = st.selectbox("Segment", ["Total","Male","Female"])
+
+    graph_filters = []
+
+    if g_country:
+        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country])))
+
+    if g_segment == "Male":
+        graph_filters.append("Sex = 1")
+    elif g_segment == "Female":
+        graph_filters.append("Sex = 2")
+
+    graph_where = " AND ".join(graph_filters)
+    if graph_where:
+        graph_where = "WHERE " + graph_where
 
     queries = []
 
@@ -214,7 +237,7 @@ with tab2:
         SUM(CASE WHEN LOWER(TRIM({col}))='yes'
             THEN {weight_col} ELSE 0 END)*100.0 /
         SUM({weight_col}) AS Awareness
-        FROM df
+        FROM df {graph_where}
         GROUP BY Month
         """
         queries.append(q)
