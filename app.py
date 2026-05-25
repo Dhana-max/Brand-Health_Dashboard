@@ -14,7 +14,7 @@ PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/down
 MAP_FILE = "Map.xlsx"
 
 # -----------------------------
-# DUCKDB CONNECTION ✅
+# DUCKDB CONNECTION
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -69,7 +69,7 @@ for _, r in brand_rows.iterrows():
     brand_map[name] = code
 
 # -----------------------------
-# SIDEBAR FILTERS ✅
+# SIDEBAR FILTERS (DASHBOARD ONLY)
 # -----------------------------
 st.sidebar.header("Filters")
 
@@ -81,7 +81,7 @@ segment = st.sidebar.selectbox("Segment", ["Total", "Male", "Female"])
 code = brand_map[selected_brand]
 
 # -----------------------------
-# FILTER CONDITIONS ✅ FIXED
+# FILTER CONDITIONS (DASHBOARD)
 # -----------------------------
 filters = []
 
@@ -165,7 +165,7 @@ consideration = get_top2_metric(consideration_col)
 consideration_effect = get_top2_metric(effect_col)
 
 # -----------------------------
-# MAIN TABS ✅
+# TABS
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
@@ -190,23 +190,7 @@ with tab1:
     ]
 
     attribute_labels = {
-        1: "Helps me move forward professionally",
-        2: "Helps me find the right job",
-        3: "Helps me navigate career",
-        4: "Feel I belong",
-        5: "Cares about issues",
-        6: "Brand I love",
-        7: "Brand I trust",
-        8: "Community feeling",
-        9: "Stay informed",
-        10: "Work discussions",
-        11: "Useful daily",
-        12: "Create/share",
-        13: "Share more",
-        14: "Used at job",
-        15: "Helps goals",
-        16: "Local network",
-        17: "Career growth"
+        i: f"Attribute {i}" for i in range(1, 18)
     }
 
     attribute_values = [get_top2_metric(col) for col in attribute_cols]
@@ -216,31 +200,67 @@ with tab1:
         "Score (%)": attribute_values
     })
 
-    st.subheader("Brand Attributes (Top 2 %)")
+    st.subheader("Brand Attributes")
     st.dataframe(attribute_df, use_container_width=True)
 
 # =============================
-# GRAPHS TAB ✅ NEW
+# GRAPHS TAB ✅ FINAL VERSION
 # =============================
 with tab2:
 
-    st.subheader("📈 Awareness Trend")
+    st.subheader("📈 Awareness Trend (All Brands)")
 
-    query_trend = f"""
-    SELECT 
-        Month,
-        SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes'
-            THEN {weight_col} ELSE 0 END) * 100.0 /
-        SUM(CASE WHEN {awareness_col} IS NOT NULL
-            THEN {weight_col} ELSE 0 END) AS Awareness
-    FROM df
-    {where_clause}
-    GROUP BY Month
-    ORDER BY Month
-    """
+    # ✅ GRAPH FILTERS (NO BRAND / NO MONTH)
+    col1, col2 = st.columns(2)
 
-    trend_df = con.execute(query_trend).df()
+    with col1:
+        graph_countries = st.multiselect("Country", countries)
 
+    with col2:
+        graph_segment = st.selectbox("Segment", ["Total", "Male", "Female"])
+
+    # ✅ FILTER LOGIC
+    graph_filters = []
+
+    if graph_countries:
+        graph_filters.append(
+            "Country_New IN ({})".format(",".join([f"'{c}'" for c in graph_countries]))
+        )
+
+    if graph_segment == "Male":
+        graph_filters.append("Sex = 1")
+    elif graph_segment == "Female":
+        graph_filters.append("Sex = 2")
+
+    graph_where = " AND ".join(graph_filters)
+    if graph_where:
+        graph_where = "WHERE " + graph_where
+
+    # ✅ BUILD MULTI-BRAND QUERY
+    queries = []
+
+    for brand_name, brand_code in brand_map.items():
+        col_name = f"Aided_Awareness_{brand_code}_slice"
+
+        q = f"""
+        SELECT 
+            Month,
+            '{brand_name}' AS Brand,
+            SUM(CASE WHEN LOWER(TRIM({col_name}))='yes'
+                THEN {weight_col} ELSE 0 END) * 100.0 /
+            SUM({weight_col}) AS Awareness
+        FROM df
+        {graph_where}
+        GROUP BY Month
+        """
+
+        queries.append(q)
+
+    final_query = " UNION ALL ".join(queries) + " ORDER BY Month"
+
+    trend_df = con.execute(final_query).df()
+
+    # ✅ CHART
     month_order = [
         "JAN","FEB","MAR","APR","MAY","JUN",
         "JUL","AUG","SEP","OCT","NOV","DEC"
@@ -249,7 +269,8 @@ with tab2:
     chart = alt.Chart(trend_df).mark_line(point=True).encode(
         x=alt.X("Month", sort=month_order),
         y=alt.Y("Awareness", title="Awareness (%)"),
-        tooltip=["Month", "Awareness"]
+        color="Brand",
+        tooltip=["Month", "Brand", "Awareness"]
     )
 
     st.altair_chart(chart, use_container_width=True)
@@ -263,6 +284,5 @@ st.write({
     "Brand": selected_brand,
     "Months": selected_months or "All",
     "Countries": selected_countries or "All",
-    "Segment": segment,
-    "Weight Used": weight_col
+    "Segment": segment
 })
