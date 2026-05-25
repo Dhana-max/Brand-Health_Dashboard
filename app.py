@@ -39,19 +39,35 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ LOAD FILTER VALUES (FIXED ORDER)
+# ✅ LOAD FILTER VALUES (FINAL FIX ORDER)
 # -----------------------------
 @st.cache_data
 def load_filters():
+
+    # ✅ Preserve Month order exactly
     temp = con.execute("""
-        SELECT DISTINCT Month, Country_New FROM df
+        SELECT Month, MIN(rowid) AS rid
+        FROM df
+        WHERE Month IS NOT NULL
+        GROUP BY Month
+        ORDER BY rid
     """).df()
 
-    # ✅ NO sorted() → keep dataset order
-    months = temp["Month"].dropna().unique().tolist()
-    countries = temp["Country_New"].dropna().unique().tolist()
+    months = temp["Month"].tolist()
+
+    # ✅ Preserve Country order
+    ctemp = con.execute("""
+        SELECT Country_New, MIN(rowid) AS rid
+        FROM df
+        WHERE Country_New IS NOT NULL
+        GROUP BY Country_New
+        ORDER BY rid
+    """).df()
+
+    countries = ctemp["Country_New"].tolist()
 
     return months, countries
+
 
 months, countries = load_filters()
 
@@ -62,12 +78,11 @@ brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
 
-brand_map = {}
-
-for _, r in brand_rows.iterrows():
-    code = int(re.findall(r"\d+", str(r["Variable"]))[0])
-    name = str(r["Label"]).split(" - ")[-1].strip()
-    brand_map[name] = code
+brand_map = {
+    str(r["Label"]).split(" - ")[-1].strip():
+    int(re.findall(r"\d+", str(r["Variable"]))[0])
+    for _, r in brand_rows.iterrows()
+}
 
 # -----------------------------
 # SIDEBAR FILTERS
@@ -102,7 +117,7 @@ if where_clause:
     where_clause = "WHERE " + where_clause
 
 # -----------------------------
-# WEIGHT COLUMN
+# WEIGHT
 # -----------------------------
 weight_col = (
     "Weight_Post"
@@ -119,7 +134,7 @@ consideration_col = f"Consideration_{code}_slice"
 effect_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# KPI FUNCTION (UNCHANGED LOGIC)
+# ✅ KPI FUNCTION (UNCHANGED LOGIC)
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -136,6 +151,7 @@ def get_top2_metric(col):
         FROM df
         {where_clause}
         """
+
         result = con.execute(query).fetchone()
 
         if not result:
@@ -154,14 +170,17 @@ query_awareness = f"""
 SELECT 
     SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes'
         THEN {weight_col} ELSE 0 END),
+
     SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN 
         ('yes','no','dont know','don''t know') 
         THEN {weight_col} ELSE 0 END)
+
 FROM df
 {where_clause}
 """
 
 res = con.execute(query_awareness).fetchone()
+
 awareness = round((res[0]/res[1])*100,1) if res and res[1] else 0
 
 # KPI VALUES
@@ -226,7 +245,7 @@ with tab2:
             interpolate="monotone",
             strokeWidth=2
         ).encode(
-            x=alt.X("Month:N", sort=months),  # ✅ FIXED ORDER
+            x=alt.X("Month:N", sort=months),   # ✅ FINAL FIX
             y="Awareness:Q",
             tooltip=["Month", "Awareness"]
         )
