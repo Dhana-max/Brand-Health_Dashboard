@@ -43,13 +43,11 @@ map_df = load_map()
 # -----------------------------
 @st.cache_data
 def load_filters():
-
     temp = con.execute("""
         SELECT Month FROM (
             SELECT Month, ROW_NUMBER() OVER() rn
             FROM df WHERE Month IS NOT NULL
-        )
-        GROUP BY Month ORDER BY MIN(rn)
+        ) GROUP BY Month ORDER BY MIN(rn)
     """).df()
 
     months = temp["Month"].tolist()
@@ -58,8 +56,7 @@ def load_filters():
         SELECT Country_New FROM (
             SELECT Country_New, ROW_NUMBER() OVER() rn
             FROM df WHERE Country_New IS NOT NULL
-        )
-        GROUP BY Country_New ORDER BY MIN(rn)
+        ) GROUP BY Country_New ORDER BY MIN(rn)
     """).df()
 
     countries = ctemp["Country_New"].tolist()
@@ -81,20 +78,72 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
+# ✅ CORE BRANDS WHEN ALL COUNTRIES SELECTED
+default_brands = [
+    "LinkedIn", "Indeed", "Facebook",
+    "Google", "Twitter", "TikTok"
+]
+
+# -----------------------------
+# ✅ BRAND FILTER LOGIC
+# -----------------------------
+def get_brands_by_country(selected_countries):
+
+    # ✅ ALL countries selected → restrict
+    if selected_countries and len(selected_countries) == len(countries):
+        return {
+            b: brand_map[b]
+            for b in default_brands if b in brand_map
+        }
+
+    # ✅ No selection → show all
+    if not selected_countries:
+        return brand_map
+
+    # ✅ Country-specific filtering
+    filtered = {}
+
+    for brand, code in brand_map.items():
+        col = f"Aided_Awareness_{code}_slice"
+
+        try:
+            query = f"""
+            SELECT COUNT(*) FROM df
+            WHERE Country_New IN ({",".join([f"'{c}'" for c in selected_countries])})
+            AND {col} IS NOT NULL
+            """
+
+            res = con.execute(query).fetchone()
+
+            if res and res[0] > 0:
+                filtered[brand] = code
+
+        except:
+            continue
+
+    return filtered
+
 # -----------------------------
 # DASHBOARD FILTERS
 # -----------------------------
 st.sidebar.header("Filters")
 
-selected_brand = st.sidebar.selectbox("Brand", sorted(brand_map.keys()))
-selected_months = st.sidebar.multiselect("Month", months)
 selected_countries = st.sidebar.multiselect("Country", countries)
+
+filtered_brand_map = get_brands_by_country(selected_countries)
+
+selected_brand = st.sidebar.selectbox(
+    "Brand",
+    sorted(filtered_brand_map.keys())
+)
+
+selected_months = st.sidebar.multiselect("Month", months)
 segment = st.sidebar.selectbox("Segment", ["Total","Male","Female"])
 
-code = brand_map[selected_brand]
+code = filtered_brand_map[selected_brand]
 
 # -----------------------------
-# FILTER CONDITIONS
+# WHERE CLAUSE
 # -----------------------------
 filters = []
 
@@ -118,16 +167,14 @@ if where_clause:
 # -----------------------------
 weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
-# -----------------------------
-# KPI COLUMNS
-# -----------------------------
+# KPI COLS
 awareness_col = f"Aided_Awareness_{code}_slice"
 fav_col = f"Brand_Favorability_{code}_slice"
 cons_col = f"Consideration_{code}_slice"
 eff_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# KPI FUNCTION (UNCHANGED)
+# KPI FUNCTION
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -145,7 +192,7 @@ def get_top2_metric(col):
         return 0
 
 # -----------------------------
-# AWARENESS KPI
+# AWARENESS
 # -----------------------------
 query_awareness = f"""
 SELECT 
@@ -181,7 +228,7 @@ with tab1:
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
-    # ✅ ATTRIBUTES (RESTORED)
+    # ✅ ATTRIBUTES
     attribute_cols = [
         f"Attributes_New_DP_{code}_Q12a_{i}_slice"
         for i in range(1, 18)
@@ -204,14 +251,9 @@ with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
 
-    # ✅ GRAPH FILTERS (Independent)
-    col1, col2 = st.columns(2)
-
-    with col1:
-        g_country = st.multiselect("Country", countries)
-
-    with col2:
-        g_segment = st.selectbox("Segment", ["Total","Male","Female"])
+    # ✅ Graph filters
+    g_country = st.multiselect("Country", countries)
+    g_segment = st.selectbox("Segment", ["Total","Male","Female"])
 
     graph_filters = []
 
@@ -227,9 +269,12 @@ with tab2:
     if graph_where:
         graph_where = "WHERE " + graph_where
 
+    # ✅ Apply SAME brand logic
+    graph_brand_map = get_brands_by_country(g_country)
+
     queries = []
 
-    for b, bcode in brand_map.items():
+    for b, bcode in graph_brand_map.items():
         col = f"Aided_Awareness_{bcode}_slice"
 
         q = f"""
