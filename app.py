@@ -118,28 +118,42 @@ consideration_col = f"Consideration_{code}_slice"
 effect_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# KPI FUNCTION
+# ✅ SAFE KPI FUNCTION (FIXED)
 # -----------------------------
 def get_top2_metric(col):
-    query = f"""
-    SELECT 
-        SUM(
-            CASE 
-                WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-                THEN {weight_col} ELSE 0 
-            END
-        ),
-        SUM(
-            CASE 
-                WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-                THEN {weight_col} ELSE 0 
-            END
-        )
-    FROM df
-    {where_clause}
-    """
-    num, den = con.execute(query).fetchone()
-    return round((num / den) * 100, 1) if den else 0
+    try:
+        query = f"""
+        SELECT 
+            SUM(
+                CASE 
+                    WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
+                    THEN {weight_col} ELSE 0 
+                END
+            ),
+            SUM(
+                CASE 
+                    WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
+                    THEN {weight_col} ELSE 0 
+                END
+            )
+        FROM df
+        {where_clause}
+        """
+
+        result = con.execute(query).fetchone()
+
+        if result is None:
+            return 0
+
+        num, den = result
+
+        if den is None or den == 0:
+            return 0
+
+        return round((num / den) * 100, 1)
+
+    except:
+        return 0
 
 # -----------------------------
 # AWARENESS
@@ -152,8 +166,13 @@ FROM df
 {where_clause}
 """
 
-yes_wt, total_wt = con.execute(query_awareness).fetchone()
-awareness = round((yes_wt / total_wt) * 100, 1) if total_wt else 0
+result = con.execute(query_awareness).fetchone()
+
+if result:
+    yes_wt, total_wt = result
+    awareness = round((yes_wt / total_wt) * 100, 1) if total_wt else 0
+else:
+    awareness = 0
 
 # -----------------------------
 # KPI METRICS
@@ -163,12 +182,12 @@ consideration = get_top2_metric(consideration_col)
 consideration_effect = get_top2_metric(effect_col)
 
 # -----------------------------
-# ✅ TABS (ONLY UI CHANGE)
+# ✅ TABS
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # =============================
-# ✅ DASHBOARD TAB (UNCHANGED)
+# DASHBOARD TAB
 # =============================
 with tab1:
 
@@ -181,7 +200,7 @@ with tab1:
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
-    # ✅ ATTRIBUTES (UNCHANGED)
+    # ✅ ATTRIBUTES
     attribute_cols = [
         f"Attributes_New_DP_{code}_Q12a_{i}_slice"
         for i in range(1, 18)
@@ -217,7 +236,7 @@ with tab1:
     st.subheader("Brand Attributes (Top 2 %)")
     st.dataframe(attribute_df, use_container_width=True)
 
-    # ✅ FILTER SUMMARY (UNCHANGED)
+    # ✅ FILTER SUMMARY
     st.subheader("Applied Filters")
     st.write({
         "Brand": selected_brand,
@@ -228,7 +247,7 @@ with tab1:
     })
 
 # =============================
-# ✅ GRAPH TAB (ONLY ADDITION)
+# GRAPH TAB
 # =============================
 with tab2:
 
