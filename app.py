@@ -47,7 +47,8 @@ def load_filters():
         SELECT Month FROM (
             SELECT Month, ROW_NUMBER() OVER() rn
             FROM df WHERE Month IS NOT NULL
-        ) GROUP BY Month ORDER BY MIN(rn)
+        )
+        GROUP BY Month ORDER BY MIN(rn)
     """).df()
 
     months = temp["Month"].tolist()
@@ -56,7 +57,8 @@ def load_filters():
         SELECT Country_New FROM (
             SELECT Country_New, ROW_NUMBER() OVER() rn
             FROM df WHERE Country_New IS NOT NULL
-        ) GROUP BY Country_New ORDER BY MIN(rn)
+        )
+        GROUP BY Country_New ORDER BY MIN(rn)
     """).df()
 
     countries = ctemp["Country_New"].tolist()
@@ -72,35 +74,47 @@ brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
 
-brand_map = {
-    str(r["Label"]).split(" - ")[-1].strip():
-    int(re.findall(r"\d+", str(r["Variable"]))[0])
-    for _, r in brand_rows.iterrows()
-}
-
-# ✅ CORE BRANDS WHEN ALL COUNTRIES SELECTED
-default_brands = [
-    "LinkedIn", "Indeed", "Facebook",
-    "Google", "Twitter", "TikTok"
-]
+brand_map = {}
+for _, r in brand_rows.iterrows():
+    code = int(re.findall(r"\d+", str(r["Variable"]))[0])
+    name = str(r["Label"]).split(" - ")[-1].strip()
+    brand_map[name] = code
 
 # -----------------------------
-# ✅ BRAND FILTER LOGIC
+# ✅ STANDARDIZE BRAND NAMES
+# -----------------------------
+brand_alias = {
+    "x": "Twitter",
+    "twitter": "Twitter",
+    "twitter/x": "Twitter",
+    "x (twitter)": "Twitter"
+}
+
+# Normalize keys
+normalized_brand_map = {}
+for k, v in brand_map.items():
+    k_clean = k.lower().strip()
+    k_final = brand_alias.get(k_clean, k)
+    normalized_brand_map[k_final] = v
+
+brand_map = normalized_brand_map
+
+# ✅ CORE BRANDS
+default_brands = ["LinkedIn","Indeed","Facebook","Google","Twitter","TikTok"]
+
+# -----------------------------
+# ✅ BRAND FILTER FUNCTION
 # -----------------------------
 def get_brands_by_country(selected_countries):
 
-    # ✅ ALL countries selected → restrict
+    # ALL countries → default brands only
     if selected_countries and len(selected_countries) == len(countries):
-        return {
-            b: brand_map[b]
-            for b in default_brands if b in brand_map
-        }
+        return {b: brand_map[b] for b in default_brands if b in brand_map}
 
-    # ✅ No selection → show all
+    # No filter → all brands
     if not selected_countries:
         return brand_map
 
-    # ✅ Country-specific filtering
     filtered = {}
 
     for brand, code in brand_map.items():
@@ -112,12 +126,10 @@ def get_brands_by_country(selected_countries):
             WHERE Country_New IN ({",".join([f"'{c}'" for c in selected_countries])})
             AND {col} IS NOT NULL
             """
-
             res = con.execute(query).fetchone()
 
             if res and res[0] > 0:
                 filtered[brand] = code
-
         except:
             continue
 
@@ -192,20 +204,19 @@ def get_top2_metric(col):
         return 0
 
 # -----------------------------
-# AWARENESS
+# AWARENESS KPI
 # -----------------------------
 query_awareness = f"""
 SELECT 
 SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes' THEN {weight_col} ELSE 0 END),
 SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN ('yes','no','dont know','don''t know')
-    THEN {weight_col} ELSE 0 END)
+THEN {weight_col} ELSE 0 END)
 FROM df {where_clause}
 """
 
 res = con.execute(query_awareness).fetchone()
 awareness = round((res[0]/res[1])*100,1) if res and res[1] else 0
 
-# KPI VALUES
 favorability = get_top2_metric(fav_col)
 consideration = get_top2_metric(cons_col)
 consideration_effect = get_top2_metric(eff_col)
@@ -216,7 +227,7 @@ consideration_effect = get_top2_metric(eff_col)
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
-# DASHBOARD TAB
+# DASHBOARD
 # -----------------------------
 with tab1:
 
@@ -228,30 +239,27 @@ with tab1:
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
-    # ✅ ATTRIBUTES
+    # ✅ Attributes
     attribute_cols = [
         f"Attributes_New_DP_{code}_Q12a_{i}_slice"
-        for i in range(1, 18)
+        for i in range(1,18)
     ]
 
-    attribute_values = [get_top2_metric(col) for col in attribute_cols]
-
-    attr_df = pd.DataFrame({
-        "Attribute": [f"Attribute {i}" for i in range(1, 18)],
-        "Score (%)": attribute_values
-    })
+    attr_vals = [get_top2_metric(c) for c in attribute_cols]
 
     st.subheader("Brand Attributes")
-    st.dataframe(attr_df)
+    st.dataframe(pd.DataFrame({
+        "Attribute": [f"Attribute {i}" for i in range(1,18)],
+        "Score (%)": attr_vals
+    }))
 
 # -----------------------------
-# GRAPH TAB
+# GRAPH
 # -----------------------------
 with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
 
-    # ✅ Graph filters
     g_country = st.multiselect("Country", countries)
     g_segment = st.selectbox("Segment", ["Total","Male","Female"])
 
@@ -269,7 +277,6 @@ with tab2:
     if graph_where:
         graph_where = "WHERE " + graph_where
 
-    # ✅ Apply SAME brand logic
     graph_brand_map = get_brands_by_country(g_country)
 
     queries = []
@@ -290,19 +297,10 @@ with tab2:
     trend_df = con.execute(" UNION ALL ".join(queries)).df()
 
     if not trend_df.empty:
-
-        chart = alt.Chart(trend_df).mark_line(
-            interpolate="monotone"
-        ).encode(
+        chart = alt.Chart(trend_df).mark_line(interpolate="monotone").encode(
             x=alt.X("Month:N", sort=months),
-            y=alt.Y("Awareness:Q", scale=alt.Scale(domain=[0,100])),
-            color="Brand",
-            tooltip=["Month","Brand","Awareness"]
+            y=alt.Y("Awareness:Q"),
+            color="Brand"
         )
 
-        points = chart.mark_circle(size=40)
-
-        st.altair_chart(chart + points, use_container_width=True)
-
-    else:
-        st.warning("No data available")
+        st.altair_chart(chart + chart.mark_circle(size=40), use_container_width=True)
