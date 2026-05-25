@@ -39,7 +39,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTERS (ORDER PRESERVED)
+# LOAD FILTERS (ORDER FIXED)
 # -----------------------------
 @st.cache_data
 def load_filters():
@@ -82,7 +82,7 @@ brand_map = {
 }
 
 # -----------------------------
-# SIDEBAR FILTERS (DASHBOARD)
+# DASHBOARD FILTERS
 # -----------------------------
 st.sidebar.header("Filters")
 
@@ -94,7 +94,7 @@ segment = st.sidebar.selectbox("Segment", ["Total","Male","Female"])
 code = brand_map[selected_brand]
 
 # -----------------------------
-# FILTER CONDITIONS (DASHBOARD)
+# DASHBOARD WHERE CLAUSE
 # -----------------------------
 filters = []
 
@@ -143,7 +143,7 @@ def get_top2_metric(col):
         return 0
 
 # -----------------------------
-# AWARENESS KPI
+# AWARENESS
 # -----------------------------
 query_awareness = f"""
 SELECT 
@@ -180,20 +180,20 @@ with tab1:
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
 # -----------------------------
-# ✅ GRAPH TAB (EXCEL STYLE + FILTERS)
+# GRAPH TAB
 # -----------------------------
 with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
 
-    # ✅ Graph-specific filters
+    # ✅ graph-only filters
     g_country = st.multiselect("Country", countries)
     g_segment = st.selectbox("Segment", ["Total","Male","Female"])
 
     graph_filters = []
 
     if g_country:
-        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}' for c in g_country])))
+        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country])))
 
     if g_segment == "Male":
         graph_filters.append("Sex = 1")
