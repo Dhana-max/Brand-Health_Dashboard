@@ -4,9 +4,6 @@ import pandas as pd
 import re
 import altair as alt
 
-# -----------------------------
-# CONFIG
-# -----------------------------
 st.set_page_config(layout="wide")
 st.title("Brand Health Dashboard")
 
@@ -14,7 +11,7 @@ PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/down
 MAP_FILE = "Map.xlsx"
 
 # -----------------------------
-# ✅ CLEAN DATA (FINAL FIX)
+# ✅ FINAL DATA CLEANING (STRICT)
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -22,30 +19,15 @@ def get_connection():
     con.execute(f"""
         CREATE VIEW df AS 
         SELECT 
+        
+        -- ✅ STRICT MONTH CLEAN
+        SUBSTR(UPPER(TRIM(Month)), 1, 3) AS Month,
 
-        -- ✅ CLEAN MONTH
+        -- ✅ STRICT COUNTRY CLEAN
         CASE 
-            WHEN UPPER(TRIM(Month)) LIKE '%JAN%' THEN 'JAN'
-            WHEN UPPER(TRIM(Month)) LIKE '%FEB%' THEN 'FEB'
-            WHEN UPPER(TRIM(Month)) LIKE '%MAR%' THEN 'MAR'
-            WHEN UPPER(TRIM(Month)) LIKE '%APR%' THEN 'APR'
-            WHEN UPPER(TRIM(Month)) LIKE '%MAY%' THEN 'MAY'
-            WHEN UPPER(TRIM(Month)) LIKE '%JUN%' THEN 'JUN'
-            WHEN UPPER(TRIM(Month)) LIKE '%JUL%' THEN 'JUL'
-            WHEN UPPER(TRIM(Month)) LIKE '%AUG%' THEN 'AUG'
-            WHEN UPPER(TRIM(Month)) LIKE '%SEP%' THEN 'SEP'
-            WHEN UPPER(TRIM(Month)) LIKE '%OCT%' THEN 'OCT'
-            WHEN UPPER(TRIM(Month)) LIKE '%NOV%' THEN 'NOV'
-            WHEN UPPER(TRIM(Month)) LIKE '%DEC%' THEN 'DEC'
-            ELSE NULL
-        END AS Month,
-
-        -- ✅ CLEAN COUNTRY
-        CASE 
-            WHEN UPPER(TRIM(Country_New)) IN ('US','USA','U.S.','UNITED STATES') 
-                THEN 'UNITED STATES'
-            WHEN UPPER(TRIM(Country_New)) LIKE '%INDIA%' 
-                THEN 'INDIA'
+            WHEN UPPER(TRIM(Country_New)) LIKE '%US%' THEN 'UNITED STATES'
+            WHEN UPPER(TRIM(Country_New)) LIKE '%INDIA%' THEN 'INDIA'
+            WHEN UPPER(TRIM(Country_New)) LIKE '%UK%' THEN 'UNITED KINGDOM'
             ELSE UPPER(TRIM(Country_New))
         END AS Country_New,
 
@@ -59,7 +41,7 @@ def get_connection():
 con = get_connection()
 
 # -----------------------------
-# LOAD MAP
+# MAP FILE
 # -----------------------------
 @st.cache_data
 def load_map():
@@ -70,17 +52,19 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTERS
+# FILTER VALUES
 # -----------------------------
 @st.cache_data
 def load_filters():
     df = con.execute("""
-        SELECT DISTINCT Month, Country_New 
-        FROM df
+        SELECT DISTINCT Month, Country_New FROM df
         WHERE Month IS NOT NULL AND Country_New IS NOT NULL
     """).df()
 
-    return sorted(df["Month"]), sorted(df["Country_New"])
+    months = sorted(set(df["Month"]))
+    countries = sorted(set(df["Country_New"]))
+
+    return months, countries
 
 months, countries = load_filters()
 
@@ -107,7 +91,7 @@ segment = st.sidebar.selectbox("Segment", ["Total", "Male", "Female"])
 code = brand_map[selected_brand]
 
 # -----------------------------
-# FILTER CONDITIONS
+# FILTER CLAUSE
 # -----------------------------
 filters = []
 
@@ -126,9 +110,6 @@ where_clause = " AND ".join(filters)
 if where_clause:
     where_clause = "WHERE " + where_clause
 
-# -----------------------------
-# WEIGHT
-# -----------------------------
 weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
 # -----------------------------
@@ -140,54 +121,43 @@ cons_col = f"Consideration_{code}_slice"
 eff_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# ✅ SAFE KPI FUNCTION
+# KPI FUNCTION (TEXT SAFE)
 # -----------------------------
 def get_top2_metric(col):
     try:
         query = f"""
         SELECT 
-            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)
+            SUM(CASE WHEN LOWER(TRIM({col})) IN 
+                ('strongly agree','agree','4','5')
                 THEN {weight_col} ELSE 0 END),
-            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IS NOT NULL
+
+            SUM(CASE WHEN {col} IS NOT NULL
                 THEN {weight_col} ELSE 0 END)
+
         FROM df
         {where_clause}
         """
-        result = con.execute(query).fetchone()
-        if not result:
-            return 0
-        num, den = result
-        return round((num / den) * 100, 1) if den else 0
+        res = con.execute(query).fetchone()
+        return round((res[0]/res[1])*100,1) if res and res[1] else 0
     except:
         return 0
 
 # -----------------------------
-# ✅ FIXED AWARENESS (KEY FIX)
+# ✅ AWARENESS FIX
 # -----------------------------
 query_awareness = f"""
 SELECT 
-    SUM(CASE 
-        WHEN LOWER(TRIM({awareness_col})) IN ('yes','1','true','selected')
+    SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN ('yes','1')
         THEN {weight_col} ELSE 0 END),
-
-    SUM(CASE 
-        WHEN {awareness_col} IS NOT NULL
-        THEN {weight_col} ELSE 0 END)
-
+    SUM({weight_col})
 FROM df
 {where_clause}
 """
 
 res = con.execute(query_awareness).fetchone()
+awareness = round((res[0]/res[1])*100,1) if res and res[1] else 0
 
-if res and res[1]:
-    awareness = round((res[0] / res[1]) * 100, 1)
-else:
-    awareness = 0
-
-# -----------------------------
 # KPI VALUES
-# -----------------------------
 favorability = get_top2_metric(fav_col)
 consideration = get_top2_metric(cons_col)
 consideration_effect = get_top2_metric(eff_col)
@@ -197,48 +167,33 @@ consideration_effect = get_top2_metric(eff_col)
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
-# =============================
+# -----------------------------
 # DASHBOARD
-# =============================
+# -----------------------------
 with tab1:
 
     st.subheader("Key Metrics")
 
     c1,c2,c3,c4 = st.columns(4)
-
     c1.metric("Awareness", f"{awareness}%")
     c2.metric("Favorability", f"{favorability}%")
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
-    # ✅ Attributes
-    attrs = []
-    for i in range(1,18):
-        col = f"Attributes_New_DP_{code}_Q12a_{i}_slice"
-        val = get_top2_metric(col)
-        attrs.append([f"Attribute {i}", val])
-
-    attr_df = pd.DataFrame(attrs, columns=["Attribute","Score (%)"])
-
-    st.subheader("Brand Attributes")
-    st.dataframe(attr_df)
-
-# =============================
-# GRAPH TAB
-# =============================
+# -----------------------------
+# GRAPHS
+# -----------------------------
 with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
 
     g_country = st.multiselect("Country", countries)
-    g_segment = st.selectbox("Segment", ["Total", "Male", "Female"])
+    g_segment = st.selectbox("Segment", ["Total","Male","Female"])
 
     graph_filters = []
 
     if g_country:
-        graph_filters.append(
-            "Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country]))
-        )
+        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country])))
 
     if g_segment == "Male":
         graph_filters.append("Sex = 1")
@@ -256,7 +211,7 @@ with tab2:
 
         q = f"""
         SELECT Month,'{brand}' AS Brand,
-        SUM(CASE WHEN LOWER(TRIM({col})) IN ('yes','1','true')
+        SUM(CASE WHEN LOWER(TRIM({col})) IN ('yes','1')
             THEN {weight_col} ELSE 0 END)*100.0 /
         SUM({weight_col}) AS Awareness
         FROM df {graph_where}
@@ -266,10 +221,10 @@ with tab2:
 
     trend_df = con.execute(" UNION ALL ".join(queries)).df()
 
-    all_months = ["JAN","FEB","MAR","APR","MAY","JUN",
-                  "JUL","AUG","SEP","OCT","NOV","DEC"]
+    all_months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
 
     if not trend_df.empty:
+
         brands = pd.DataFrame({"Brand": trend_df["Brand"].unique()})
         months_df = pd.DataFrame({"Month": all_months})
         grid = brands.merge(months_df, how="cross")
@@ -277,28 +232,10 @@ with tab2:
         trend_df = grid.merge(trend_df, on=["Brand","Month"], how="left")
         trend_df["Awareness"] = trend_df["Awareness"].fillna(0)
 
-        chart = alt.Chart(trend_df).mark_line(
-            interpolate="monotone",
-            strokeWidth=2
-        ).encode(
+        chart = alt.Chart(trend_df).mark_line(interpolate="monotone").encode(
             x=alt.X("Month:N", sort=all_months),
-            y=alt.Y("Awareness:Q", scale=alt.Scale(domain=[0,100])),
-            color="Brand",
-            tooltip=["Month","Brand","Awareness"]
+            y=alt.Y("Awareness:Q"),
+            color="Brand"
         )
 
         st.altair_chart(chart, use_container_width=True)
-    else:
-        st.warning("No data available")
-
-# -----------------------------
-# SUMMARY
-# -----------------------------
-st.subheader("Applied Filters")
-
-st.write({
-    "Brand": selected_brand,
-    "Months": selected_months or "All",
-    "Countries": selected_countries or "All",
-    "Segment": segment
-})
