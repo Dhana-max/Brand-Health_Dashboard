@@ -39,29 +39,37 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ LOAD FILTER VALUES (FINAL FIX ORDER)
+# ✅ LOAD FILTER VALUES (ORDER FIXED USING ROW_NUMBER)
 # -----------------------------
 @st.cache_data
 def load_filters():
 
-    # ✅ Preserve Month order exactly
+    # Preserve Month order exactly as dataset
     temp = con.execute("""
-        SELECT Month, MIN(rowid) AS rid
-        FROM df
-        WHERE Month IS NOT NULL
+        SELECT Month
+        FROM (
+            SELECT Month,
+                   ROW_NUMBER() OVER () AS rn
+            FROM df
+            WHERE Month IS NOT NULL
+        )
         GROUP BY Month
-        ORDER BY rid
+        ORDER BY MIN(rn)
     """).df()
 
     months = temp["Month"].tolist()
 
-    # ✅ Preserve Country order
+    # Preserve Country order
     ctemp = con.execute("""
-        SELECT Country_New, MIN(rowid) AS rid
-        FROM df
-        WHERE Country_New IS NOT NULL
+        SELECT Country_New
+        FROM (
+            SELECT Country_New,
+                   ROW_NUMBER() OVER () AS rn
+            FROM df
+            WHERE Country_New IS NOT NULL
+        )
         GROUP BY Country_New
-        ORDER BY rid
+        ORDER BY MIN(rn)
     """).df()
 
     countries = ctemp["Country_New"].tolist()
@@ -117,7 +125,7 @@ if where_clause:
     where_clause = "WHERE " + where_clause
 
 # -----------------------------
-# WEIGHT
+# WEIGHT COLUMN
 # -----------------------------
 weight_col = (
     "Weight_Post"
@@ -134,7 +142,7 @@ consideration_col = f"Consideration_{code}_slice"
 effect_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# ✅ KPI FUNCTION (UNCHANGED LOGIC)
+# ✅ KPI FUNCTION (ORIGINAL LOGIC)
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -164,7 +172,7 @@ def get_top2_metric(col):
         return 0
 
 # -----------------------------
-# AWARENESS (UNCHANGED)
+# AWARENESS
 # -----------------------------
 query_awareness = f"""
 SELECT 
@@ -174,13 +182,11 @@ SELECT
     SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN 
         ('yes','no','dont know','don''t know') 
         THEN {weight_col} ELSE 0 END)
-
 FROM df
 {where_clause}
 """
 
 res = con.execute(query_awareness).fetchone()
-
 awareness = round((res[0]/res[1])*100,1) if res and res[1] else 0
 
 # KPI VALUES
@@ -245,7 +251,7 @@ with tab2:
             interpolate="monotone",
             strokeWidth=2
         ).encode(
-            x=alt.X("Month:N", sort=months),   # ✅ FINAL FIX
+            x=alt.X("Month:N", sort=months),   # ✅ correct dataset order
             y="Awareness:Q",
             tooltip=["Month", "Awareness"]
         )
