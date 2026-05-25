@@ -44,7 +44,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTER VALUES ✅ CLEAN
+# LOAD FILTER VALUES
 # -----------------------------
 @st.cache_data
 def load_filters():
@@ -74,7 +74,7 @@ for _, r in brand_rows.iterrows():
     brand_map[name] = code
 
 # -----------------------------
-# SIDEBAR FILTERS
+# SIDEBAR FILTERS (DASHBOARD)
 # -----------------------------
 st.sidebar.header("Filters")
 
@@ -115,7 +115,7 @@ weight_col = (
 )
 
 # -----------------------------
-# KPI COLUMNS
+# KPI COLUMN NAMES
 # -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 fav_col = f"Brand_Favorability_{code}_slice"
@@ -129,11 +129,9 @@ def get_top2_metric(col):
     try:
         query = f"""
         SELECT 
-            SUM(CASE 
-                WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)
+            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)
                 THEN {weight_col} ELSE 0 END),
-            SUM(CASE 
-                WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IS NOT NULL
+            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IS NOT NULL
                 THEN {weight_col} ELSE 0 END)
         FROM df
         {where_clause}
@@ -174,7 +172,7 @@ else:
     awareness = round((yes_wt / total_wt) * 100, 1) if total_wt else 0
 
 # -----------------------------
-# KPI METRICS
+# KPI VALUES
 # -----------------------------
 favorability = get_top2_metric(fav_col)
 consideration = get_top2_metric(cons_col)
@@ -186,7 +184,7 @@ consideration_effect = get_top2_metric(eff_col)
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # =============================
-# DASHBOARD
+# ✅ DASHBOARD
 # =============================
 with tab1:
 
@@ -200,7 +198,7 @@ with tab1:
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
 # =============================
-# ✅ GRAPHS (CLEAN EXCEL STYLE)
+# ✅ GRAPHS (CLEAN + SAFE)
 # =============================
 with tab2:
 
@@ -217,9 +215,7 @@ with tab2:
     graph_filters = []
 
     if g_country:
-        graph_filters.append(
-            "Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country]))
-        )
+        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country])))
 
     if g_segment == "Male":
         graph_filters.append("Sex = 1")
@@ -240,7 +236,7 @@ with tab2:
             Month,
             '{brand_name}' AS Brand,
             SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-                THEN {weight_col} ELSE 0 END)*100.0 /
+                THEN {weight_col} ELSE 0 END) * 100.0 /
             SUM({weight_col}) AS Awareness
         FROM df
         {graph_where}
@@ -251,20 +247,33 @@ with tab2:
 
     trend_df = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ CLEAN EXCEL STYLE CHART
-    month_order = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
+    # ✅ SAFE CHART HANDLING
+    if trend_df is None or trend_df.empty:
+        st.warning("No data available for selected filters")
+    else:
+        trend_df = trend_df.dropna(subset=["Month", "Awareness"])
+        trend_df["Awareness"] = pd.to_numeric(trend_df["Awareness"], errors="coerce")
+        trend_df = trend_df.dropna(subset=["Awareness"])
 
-    chart = alt.Chart(trend_df).mark_line(
-        interpolate="monotone",
-        strokeWidth=2
-    ).encode(
-        x=alt.X("Month", sort=month_order, axis=alt.Axis(labelAngle=-45)),
-        y=alt.Y("Awareness", scale=alt.Scale(domain=[0,100])),
-        color="Brand",
-        tooltip=["Month", "Brand", alt.Tooltip("Awareness", format=".1f")]
-    ).properties(height=420)
+        if trend_df.empty:
+            st.warning("No valid data after cleaning")
+        else:
+            month_order = ["JAN","FEB","MAR","APR","MAY","JUN",
+                           "JUL","AUG","SEP","OCT","NOV","DEC"]
 
-    st.altair_chart(chart, use_container_width=True)
+            chart = alt.Chart(trend_df).mark_line(
+                interpolate="monotone",
+                strokeWidth=2
+            ).encode(
+                x=alt.X("Month:N", sort=month_order, axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y("Awareness:Q", scale=alt.Scale(domain=[0,100])),
+                color=alt.Color("Brand:N"),
+                tooltip=["Month:N", "Brand:N", alt.Tooltip("Awareness:Q", format=".1f")]
+            ).properties(
+                height=420
+            )
+
+            st.altair_chart(chart, use_container_width=True)
 
 # -----------------------------
 # SUMMARY
