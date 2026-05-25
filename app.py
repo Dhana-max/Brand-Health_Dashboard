@@ -39,7 +39,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTER VALUES
+# ✅ LOAD FILTER VALUES (FIXED ORDER)
 # -----------------------------
 @st.cache_data
 def load_filters():
@@ -47,10 +47,11 @@ def load_filters():
         SELECT DISTINCT Month, Country_New FROM df
     """).df()
 
-    return (
-        sorted(temp["Month"].dropna().unique()),
-        sorted(temp["Country_New"].dropna().unique())
-    )
+    # ✅ NO sorted() → keep dataset order
+    months = temp["Month"].dropna().unique().tolist()
+    countries = temp["Country_New"].dropna().unique().tolist()
+
+    return months, countries
 
 months, countries = load_filters()
 
@@ -61,11 +62,12 @@ brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
 
-brand_map = {
-    str(r["Label"]).split(" - ")[-1].strip():
-    int(re.findall(r"\d+", str(r["Variable"]))[0])
-    for _, r in brand_rows.iterrows()
-}
+brand_map = {}
+
+for _, r in brand_rows.iterrows():
+    code = int(re.findall(r"\d+", str(r["Variable"]))[0])
+    name = str(r["Label"]).split(" - ")[-1].strip()
+    brand_map[name] = code
 
 # -----------------------------
 # SIDEBAR FILTERS
@@ -117,7 +119,7 @@ consideration_col = f"Consideration_{code}_slice"
 effect_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# ✅ KPI FUNCTION (UNCHANGED LOGIC)
+# KPI FUNCTION (UNCHANGED LOGIC)
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -134,7 +136,6 @@ def get_top2_metric(col):
         FROM df
         {where_clause}
         """
-
         result = con.execute(query).fetchone()
 
         if not result:
@@ -147,7 +148,7 @@ def get_top2_metric(col):
         return 0
 
 # -----------------------------
-# AWARENESS
+# AWARENESS (UNCHANGED)
 # -----------------------------
 query_awareness = f"""
 SELECT 
@@ -174,7 +175,7 @@ consideration_effect = get_top2_metric(effect_col)
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
-# DASHBOARD
+# DASHBOARD TAB
 # -----------------------------
 with tab1:
 
@@ -203,7 +204,7 @@ with tab1:
     st.dataframe(attr_df)
 
 # -----------------------------
-# ✅ GRAPH TAB
+# GRAPH TAB
 # -----------------------------
 with tab2:
 
@@ -225,8 +226,8 @@ with tab2:
             interpolate="monotone",
             strokeWidth=2
         ).encode(
-            x=alt.X("Month:N", sort=months, title="Month"),   # ✅ FIXED HERE
-            y=alt.Y("Awareness:Q"),
+            x=alt.X("Month:N", sort=months),  # ✅ FIXED ORDER
+            y="Awareness:Q",
             tooltip=["Month", "Awareness"]
         )
 
