@@ -14,7 +14,7 @@ PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/down
 MAP_FILE = "Map.xlsx"
 
 # -----------------------------
-# ✅ CLEAN DATA (FINAL FIX)
+# ✅ CLEAN DATA AT SOURCE
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -48,33 +48,23 @@ map_df = load_map()
 # -----------------------------
 @st.cache_data
 def load_filters():
-    df = con.execute("""
-        SELECT DISTINCT Month, Country_New FROM df
-    """).df()
-
-    months = sorted(df["Month"].dropna().unique())
-    countries = sorted(df["Country_New"].dropna().unique())
-
-    return months, countries
+    df = con.execute("SELECT DISTINCT Month, Country_New FROM df").df()
+    return sorted(df["Month"]), sorted(df["Country_New"])
 
 months, countries = load_filters()
 
 # -----------------------------
 # BRAND MAP
 # -----------------------------
-brand_rows = map_df[
-    map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
-]
+brand_rows = map_df[map_df["Variable"].str.contains("Aided_Awareness_", na=False)]
 
-brand_map = {}
-
-for _, r in brand_rows.iterrows():
-    code = int(re.findall(r"\d+", str(r["Variable"]))[0])
-    name = str(r["Label"]).split(" - ")[-1].strip()
-    brand_map[name] = code
+brand_map = {
+    str(r["Label"]).split(" - ")[-1].strip(): int(re.findall(r"\d+", str(r["Variable"]))[0])
+    for _, r in brand_rows.iterrows()
+}
 
 # -----------------------------
-# SIDEBAR FILTERS (DASHBOARD)
+# SIDEBAR FILTERS
 # -----------------------------
 st.sidebar.header("Filters")
 
@@ -108,14 +98,10 @@ if where_clause:
 # -----------------------------
 # WEIGHT
 # -----------------------------
-weight_col = (
-    "Weight_Post"
-    if selected_countries and len(selected_countries) == 1
-    else "Global_weight_Stacked"
-)
+weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
 # -----------------------------
-# KPI COLUMN NAMES
+# KPI COLUMNS
 # -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 fav_col = f"Brand_Favorability_{code}_slice"
@@ -123,7 +109,7 @@ cons_col = f"Consideration_{code}_slice"
 eff_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# ✅ SAFE KPI FUNCTION
+# SAFE KPI FUNCTION
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -137,22 +123,16 @@ def get_top2_metric(col):
         {where_clause}
         """
         result = con.execute(query).fetchone()
-
         if not result:
             return 0
-
+        
         num, den = result
-
-        if not den or den == 0:
-            return 0
-
-        return round((num / den) * 100, 1)
-
+        return round((num / den) * 100, 1) if den else 0
     except:
         return 0
 
 # -----------------------------
-# ✅ SAFE AWARENESS KPI
+# SAFE AWARENESS
 # -----------------------------
 query_awareness = f"""
 SELECT 
@@ -164,12 +144,11 @@ FROM df
 """
 
 result = con.execute(query_awareness).fetchone()
-
-if not result:
-    awareness = 0
-else:
+if result:
     yes_wt, total_wt = result
     awareness = round((yes_wt / total_wt) * 100, 1) if total_wt else 0
+else:
+    awareness = 0
 
 # -----------------------------
 # KPI VALUES
@@ -179,17 +158,16 @@ consideration = get_top2_metric(cons_col)
 consideration_effect = get_top2_metric(eff_col)
 
 # -----------------------------
-# ✅ TABS
+# TABS
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # =============================
-# ✅ DASHBOARD
+# DASHBOARD TAB
 # =============================
 with tab1:
 
     st.subheader("Key Metrics")
-
     c1, c2, c3, c4 = st.columns(4)
 
     c1.metric("Awareness", f"{awareness}%")
@@ -197,8 +175,32 @@ with tab1:
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
+    # ✅ ATTRIBUTES FIXED
+    attribute_cols = [
+        f"Attributes_New_DP_{code}_Q12a_{i}_slice"
+        for i in range(1, 18)
+    ]
+
+    attr_names = [f"Attribute {i}" for i in range(1, 18)]
+    attr_values = []
+
+    for col in attribute_cols:
+        try:
+            val = get_top2_metric(col)
+        except:
+            val = None
+        attr_values.append(val)
+
+    attribute_df = pd.DataFrame({
+        "Attribute": attr_names,
+        "Score (%)": attr_values
+    }).dropna()
+
+    st.subheader("Brand Attributes")
+    st.dataframe(attribute_df, use_container_width=True)
+
 # =============================
-# ✅ GRAPHS (CLEAN + SAFE)
+# GRAPHS TAB
 # =============================
 with tab2:
 
@@ -215,7 +217,9 @@ with tab2:
     graph_filters = []
 
     if g_country:
-        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country])))
+        graph_filters.append(
+            "Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country]))
+        )
 
     if g_segment == "Male":
         graph_filters.append("Sex = 1")
@@ -226,54 +230,47 @@ with tab2:
     if graph_where:
         graph_where = "WHERE " + graph_where
 
+    # build data
     queries = []
-
     for brand_name, bcode in brand_map.items():
         col = f"Aided_Awareness_{bcode}_slice"
 
         q = f"""
-        SELECT 
-            Month,
-            '{brand_name}' AS Brand,
-            SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-                THEN {weight_col} ELSE 0 END) * 100.0 /
-            SUM({weight_col}) AS Awareness
+        SELECT Month, '{brand_name}' AS Brand,
+        SUM(CASE WHEN LOWER(TRIM({col}))='yes'
+            THEN {weight_col} ELSE 0 END)*100.0 /
+        SUM({weight_col}) AS Awareness
         FROM df
         {graph_where}
         GROUP BY Month
         """
-
         queries.append(q)
 
     trend_df = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ SAFE CHART HANDLING
-    if trend_df is None or trend_df.empty:
-        st.warning("No data available for selected filters")
+    # ✅ FORCE FULL MONTHS
+    all_months = ["JAN","FEB","MAR","APR","MAY","JUN",
+                  "JUL","AUG","SEP","OCT","NOV","DEC"]
+
+    if not trend_df.empty:
+        brands_df = pd.DataFrame({"Brand": trend_df["Brand"].unique()})
+        months_df = pd.DataFrame({"Month": all_months})
+        full = brands_df.merge(months_df, how="cross")
+
+        trend_df = full.merge(trend_df, on=["Brand","Month"], how="left")
+        trend_df["Awareness"] = trend_df["Awareness"].fillna(0)
+
+        # chart
+        chart = alt.Chart(trend_df).mark_line(interpolate="monotone").encode(
+            x=alt.X("Month:N", sort=all_months),
+            y=alt.Y("Awareness:Q", scale=alt.Scale(domain=[0,100])),
+            color="Brand",
+            tooltip=["Month", "Brand", alt.Tooltip("Awareness", format=".1f")]
+        ).properties(height=420)
+
+        st.altair_chart(chart, use_container_width=True)
     else:
-        trend_df = trend_df.dropna(subset=["Month", "Awareness"])
-        trend_df["Awareness"] = pd.to_numeric(trend_df["Awareness"], errors="coerce")
-        trend_df = trend_df.dropna(subset=["Awareness"])
-
-        if trend_df.empty:
-            st.warning("No valid data after cleaning")
-        else:
-            month_order = ["JAN","FEB","MAR","APR","MAY","JUN",
-                           "JUL","AUG","SEP","OCT","NOV","DEC"]
-
-            chart = alt.Chart(trend_df).mark_line(
-                interpolate="monotone",
-                strokeWidth=2
-            ).encode(
-                x=alt.X("Month:N", sort=month_order, axis=alt.Axis(labelAngle=-45)),
-                y=alt.Y("Awareness:Q", scale=alt.Scale(domain=[0,100])),
-                color=alt.Color("Brand:N"),
-                tooltip=["Month:N", "Brand:N", alt.Tooltip("Awareness:Q", format=".1f")]
-            ).properties(
-                height=420
-            )
-
-            st.altair_chart(chart, use_container_width=True)
+        st.warning("No data for selected filters")
 
 # -----------------------------
 # SUMMARY
