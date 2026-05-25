@@ -94,7 +94,7 @@ segment = st.sidebar.selectbox("Segment", ["Total","Male","Female"])
 code = brand_map[selected_brand]
 
 # -----------------------------
-# DASHBOARD WHERE CLAUSE
+# FILTER CONDITIONS
 # -----------------------------
 filters = []
 
@@ -118,14 +118,16 @@ if where_clause:
 # -----------------------------
 weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
+# -----------------------------
 # KPI COLS
+# -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 fav_col = f"Brand_Favorability_{code}_slice"
 cons_col = f"Consideration_{code}_slice"
 eff_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# KPI FUNCTION (UNCHANGED)
+# KPI FUNCTION
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -179,30 +181,28 @@ with tab1:
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
+    # ✅ ATTRIBUTES BACK
+    attribute_cols = [
+        f"Attributes_New_DP_{code}_Q12a_{i}_slice"
+        for i in range(1, 18)
+    ]
+
+    attribute_values = [get_top2_metric(col) for col in attribute_cols]
+
+    attr_df = pd.DataFrame({
+        "Attribute": [f"Attribute {i}" for i in range(1, 18)],
+        "Score (%)": attribute_values
+    })
+
+    st.subheader("Brand Attributes")
+    st.dataframe(attr_df)
+
 # -----------------------------
-# GRAPH TAB
+# GRAPH TAB (SIMPLIFIED)
 # -----------------------------
 with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
-
-    # ✅ graph-only filters
-    g_country = st.multiselect("Country", countries)
-    g_segment = st.selectbox("Segment", ["Total","Male","Female"])
-
-    graph_filters = []
-
-    if g_country:
-        graph_filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in g_country])))
-
-    if g_segment == "Male":
-        graph_filters.append("Sex = 1")
-    elif g_segment == "Female":
-        graph_filters.append("Sex = 2")
-
-    graph_where = " AND ".join(graph_filters)
-    if graph_where:
-        graph_where = "WHERE " + graph_where
 
     queries = []
 
@@ -214,7 +214,7 @@ with tab2:
         SUM(CASE WHEN LOWER(TRIM({col}))='yes'
             THEN {weight_col} ELSE 0 END)*100.0 /
         SUM({weight_col}) AS Awareness
-        FROM df {graph_where}
+        FROM df
         GROUP BY Month
         """
         queries.append(q)
@@ -223,41 +223,18 @@ with tab2:
 
     if not trend_df.empty:
 
-        highlight_brand = selected_brand
-
-        base = alt.Chart(trend_df).encode(
+        chart = alt.Chart(trend_df).mark_line(
+            interpolate="monotone"
+        ).encode(
             x=alt.X("Month:N", sort=months),
             y=alt.Y("Awareness:Q", scale=alt.Scale(domain=[0,100])),
+            color="Brand",
             tooltip=["Month","Brand","Awareness"]
         )
 
-        background = base.transform_filter(
-            alt.datum.Brand != highlight_brand
-        ).mark_line(
-            color="lightgray",
-            strokeWidth=1.5,
-            opacity=0.5,
-            interpolate="monotone"
-        )
+        points = chart.mark_circle(size=40)
 
-        highlight = base.transform_filter(
-            alt.datum.Brand == highlight_brand
-        ).mark_line(
-            strokeWidth=3,
-            color="#1f77b4",
-            interpolate="monotone"
-        )
-
-        points = base.transform_filter(
-            alt.datum.Brand == highlight_brand
-        ).mark_circle(
-            size=80,
-            color="#1f77b4"
-        )
-
-        chart = background + highlight + points
-
-        st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart + points, use_container_width=True)
 
     else:
         st.warning("No data available")
