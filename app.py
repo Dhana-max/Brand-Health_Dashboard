@@ -163,12 +163,12 @@ consideration = get_top2_metric(consideration_col)
 consideration_effect = get_top2_metric(effect_col)
 
 # -----------------------------
-# ✅ TABS ADDED HERE
+# ✅ TABS (ONLY UI CHANGE)
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # =============================
-# DASHBOARD TAB (UNCHANGED)
+# ✅ DASHBOARD TAB (UNCHANGED)
 # =============================
 with tab1:
 
@@ -181,8 +181,54 @@ with tab1:
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
+    # ✅ ATTRIBUTES (UNCHANGED)
+    attribute_cols = [
+        f"Attributes_New_DP_{code}_Q12a_{i}_slice"
+        for i in range(1, 18)
+    ]
+
+    attribute_labels = {
+        1: "Helps me move forward professionally",
+        2: "Helps me find the right job",
+        3: "Helps me navigate career",
+        4: "Feel I belong",
+        5: "Cares about issues",
+        6: "Brand I love",
+        7: "Brand I trust",
+        8: "Community feeling",
+        9: "Stay informed",
+        10: "Work discussions",
+        11: "Useful daily",
+        12: "Create/share",
+        13: "Share more",
+        14: "Used at job",
+        15: "Helps goals",
+        16: "Local network",
+        17: "Career growth"
+    }
+
+    attribute_values = [get_top2_metric(col) for col in attribute_cols]
+
+    attribute_df = pd.DataFrame({
+        "Attribute": [attribute_labels[i] for i in range(1, 18)],
+        "Score (%)": attribute_values
+    })
+
+    st.subheader("Brand Attributes (Top 2 %)")
+    st.dataframe(attribute_df, use_container_width=True)
+
+    # ✅ FILTER SUMMARY (UNCHANGED)
+    st.subheader("Applied Filters")
+    st.write({
+        "Brand": selected_brand,
+        "Months": selected_months or "All",
+        "Countries": selected_countries or "All",
+        "Segment": segment,
+        "Weight Used": weight_col
+    })
+
 # =============================
-# ✅ GRAPH TAB
+# ✅ GRAPH TAB (ONLY ADDITION)
 # =============================
 with tab2:
 
@@ -207,22 +253,9 @@ with tab2:
             interpolate="monotone",
             strokeWidth=2
         ).encode(
-            x=alt.X("Month:N"),
-            y=alt.Y("Awareness:Q"),
+            x=alt.X("Month:N", title="Month"),
+            y=alt.Y("Awareness:Q", title="Awareness (%)"),
             tooltip=["Month", "Awareness"]
         )
 
         st.altair_chart(chart, use_container_width=True)
-
-# -----------------------------
-# FILTER SUMMARY
-# -----------------------------
-st.subheader("Applied Filters")
-
-st.write({
-    "Brand": selected_brand,
-    "Months": selected_months or "All",
-    "Countries": selected_countries or "All",
-    "Segment": segment,
-    "Weight Used": weight_col
-})
