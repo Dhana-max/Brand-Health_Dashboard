@@ -43,7 +43,10 @@ map_df = load_map()
 # -----------------------------
 @st.cache_data
 def load_filters():
-    temp = con.execute("SELECT DISTINCT Month, Country_New FROM df").df()
+    temp = con.execute("""
+        SELECT DISTINCT Month, Country_New FROM df
+    """).df()
+
     return (
         sorted(temp["Month"].dropna().unique()),
         sorted(temp["Country_New"].dropna().unique())
@@ -82,10 +85,10 @@ code = brand_map[selected_brand]
 filters = []
 
 if selected_months:
-    filters.append(f"Month IN ({','.join([f'\'{m}\'' for m in selected_months])})")
+    filters.append("Month IN ({})".format(",".join([f"'{m}'" for m in selected_months])))
 
 if selected_countries:
-    filters.append(f"Country_New IN ({','.join([f'\'{c}\'' for c in selected_countries])})")
+    filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in selected_countries])))
 
 if segment == "Male":
     filters.append("Sex = 1")
@@ -97,12 +100,16 @@ if where_clause:
     where_clause = "WHERE " + where_clause
 
 # -----------------------------
-# WEIGHT
+# WEIGHT COLUMN
 # -----------------------------
-weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+weight_col = (
+    "Weight_Post"
+    if selected_countries and len(selected_countries) == 1
+    else "Global_weight_Stacked"
+)
 
 # -----------------------------
-# KPI COLS
+# KPI COLUMN NAMES
 # -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 favorability_col = f"Brand_Favorability_{code}_slice"
@@ -110,7 +117,7 @@ consideration_col = f"Consideration_{code}_slice"
 effect_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# ✅ RESTORED KPI FUNCTION ✅
+# ✅ KPI FUNCTION (UNCHANGED LOGIC)
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -134,27 +141,21 @@ def get_top2_metric(col):
             return 0
 
         num, den = result
-
-        if not den:
-            return 0
-
-        return round((num / den) * 100, 1)
+        return round((num / den) * 100, 1) if den else 0
 
     except:
         return 0
 
 # -----------------------------
-# ✅ AWARENESS (UNCHANGED LOGIC)
+# AWARENESS
 # -----------------------------
 query_awareness = f"""
 SELECT 
     SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes'
         THEN {weight_col} ELSE 0 END),
-
     SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN 
         ('yes','no','dont know','don''t know') 
         THEN {weight_col} ELSE 0 END)
-
 FROM df
 {where_clause}
 """
@@ -202,7 +203,7 @@ with tab1:
     st.dataframe(attr_df)
 
 # -----------------------------
-# GRAPH TAB
+# ✅ GRAPH TAB
 # -----------------------------
 with tab2:
 
@@ -212,14 +213,23 @@ with tab2:
         SELECT Month,
         SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes'
             THEN {weight_col} ELSE 0 END)*100.0 /
-        SUM({weight_col}) AS Awareness
+        SUM(CASE WHEN LOWER(TRIM({awareness_col})) IN 
+            ('yes','no','dont know','don''t know')
+            THEN {weight_col} ELSE 0 END) AS Awareness
         FROM df {where_clause}
         GROUP BY Month
     """).df()
 
     if not trend_df.empty:
-        chart = alt.Chart(trend_df).mark_line().encode(
-            x="Month",
-            y="Awareness"
+        chart = alt.Chart(trend_df).mark_line(
+            interpolate="monotone",
+            strokeWidth=2
+        ).encode(
+            x=alt.X("Month:N", sort=months, title="Month"),   # ✅ FIXED HERE
+            y=alt.Y("Awareness:Q"),
+            tooltip=["Month", "Awareness"]
         )
+
         st.altair_chart(chart, use_container_width=True)
+    else:
+        st.warning("No data to display")
