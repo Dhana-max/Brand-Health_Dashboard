@@ -69,7 +69,7 @@ for _, r in brand_rows.iterrows():
     brand_map[name] = code
 
 # -----------------------------
-# SIDEBAR FILTERS (DASHBOARD ONLY)
+# SIDEBAR FILTERS
 # -----------------------------
 st.sidebar.header("Filters")
 
@@ -81,19 +81,15 @@ segment = st.sidebar.selectbox("Segment", ["Total", "Male", "Female"])
 code = brand_map[selected_brand]
 
 # -----------------------------
-# FILTER CONDITIONS (DASHBOARD)
+# FILTER CONDITIONS
 # -----------------------------
 filters = []
 
 if selected_months:
-    filters.append(
-        "Month IN ({})".format(",".join([f"'{m}'" for m in selected_months]))
-    )
+    filters.append("Month IN ({})".format(",".join([f"'{m}'" for m in selected_months])))
 
 if selected_countries:
-    filters.append(
-        "Country_New IN ({})".format(",".join([f"'{c}'" for c in selected_countries]))
-    )
+    filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in selected_countries])))
 
 if segment == "Male":
     filters.append("Sex = 1")
@@ -122,24 +118,36 @@ consideration_col = f"Consideration_{code}_slice"
 effect_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# KPI FUNCTION
+# KPI FUNCTION ✅ SAFE
 # -----------------------------
 def get_top2_metric(col):
-    query = f"""
-    SELECT 
-        SUM(CASE 
-            WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN {weight_col} ELSE 0 
-        END),
-        SUM(CASE 
-            WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-            THEN {weight_col} ELSE 0 
-        END)
-    FROM df
-    {where_clause}
-    """
-    num, den = con.execute(query).fetchone()
-    return round((num / den) * 100, 1) if den else 0
+    try:
+        query = f"""
+        SELECT 
+            SUM(CASE 
+                WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
+                THEN {weight_col} ELSE 0 END),
+            SUM(CASE 
+                WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
+                THEN {weight_col} ELSE 0 END)
+        FROM df
+        {where_clause}
+        """
+
+        result = con.execute(query).fetchone()
+
+        if result is None:
+            return 0
+
+        num, den = result
+
+        if den is None or den == 0:
+            return 0
+
+        return round((num / den) * 100, 1)
+
+    except:
+        return 0
 
 # -----------------------------
 # AWARENESS KPI
@@ -165,115 +173,105 @@ consideration = get_top2_metric(consideration_col)
 consideration_effect = get_top2_metric(effect_col)
 
 # -----------------------------
-# TABS
+# DISPLAY KPIs
 # -----------------------------
-tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
+st.subheader("Key Metrics")
 
-# =============================
-# DASHBOARD TAB
-# =============================
-with tab1:
+c1, c2, c3, c4 = st.columns(4)
 
-    st.subheader("Key Metrics")
+c1.metric("Awareness", f"{awareness}%")
+c2.metric("Favorability", f"{favorability}%")
+c3.metric("Consideration", f"{consideration}%")
+c4.metric("Consideration Effect", f"{consideration_effect}%")
 
-    c1, c2, c3, c4 = st.columns(4)
+# -----------------------------
+# ATTRIBUTES
+# -----------------------------
+attribute_cols = [
+    f"Attributes_New_DP_{code}_Q12a_{i}_slice"
+    for i in range(1, 18)
+]
 
-    c1.metric("Awareness", f"{awareness}%")
-    c2.metric("Favorability", f"{favorability}%")
-    c3.metric("Consideration", f"{consideration}%")
-    c4.metric("Consideration Effect", f"{consideration_effect}%")
+attribute_values = [get_top2_metric(col) for col in attribute_cols]
 
-    # ATTRIBUTES
-    attribute_cols = [
-        f"Attributes_New_DP_{code}_Q12a_{i}_slice"
-        for i in range(1, 18)
-    ]
+attribute_df = pd.DataFrame({
+    "Attribute": [f"Attribute {i}" for i in range(1, 18)],
+    "Score (%)": attribute_values
+})
 
-    attribute_labels = {
-        i: f"Attribute {i}" for i in range(1, 18)
-    }
+st.subheader("Brand Attributes (Top 2 %)")
+st.dataframe(attribute_df, use_container_width=True)
 
-    attribute_values = [get_top2_metric(col) for col in attribute_cols]
+# ============================================================
+# ✅ ✅ ✅ ✅ GRAPH SECTION (ONLY ADDITION)
+# ============================================================
 
-    attribute_df = pd.DataFrame({
-        "Attribute": [attribute_labels[i] for i in range(1, 18)],
-        "Score (%)": attribute_values
-    })
+st.subheader("📈 Awareness Trend (All Brands)")
 
-    st.subheader("Brand Attributes")
-    st.dataframe(attribute_df, use_container_width=True)
+# Graph filters
+col1, col2 = st.columns(2)
 
-# =============================
-# GRAPHS TAB ✅ FINAL VERSION
-# =============================
-with tab2:
+with col1:
+    graph_countries = st.multiselect("Country (Graph)", countries, key="g_country")
 
-    st.subheader("📈 Awareness Trend (All Brands)")
+with col2:
+    graph_segment = st.selectbox("Segment (Graph)", ["Total", "Male", "Female"], key="g_segment")
 
-    # ✅ GRAPH FILTERS (NO BRAND / NO MONTH)
-    col1, col2 = st.columns(2)
+# Graph filter logic
+graph_filters = []
 
-    with col1:
-        graph_countries = st.multiselect("Country", countries)
-
-    with col2:
-        graph_segment = st.selectbox("Segment", ["Total", "Male", "Female"])
-
-    # ✅ FILTER LOGIC
-    graph_filters = []
-
-    if graph_countries:
-        graph_filters.append(
-            "Country_New IN ({})".format(",".join([f"'{c}'" for c in graph_countries]))
-        )
-
-    if graph_segment == "Male":
-        graph_filters.append("Sex = 1")
-    elif graph_segment == "Female":
-        graph_filters.append("Sex = 2")
-
-    graph_where = " AND ".join(graph_filters)
-    if graph_where:
-        graph_where = "WHERE " + graph_where
-
-    # ✅ BUILD MULTI-BRAND QUERY
-    queries = []
-
-    for brand_name, brand_code in brand_map.items():
-        col_name = f"Aided_Awareness_{brand_code}_slice"
-
-        q = f"""
-        SELECT 
-            Month,
-            '{brand_name}' AS Brand,
-            SUM(CASE WHEN LOWER(TRIM({col_name}))='yes'
-                THEN {weight_col} ELSE 0 END) * 100.0 /
-            SUM({weight_col}) AS Awareness
-        FROM df
-        {graph_where}
-        GROUP BY Month
-        """
-
-        queries.append(q)
-
-    final_query = " UNION ALL ".join(queries) + " ORDER BY Month"
-
-    trend_df = con.execute(final_query).df()
-
-    # ✅ CHART
-    month_order = [
-        "JAN","FEB","MAR","APR","MAY","JUN",
-        "JUL","AUG","SEP","OCT","NOV","DEC"
-    ]
-
-    chart = alt.Chart(trend_df).mark_line(point=True).encode(
-        x=alt.X("Month", sort=month_order),
-        y=alt.Y("Awareness", title="Awareness (%)"),
-        color="Brand",
-        tooltip=["Month", "Brand", "Awareness"]
+if graph_countries:
+    graph_filters.append(
+        "Country_New IN ({})".format(",".join([f"'{c}'" for c in graph_countries]))
     )
 
-    st.altair_chart(chart, use_container_width=True)
+if graph_segment == "Male":
+    graph_filters.append("Sex = 1")
+elif graph_segment == "Female":
+    graph_filters.append("Sex = 2")
+
+graph_where = " AND ".join(graph_filters)
+if graph_where:
+    graph_where = "WHERE " + graph_where
+
+# Build query
+queries = []
+
+for brand_name, brand_code in brand_map.items():
+    col_name = f"Aided_Awareness_{brand_code}_slice"
+
+    q = f"""
+    SELECT 
+        Month,
+        '{brand_name}' AS Brand,
+        SUM(CASE WHEN LOWER(TRIM({col_name}))='yes'
+            THEN {weight_col} ELSE 0 END) * 100.0 /
+        SUM({weight_col}) AS Awareness
+    FROM df
+    {graph_where}
+    GROUP BY Month
+    """
+
+    queries.append(q)
+
+final_query = " UNION ALL ".join(queries) + " ORDER BY Month"
+
+trend_df = con.execute(final_query).df()
+
+# Line Chart
+month_order = [
+    "JAN","FEB","MAR","APR","MAY","JUN",
+    "JUL","AUG","SEP","OCT","NOV","DEC"
+]
+
+chart = alt.Chart(trend_df).mark_line(point=True).encode(
+    x=alt.X("Month", sort=month_order),
+    y=alt.Y("Awareness", title="Awareness (%)"),
+    color="Brand",
+    tooltip=["Month", "Brand", "Awareness"]
+)
+
+st.altair_chart(chart, use_container_width=True)
 
 # -----------------------------
 # FILTER SUMMARY
