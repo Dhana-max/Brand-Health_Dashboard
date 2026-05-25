@@ -14,7 +14,7 @@ PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/down
 MAP_FILE = "Map.xlsx"
 
 # -----------------------------
-# ✅ CLEAN DATA AT SOURCE
+# ✅ CLEAN DATA (FINAL FIX)
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -25,6 +25,7 @@ def get_connection():
             UPPER(TRIM(Month)) AS Month,
             UPPER(TRIM(Country_New)) AS Country_New,
             *
+        EXCLUDE (Month, Country_New)
         FROM read_parquet('{PARQUET_URL}')
     """)
     return con
@@ -43,12 +44,18 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTER VALUES
+# LOAD FILTER VALUES ✅ CLEAN
 # -----------------------------
 @st.cache_data
 def load_filters():
-    df = con.execute("SELECT DISTINCT Month, Country_New FROM df").df()
-    return sorted(df["Month"]), sorted(df["Country_New"])
+    df = con.execute("""
+        SELECT DISTINCT Month, Country_New FROM df
+    """).df()
+
+    months = sorted(df["Month"].dropna().unique())
+    countries = sorted(df["Country_New"].dropna().unique())
+
+    return months, countries
 
 months, countries = load_filters()
 
@@ -60,13 +67,14 @@ brand_rows = map_df[
 ]
 
 brand_map = {}
+
 for _, r in brand_rows.iterrows():
     code = int(re.findall(r"\d+", str(r["Variable"]))[0])
     name = str(r["Label"]).split(" - ")[-1].strip()
     brand_map[name] = code
 
 # -----------------------------
-# SIDEBAR FILTERS (DASHBOARD)
+# SIDEBAR FILTERS
 # -----------------------------
 st.sidebar.header("Filters")
 
@@ -83,14 +91,10 @@ code = brand_map[selected_brand]
 filters = []
 
 if selected_months:
-    filters.append(
-        "Month IN ({})".format(",".join([f"'{m}'" for m in selected_months]))
-    )
+    filters.append("Month IN ({})".format(",".join([f"'{m}'" for m in selected_months])))
 
 if selected_countries:
-    filters.append(
-        "Country_New IN ({})".format(",".join([f"'{c}'" for c in selected_countries]))
-    )
+    filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in selected_countries])))
 
 if segment == "Male":
     filters.append("Sex = 1")
@@ -111,7 +115,7 @@ weight_col = (
 )
 
 # -----------------------------
-# KPI COLUMN NAMES
+# KPI COLUMNS
 # -----------------------------
 awareness_col = f"Aided_Awareness_{code}_slice"
 fav_col = f"Brand_Favorability_{code}_slice"
@@ -128,11 +132,9 @@ def get_top2_metric(col):
             SUM(CASE 
                 WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)
                 THEN {weight_col} ELSE 0 END),
-
             SUM(CASE 
                 WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IS NOT NULL
                 THEN {weight_col} ELSE 0 END)
-
         FROM df
         {where_clause}
         """
@@ -184,7 +186,7 @@ consideration_effect = get_top2_metric(eff_col)
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # =============================
-# ✅ DASHBOARD TAB
+# DASHBOARD
 # =============================
 with tab1:
 
@@ -198,7 +200,7 @@ with tab1:
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
 # =============================
-# ✅ GRAPHS TAB (CLEAN)
+# ✅ GRAPHS (CLEAN EXCEL STYLE)
 # =============================
 with tab2:
 
@@ -238,7 +240,7 @@ with tab2:
             Month,
             '{brand_name}' AS Brand,
             SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-                THEN {weight_col} ELSE 0 END) * 100.0 /
+                THEN {weight_col} ELSE 0 END)*100.0 /
             SUM({weight_col}) AS Awareness
         FROM df
         {graph_where}
@@ -250,32 +252,22 @@ with tab2:
     trend_df = con.execute(" UNION ALL ".join(queries)).df()
 
     # ✅ CLEAN EXCEL STYLE CHART
-    month_order = [
-        "JAN","FEB","MAR","APR","MAY","JUN",
-        "JUL","AUG","SEP","OCT","NOV","DEC"
-    ]
+    month_order = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
 
     chart = alt.Chart(trend_df).mark_line(
         interpolate="monotone",
         strokeWidth=2
     ).encode(
         x=alt.X("Month", sort=month_order, axis=alt.Axis(labelAngle=-45)),
-        y=alt.Y("Awareness", title="Awareness (%)", scale=alt.Scale(domain=[0,100])),
+        y=alt.Y("Awareness", scale=alt.Scale(domain=[0,100])),
         color="Brand",
         tooltip=["Month", "Brand", alt.Tooltip("Awareness", format=".1f")]
-    ).properties(
-        height=420
-    ).configure_axis(
-        grid=True,
-        gridOpacity=0.2
-    ).configure_view(
-        strokeWidth=0
-    )
+    ).properties(height=420)
 
     st.altair_chart(chart, use_container_width=True)
 
 # -----------------------------
-# FILTER SUMMARY
+# SUMMARY
 # -----------------------------
 st.subheader("Applied Filters")
 
