@@ -2,6 +2,7 @@ import streamlit as st
 import duckdb
 import pandas as pd
 import re
+import altair as alt  # ✅ Added
 
 # -----------------------------
 # CONFIG
@@ -10,10 +11,10 @@ st.set_page_config(layout="wide")
 st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
-MAP_FILE = "Map.xlsx"   # ✅ correct case
+MAP_FILE = "Map.xlsx"
 
 # -----------------------------
-# DUCKDB CONNECTION ✅
+# DUCKDB CONNECTION
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -85,10 +86,10 @@ code = brand_map[selected_brand]
 filters = []
 
 if selected_months:
-    filters.append("Month IN ({})".format(",".join([f"'{m}'" for m in selected_months])))
+    filters.append("Month IN ({})".format(",".join([f"'{m}' for m in selected_months])))
 
 if selected_countries:
-    filters.append("Country_New IN ({})".format(",".join([f"'{c}'" for c in selected_countries])))
+    filters.append("Country_New IN ({})".format(",".join([f"'{c}' for c in selected_countries])))
 
 if segment == "Male":
     filters.append("Sex = 1")
@@ -117,7 +118,7 @@ consideration_col = f"Consideration_{code}_slice"
 effect_col = f"Consideration_Effect_{code}_slice"
 
 # -----------------------------
-# ✅ FIXED TOP2 FUNCTION (MAIN FIX)
+# KPI FUNCTION
 # -----------------------------
 def get_top2_metric(col):
     query = f"""
@@ -141,7 +142,7 @@ def get_top2_metric(col):
     return round((num / den) * 100, 1) if den else 0
 
 # -----------------------------
-# AWARENESS
+# AWARENESS KPI
 # -----------------------------
 query_awareness = f"""
 SELECT 
@@ -157,71 +158,98 @@ yes_wt, total_wt = con.execute(query_awareness).fetchone()
 awareness = round((yes_wt / total_wt) * 100, 1) if total_wt else 0
 
 # -----------------------------
-# KPI METRICS ✅
+# KPI METRICS
 # -----------------------------
 favorability = get_top2_metric(favorability_col)
 consideration = get_top2_metric(consideration_col)
 consideration_effect = get_top2_metric(effect_col)
 
 # -----------------------------
-# DISPLAY KPIs
+# ✅ TABS (MAIN CHANGE)
 # -----------------------------
-st.subheader("Key Metrics")
+tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
-c1, c2, c3, c4 = st.columns(4)
+# =============================
+# TAB 1 → DASHBOARD (UNCHANGED)
+# =============================
+with tab1:
 
-c1.metric("Awareness", f"{awareness}%")
-c2.metric("Favorability", f"{favorability}%")
-c3.metric("Consideration", f"{consideration}%")
-c4.metric("Consideration Effect", f"{consideration_effect}%")
+    st.subheader("Key Metrics")
 
-# -----------------------------
-# ATTRIBUTES ✅ FIXED
-# -----------------------------
-attribute_cols = [
-    f"Attributes_New_DP_{code}_Q12a_{i}_slice"
-    for i in range(1, 18)
-]
+    c1, c2, c3, c4 = st.columns(4)
 
-attribute_labels = {
-    1: "Helps me move forward professionally",
-    2: "Helps me find the right job",
-    3: "Helps me navigate career",
-    4: "Feel I belong",
-    5: "Cares about issues",
-    6: "Brand I love",
-    7: "Brand I trust",
-    8: "Community feeling",
-    9: "Stay informed",
-    10: "Work discussions",
-    11: "Useful daily",
-    12: "Create/share",
-    13: "Share more",
-    14: "Used at job",
-    15: "Helps goals",
-    16: "Local network",
-    17: "Career growth"
-}
+    c1.metric("Awareness", f"{awareness}%")
+    c2.metric("Favorability", f"{favorability}%")
+    c3.metric("Consideration", f"{consideration}%")
+    c4.metric("Consideration Effect", f"{consideration_effect}%")
 
-attribute_values = [get_top2_metric(col) for col in attribute_cols]
+    # ATTRIBUTES
+    attribute_cols = [
+        f"Attributes_New_DP_{code}_Q12a_{i}_slice"
+        for i in range(1, 18)
+    ]
 
-attribute_df = pd.DataFrame({
-    "Attribute": [attribute_labels[i] for i in range(1, 18)],
-    "Score (%)": attribute_values
-})
+    attribute_labels = {
+        1: "Helps me move forward professionally",
+        2: "Helps me find the right job",
+        3: "Helps me navigate career",
+        4: "Feel I belong",
+        5: "Cares about issues",
+        6: "Brand I love",
+        7: "Brand I trust",
+        8: "Community feeling",
+        9: "Stay informed",
+        10: "Work discussions",
+        11: "Useful daily",
+        12: "Create/share",
+        13: "Share more",
+        14: "Used at job",
+        15: "Helps goals",
+        16: "Local network",
+        17: "Career growth"
+    }
 
-st.subheader("Brand Attributes (Top 2 %)")
-st.dataframe(attribute_df, use_container_width=True)
+    attribute_values = [get_top2_metric(col) for col in attribute_cols]
 
-# -----------------------------
-# FILTER SUMMARY
-# -----------------------------
-st.subheader("Applied Filters")
+    attribute_df = pd.DataFrame({
+        "Attribute": [attribute_labels[i] for i in range(1, 18)],
+        "Score (%)": attribute_values
+    })
 
-st.write({
-    "Brand": selected_brand,
-    "Months": selected_months or "All",
-    "Countries": selected_countries or "All",
-    "Segment": segment,
-    "Weight Used": weight_col
-})
+    st.subheader("Brand Attributes (Top 2 %)")
+    st.dataframe(attribute_df, use_container_width=True)
+
+# =============================
+# TAB 2 → GRAPHS ✅ NEW
+# =============================
+with tab2:
+
+    st.subheader("📈 Awareness Trend")
+
+    query_trend = f"""
+    SELECT 
+        Month,
+        SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes'
+            THEN {weight_col} ELSE 0 END) * 100.0 /
+        SUM(CASE WHEN {awareness_col} IS NOT NULL
+            THEN {weight_col} ELSE 0 END) AS Awareness
+    FROM df
+    {where_clause}
+    GROUP BY Month
+    ORDER BY Month
+    """
+
+    trend_df = con.execute(query_trend).df()
+
+    month_order = [
+        "JAN","FEB","MAR","APR","MAY","JUN",
+        "JUL","AUG","SEP","OCT","NOV","DEC"
+    ]
+
+    chart = alt.Chart(trend_df).mark_line(point=True).encode(
+        x=alt.X("Month", sort=month_order),
+        y=alt.Y("Awareness", title="Awareness (%)"),
+        tooltip=["Month", "Awareness"]
+    )
+
+    st.altair_chart(chart, use_container_width=True)
