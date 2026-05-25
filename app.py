@@ -2,7 +2,7 @@ import streamlit as st
 import duckdb
 import pandas as pd
 import re
-import altair as alt  # ✅ Added
+import altair as alt
 
 # -----------------------------
 # CONFIG
@@ -14,7 +14,7 @@ PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/down
 MAP_FILE = "Map.xlsx"
 
 # -----------------------------
-# DUCKDB CONNECTION
+# DUCKDB CONNECTION ✅
 # -----------------------------
 @st.cache_resource
 def get_connection():
@@ -69,7 +69,7 @@ for _, r in brand_rows.iterrows():
     brand_map[name] = code
 
 # -----------------------------
-# SIDEBAR FILTERS
+# SIDEBAR FILTERS ✅
 # -----------------------------
 st.sidebar.header("Filters")
 
@@ -81,15 +81,19 @@ segment = st.sidebar.selectbox("Segment", ["Total", "Male", "Female"])
 code = brand_map[selected_brand]
 
 # -----------------------------
-# FILTER CONDITIONS
+# FILTER CONDITIONS ✅ FIXED
 # -----------------------------
 filters = []
 
 if selected_months:
-    filters.append("Month IN ({})".format(",".join([f"'{m}' for m in selected_months])))
+    filters.append(
+        "Month IN ({})".format(",".join([f"'{m}'" for m in selected_months]))
+    )
 
 if selected_countries:
-    filters.append("Country_New IN ({})".format(",".join([f"'{c}' for c in selected_countries])))
+    filters.append(
+        "Country_New IN ({})".format(",".join([f"'{c}'" for c in selected_countries]))
+    )
 
 if segment == "Male":
     filters.append("Sex = 1")
@@ -123,18 +127,14 @@ effect_col = f"Consideration_Effect_{code}_slice"
 def get_top2_metric(col):
     query = f"""
     SELECT 
-        SUM(
-            CASE 
-                WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-                THEN {weight_col} ELSE 0 
-            END
-        ),
-        SUM(
-            CASE 
-                WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-                THEN {weight_col} ELSE 0 
-            END
-        )
+        SUM(CASE 
+            WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
+            THEN {weight_col} ELSE 0 
+        END),
+        SUM(CASE 
+            WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
+            THEN {weight_col} ELSE 0 
+        END)
     FROM df
     {where_clause}
     """
@@ -165,12 +165,12 @@ consideration = get_top2_metric(consideration_col)
 consideration_effect = get_top2_metric(effect_col)
 
 # -----------------------------
-# ✅ TABS (MAIN CHANGE)
+# MAIN TABS ✅
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # =============================
-# TAB 1 → DASHBOARD (UNCHANGED)
+# DASHBOARD TAB
 # =============================
 with tab1:
 
@@ -220,7 +220,7 @@ with tab1:
     st.dataframe(attribute_df, use_container_width=True)
 
 # =============================
-# TAB 2 → GRAPHS ✅ NEW
+# GRAPHS TAB ✅ NEW
 # =============================
 with tab2:
 
@@ -253,3 +253,16 @@ with tab2:
     )
 
     st.altair_chart(chart, use_container_width=True)
+
+# -----------------------------
+# FILTER SUMMARY
+# -----------------------------
+st.subheader("Applied Filters")
+
+st.write({
+    "Brand": selected_brand,
+    "Months": selected_months or "All",
+    "Countries": selected_countries or "All",
+    "Segment": segment,
+    "Weight Used": weight_col
+})
