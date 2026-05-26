@@ -80,7 +80,7 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# ✅ Twitter fix
+# ✅ Fix Twitter
 fixed_map = {}
 for k, v in brand_map.items():
     if k.lower() in ["x", "twitter", "twitter/x", "x (twitter)"]:
@@ -99,7 +99,6 @@ brand_map = fixed_map
 default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
 
 def get_brands_by_country(selected_countries):
-
     if not selected_countries:
         return brand_map
 
@@ -178,6 +177,7 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
+# DASHBOARD
 with tab1:
 
     col1, col2, col3, col4 = st.columns(4)
@@ -197,6 +197,7 @@ with tab1:
         cols[(i-1) % 4].metric(label, f"{val}%")
 
 # -----------------------------
+# GRAPH
 with tab2:
 
     g_country = st.multiselect("Country (graph)", countries)
@@ -249,7 +250,6 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ KEY FIX: enforce ordered categorical axis
     df_chart["Month_order"] = pd.Categorical(
         df_chart["Month"], categories=months, ordered=True
     )
@@ -258,7 +258,10 @@ with tab2:
         x=alt.X(
             "Month_order:O",
             title="Month",
-            axis=alt.Axis(labelAngle=-45)
+            axis=alt.Axis(
+                labelAngle=0,           # ✅ straight vertical labels
+                labelOverlap="greedy"   # ✅ best spacing
+            )
         ),
         y="Value:Q",
         color="Brand"
