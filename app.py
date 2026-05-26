@@ -178,7 +178,6 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
-# Dashboard
 with tab1:
 
     col1, col2, col3, col4 = st.columns(4)
@@ -198,7 +197,6 @@ with tab1:
         cols[(i-1) % 4].metric(label, f"{val}%")
 
 # -----------------------------
-# Graph
 with tab2:
 
     g_country = st.multiselect("Country (graph)", countries)
@@ -251,21 +249,18 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ CLEAN NO-SCROLL GRAPH
+    # ✅ PERFECT BALANCE AXIS
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
         x=alt.X(
             "Month:N",
             sort=months,
             axis=alt.Axis(
                 labelAngle=-45,
-                labelOverlap="greedy",
-                tickCount=14
+                labelExpr="datum.index % 2 == 0 ? datum.label : ''"  # ✅ KEY FIX
             )
         ),
         y="Value:Q",
         color="Brand"
-    ).properties(
-        height=450
-    )
+    ).properties(height=450)
 
     st.altair_chart(chart, use_container_width=True)
