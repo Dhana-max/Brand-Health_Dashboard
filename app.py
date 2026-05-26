@@ -66,34 +66,41 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# normalize names
+# ✅ CLEAN BRAND NAMES (FIX TWITTER)
 brand_alias = {
     "x": "Twitter/X",
     "twitter": "Twitter/X",
-    "twitter/x": "Twitter/X"
+    "twitter/x": "Twitter/X",
+    "x (twitter)": "Twitter/X"
 }
 
-brand_map = {
-    brand_alias.get(k.lower().strip(), k): v
-    for k, v in brand_map.items()
-}
+cleaned_map = {}
+for k, v in brand_map.items():
+    clean_key = brand_alias.get(k.lower().strip(), k)
+    cleaned_map[clean_key] = v
 
-# ✅ DEFAULT BRANDS FOR ALL COUNTRY
+brand_map = cleaned_map
+
+# ✅ ENSURE Twitter/X EXISTS
+if "Twitter/X" not in brand_map:
+    for k, v in brand_map.items():
+        if "twitter" in k.lower():
+            brand_map["Twitter/X"] = v
+            break
+
+# ✅ DEFAULT BRANDS
 default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
 
 # -----------------------------
-# ✅ BRAND FILTER LOGIC
+# BRAND FILTER
 def get_brands_by_country(selected_countries):
 
-    # no country filter → show all
     if not selected_countries:
         return brand_map
 
-    # all countries selected → show default brands
     if len(selected_countries) == len(countries):
         return {b: brand_map[b] for b in default_brands if b in brand_map}
 
-    # specific countries → dynamic brands
     filtered = {}
 
     for brand, code in brand_map.items():
@@ -111,7 +118,7 @@ def get_brands_by_country(selected_countries):
     return filtered
 
 # -----------------------------
-# ✅ WHERE BUILDER
+# WHERE BUILDER
 def build_where(months_sel, countries_sel, segment):
     filters = []
 
@@ -143,12 +150,13 @@ filtered_brand_map = get_brands_by_country(selected_countries)
 selected_brand = st.sidebar.selectbox("Brand", sorted(filtered_brand_map.keys()))
 code = filtered_brand_map[selected_brand]
 
+# ✅ Dashboard WHERE uses sidebar filters
 where_clause = build_where(selected_months, selected_countries, segment)
 
 weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
 # -----------------------------
-# ✅ METRIC FUNCTION
+# METRIC FUNCTION
 def get_metric(col, metric_type="top2"):
     try:
         if metric_type == "yesno":
@@ -191,7 +199,7 @@ with tab1:
         f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
 # -----------------------------
-# GRAPH
+# GRAPH (✅ FIXED FILTER ISOLATION)
 with tab2:
 
     st.subheader("📈 Trend Chart")
@@ -199,7 +207,8 @@ with tab2:
     g_country = st.multiselect("Country (graph)", countries)
     g_segment = st.selectbox("Segment (graph)", ["Total","Male","Female"])
 
-    graph_where = build_where(selected_months, g_country, g_segment)
+    # ✅ IMPORTANT FIX → ignore sidebar filters
+    graph_where = build_where([], g_country, g_segment)
 
     brand_map_local = get_brands_by_country(g_country)
 
@@ -213,12 +222,10 @@ with tab2:
 
     for brand, bcode in brand_map_local.items():
 
-        # Awareness
         if selected_metric in ["All Brands Awareness","Awareness"]:
             col = f"Aided_Awareness_{bcode}_slice"
             formula = f"LOWER(TRIM({col}))='yes'"
 
-        # KPIs
         elif selected_metric in ["Favorability","Consideration","Consideration Effect"]:
             col_map = {
                 "Favorability": f"Brand_Favorability_{bcode}_slice",
@@ -227,18 +234,13 @@ with tab2:
             }
             col = col_map[selected_metric]
 
-            formula = f"""
-            TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            """
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
-        # Attributes
         else:
             i = int(selected_metric.split()[-1])
             col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
 
-            formula = f"""
-            TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            """
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         queries.append(f"""
         SELECT Month, '{brand}' AS Brand,
