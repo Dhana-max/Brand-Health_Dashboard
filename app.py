@@ -32,7 +32,6 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ PRESERVE MONTH ORDER
 @st.cache_data
 def load_filters():
     months = con.execute("""
@@ -66,7 +65,7 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# ✅ CLEAN BRAND NAMES (FIX TWITTER)
+# normalize Twitter/X
 brand_alias = {
     "x": "Twitter/X",
     "twitter": "Twitter/X",
@@ -81,18 +80,15 @@ for k, v in brand_map.items():
 
 brand_map = cleaned_map
 
-# ✅ ENSURE Twitter/X EXISTS
 if "Twitter/X" not in brand_map:
     for k, v in brand_map.items():
         if "twitter" in k.lower():
             brand_map["Twitter/X"] = v
             break
 
-# ✅ DEFAULT BRANDS
+# -----------------------------
 default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
 
-# -----------------------------
-# BRAND FILTER
 def get_brands_by_country(selected_countries):
 
     if not selected_countries:
@@ -102,7 +98,6 @@ def get_brands_by_country(selected_countries):
         return {b: brand_map[b] for b in default_brands if b in brand_map}
 
     filtered = {}
-
     for brand, code in brand_map.items():
         col = f"Aided_Awareness_{code}_slice"
 
@@ -118,17 +113,14 @@ def get_brands_by_country(selected_countries):
     return filtered
 
 # -----------------------------
-# WHERE BUILDER
 def build_where(months_sel, countries_sel, segment):
     filters = []
 
     if months_sel:
-        mvals = ",".join("'" + m + "'" for m in months_sel)
-        filters.append("Month IN (" + mvals + ")")
+        filters.append("Month IN (" + ",".join("'" + m + "'" for m in months_sel) + ")")
 
     if countries_sel:
-        cvals = ",".join("'" + c + "'" for c in countries_sel)
-        filters.append("Country_New IN (" + cvals + ")")
+        filters.append("Country_New IN (" + ",".join("'" + c + "'" for c in countries_sel) + ")")
 
     if segment == "Male":
         filters.append("Sex = 1")
@@ -138,7 +130,6 @@ def build_where(months_sel, countries_sel, segment):
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 # -----------------------------
-# SIDEBAR
 st.sidebar.header("Filters")
 
 selected_countries = st.sidebar.multiselect("Country", countries)
@@ -150,32 +141,28 @@ filtered_brand_map = get_brands_by_country(selected_countries)
 selected_brand = st.sidebar.selectbox("Brand", sorted(filtered_brand_map.keys()))
 code = filtered_brand_map[selected_brand]
 
-# ✅ Dashboard WHERE uses sidebar filters
 where_clause = build_where(selected_months, selected_countries, segment)
 
 weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
 # -----------------------------
-# METRIC FUNCTION
 def get_metric(col, metric_type="top2"):
     try:
         if metric_type == "yesno":
             q = f"""
             SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0 / SUM({weight_col})
+            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col})
             FROM df {where_clause}
             """
         else:
             q = f"""
             SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100.0 /
+            THEN {weight_col} ELSE 0 END)*100.0/
             SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
             THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
-
-        result = con.execute(q).fetchone()[0]
-        return round(result or 0, 1)
+        return round(con.execute(q).fetchone()[0] or 0,1)
     except:
         return 0
 
@@ -183,38 +170,42 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
-# DASHBOARD
 with tab1:
 
-    st.metric("Awareness",
-        f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
+    col1,col2,col3,col4 = st.columns(4)
 
-    st.metric("Favorability",
-        f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
+    col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
+    col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
+    col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
+    col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
-    st.metric("Consideration",
-        f"{get_metric(f'Consideration_{code}_slice')}%")
+    st.subheader("Attributes")
 
-    st.metric("Consideration Effect",
-        f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
+    attr_cols = st.columns(4)
+    for i in range(1,9):
+        val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
+        attr_cols[(i-1)%4].metric(f"Attr {i}", f"{val}%")
 
 # -----------------------------
-# GRAPH (✅ FIXED FILTER ISOLATION)
 with tab2:
-
-    st.subheader("📈 Trend Chart")
 
     g_country = st.multiselect("Country (graph)", countries)
     g_segment = st.selectbox("Segment (graph)", ["Total","Male","Female"])
 
-    # ✅ IMPORTANT FIX → ignore sidebar filters
     graph_where = build_where([], g_country, g_segment)
 
     brand_map_local = get_brands_by_country(g_country)
 
-    metric_options = ["All Brands Awareness","Awareness",
-                      "Favorability","Consideration",
-                      "Consideration Effect"] + [f"Attribute {i}" for i in range(1,18)]
+    metric_options = [
+        "All Brands Awareness",
+        "All Brands Favorability",
+        "All Brands Consideration",
+        "All Brands Effect",
+        "Awareness",
+        "Favorability",
+        "Consideration",
+        "Consideration Effect"
+    ] + [f"Attribute {i}" for i in range(1,18)]
 
     selected_metric = st.selectbox("Metric", metric_options)
 
@@ -222,30 +213,49 @@ with tab2:
 
     for brand, bcode in brand_map_local.items():
 
-        if selected_metric in ["All Brands Awareness","Awareness"]:
+        # ✅ ALL BRAND KPI OPTIONS
+        if selected_metric == "All Brands Awareness":
             col = f"Aided_Awareness_{bcode}_slice"
             formula = f"LOWER(TRIM({col}))='yes'"
 
-        elif selected_metric in ["Favorability","Consideration","Consideration Effect"]:
-            col_map = {
-                "Favorability": f"Brand_Favorability_{bcode}_slice",
-                "Consideration": f"Consideration_{bcode}_slice",
-                "Consideration Effect": f"Consideration_Effect_{bcode}_slice"
-            }
-            col = col_map[selected_metric]
+        elif selected_metric == "All Brands Favorability":
+            col = f"Brand_Favorability_{bcode}_slice"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
+        elif selected_metric == "All Brands Consideration":
+            col = f"Consideration_{bcode}_slice"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
+
+        elif selected_metric == "All Brands Effect":
+            col = f"Consideration_Effect_{bcode}_slice"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
+
+        # ✅ SINGLE BRAND (existing logic)
+        elif selected_metric == "Awareness":
+            col = f"Aided_Awareness_{bcode}_slice"
+            formula = f"LOWER(TRIM({col}))='yes'"
+
+        elif selected_metric == "Favorability":
+            col = f"Brand_Favorability_{bcode}_slice"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
+
+        elif selected_metric == "Consideration":
+            col = f"Consideration_{bcode}_slice"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
+
+        elif selected_metric == "Consideration Effect":
+            col = f"Consideration_Effect_{bcode}_slice"
             formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         else:
             i = int(selected_metric.split()[-1])
             col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
-
             formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         queries.append(f"""
-        SELECT Month, '{brand}' AS Brand,
+        SELECT Month,'{brand}' AS Brand,
         SUM(CASE WHEN {formula}
-        THEN {weight_col} ELSE 0 END)*100.0 / SUM({weight_col}) AS Value
+        THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col}) AS Value
         FROM df {graph_where}
         GROUP BY Month
         """)
