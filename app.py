@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# Attribute labels
+# Attributes
 attr_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Attributes_New_DP_", na=False)
 ]
@@ -69,7 +69,7 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# Brand map (SAFE)
+# Brand map
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
@@ -80,6 +80,7 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
+# ✅ Twitter fix only (safe)
 fixed_map = {}
 for k, v in brand_map.items():
     if k.lower().strip() in ["x", "twitter", "twitter/x", "x (twitter)"]:
@@ -248,11 +249,12 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
+    # ✅ ✅ ONLY CHANGE → CLEAN AXIS
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
         x=alt.X(
             "Month:N",
             sort=months,
-            axis=alt.Axis(labelAngle=45, labelOverlap=False)  # ✅ FIX APPLIED
+            axis=alt.Axis(labelAngle=45, labelOverlap="greedy")
         ),
         y="Value:Q",
         color="Brand"
