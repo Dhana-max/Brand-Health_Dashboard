@@ -69,7 +69,7 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# Brand map (SAFE)
+# Brand map
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
@@ -80,9 +80,10 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
+# ✅ Twitter fix
 fixed_map = {}
 for k, v in brand_map.items():
-    if k.lower().strip() in ["x", "twitter", "twitter/x", "x (twitter)"]:
+    if k.lower() in ["x", "twitter", "twitter/x", "x (twitter)"]:
         fixed_map["Twitter/X"] = v
     else:
         fixed_map[k] = v
@@ -177,6 +178,7 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
+# Dashboard
 with tab1:
 
     col1, col2, col3, col4 = st.columns(4)
@@ -196,6 +198,7 @@ with tab1:
         cols[(i-1) % 4].metric(label, f"{val}%")
 
 # -----------------------------
+# Graph
 with tab2:
 
     g_country = st.multiselect("Country (graph)", countries)
@@ -248,8 +251,8 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ ✅ IMPROVED WIDE SCROLLABLE CHART
-    chart_width = max(1200, len(months) * 80)
+    # ✅ Wide readable chart
+    chart_width = max(1200, len(months) * 70)
 
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
         x=alt.X("Month:N", sort=months, axis=alt.Axis(labelAngle=45)),
@@ -260,11 +263,4 @@ with tab2:
         height=450
     )
 
-    st.markdown(
-        f"""
-        <div style="overflow-x: auto;">
-            {chart.to_html()}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    st.altair_chart(chart, use_container_width=False)
