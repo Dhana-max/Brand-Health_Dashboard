@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ ATTRIBUTE LABELS (FULL TEXT, NO SPLIT)
+# ✅ ATTRIBUTE LABELS (EXACT FROM FILE)
 attr_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Attributes_New_DP_", na=False)
 ]
@@ -40,14 +40,14 @@ attr_rows = map_df[
 attr_map = {}
 for _, r in attr_rows.iterrows():
     var = str(r["Variable"])
-    label = str(r["Label"]).strip()   # ✅ FULL LABEL
+    label = str(r["Label"]).strip()
 
     match = re.findall(r"Q12a_(\d+)", var)
     if match:
         attr_map[int(match[0])] = label
 
 # -----------------------------
-# MONTH / COUNTRY
+# ✅ PRESERVE MONTH ORDER
 @st.cache_data
 def load_filters():
     months = con.execute("""
@@ -71,30 +71,33 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# ✅ BRAND MAP (SAFE TWITTER MERGE)
+# ✅ BRAND MAP (RESTORED + SAFE TWITTER FIX)
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
 
-raw_brand_map = {
-    str(r["Label"]).strip(): int(re.findall(r"\d+", str(r["Variable"]))[0])
+brand_map = {
+    str(r["Label"]).split(" - ")[-1].strip():
+    int(re.findall(r"\d+", str(r["Variable"]))[0])
     for _, r in brand_rows.iterrows()
 }
 
-brand_map = {}
+# ✅ Fix Twitter ONLY (without breaking others)
+fixed_map = {}
 
-for name, code in raw_brand_map.items():
-    key = name.lower().strip()
-
-    if key in ["x", "twitter", "twitter/x", "x (twitter)"]:
-        brand_map["Twitter/X"] = code
+for k, v in brand_map.items():
+    if k.lower().strip() in ["x", "twitter", "twitter/x", "x (twitter)"]:
+        fixed_map["Twitter/X"] = v
     else:
-        brand_map[name] = code
+        fixed_map[k] = v
 
-# ✅ ENSURE Twitter/X exists
-for k, v in raw_brand_map.items():
-    if "twitter" in k.lower():
-        brand_map["Twitter/X"] = v
+# ensure twitter exists
+if "Twitter/X" not in fixed_map:
+    for k, v in brand_map.items():
+        if "twitter" in k.lower():
+            fixed_map["Twitter/X"] = v
+
+brand_map = fixed_map
 
 # -----------------------------
 default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
@@ -173,7 +176,7 @@ def get_metric(col, metric_type="top2"):
             THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
-        return round(con.execute(q).fetchone()[0] or 0,1)
+        return round(con.execute(q).fetchone()[0] or 0, 1)
     except:
         return 0
 
@@ -195,10 +198,10 @@ with tab1:
 
     cols = st.columns(4)
 
-    for i in range(1,18):
+    for i in range(1, 18):
         label = attr_map.get(i, f"Attribute {i}")
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
-        cols[(i-1)%4].metric(label, f"{val}%")
+        cols[(i-1) % 4].metric(label, f"{val}%")
 
 # -----------------------------
 # ✅ GRAPH
@@ -215,7 +218,7 @@ with tab2:
         "All Brands Favorability",
         "All Brands Consideration",
         "All Brands Effect"
-    ] + [f"All Brands Attribute {i}" for i in range(1,18)]
+    ] + [f"All Brands Attribute {i}" for i in range(1, 18)]
 
     selected_metric = st.selectbox("Metric", metric_options)
 
@@ -226,7 +229,6 @@ with tab2:
         if "Attribute" in selected_metric:
             i = int(selected_metric.split()[-1])
             col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
-
             formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         elif selected_metric == "All Brands Awareness":
@@ -255,11 +257,10 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    st.altair_chart(
-        alt.Chart(df_chart).mark_line(point=True).encode(
-            x=alt.X("Month:N", sort=months),
-            y="Value:Q",
-            color="Brand"
-        ),
-        use_container_width=True
+    chart = alt.Chart(df_chart).mark_line(point=True).encode(
+        x=alt.X("Month:N", sort=months),
+        y="Value:Q",
+        color="Brand"
     )
+
+    st.altair_chart(chart, use_container_width=True)
