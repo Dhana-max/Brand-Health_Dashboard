@@ -287,21 +287,15 @@ with tab2:
         df_chart["Month"], categories=months, ordered=True
     )
 
-    if len(g_months) == 1:
-        chart = alt.Chart(df_chart).mark_bar().encode(
-            x="Brand",
-            y="Value",
-            color="Brand"
-        )
-    else:
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x=alt.X(
-                "Month_order:O",
-                sort=months,
-                axis=alt.Axis(labelAngle=-45,labelOverlap=False,labelFontSize=9)
-            ),
-            y="Value:Q",
-            color=alt.Color("Brand", legend=alt.Legend(columns=2))
-        )
+    # ✅ ALWAYS LINE CHART (NO BAR)
+    chart = alt.Chart(df_chart).mark_line(point=True).encode(
+        x=alt.X(
+            "Month_order:O",
+            sort=months,
+            axis=alt.Axis(labelAngle=-45,labelOverlap=False,labelFontSize=9)
+        ),
+        y="Value:Q",
+        color=alt.Color("Brand", legend=alt.Legend(columns=2))
+    )
 
     st.altair_chart(chart, use_container_width=True)
