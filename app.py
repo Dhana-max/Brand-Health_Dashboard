@@ -251,16 +251,21 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ Wide readable chart
-    chart_width = max(1200, len(months) * 70)
-
+    # ✅ CLEAN NO-SCROLL GRAPH
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x=alt.X("Month:N", sort=months, axis=alt.Axis(labelAngle=45)),
+        x=alt.X(
+            "Month:N",
+            sort=months,
+            axis=alt.Axis(
+                labelAngle=-45,
+                labelOverlap="greedy",
+                tickCount=14
+            )
+        ),
         y="Value:Q",
         color="Brand"
     ).properties(
-        width=chart_width,
         height=450
     )
 
-    st.altair_chart(chart, use_container_width=False)
+    st.altair_chart(chart, use_container_width=True)
