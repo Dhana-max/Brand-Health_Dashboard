@@ -5,6 +5,7 @@ import re
 import altair as alt
 
 st.set_page_config(layout="wide")
+
 st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
@@ -32,7 +33,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ ATTRIBUTE LABELS (FINAL)
+# ✅ ATTRIBUTE LABELS
 attr_map = {
     1: "Helps me move forward professionally",
     2: "Helps me find the right job for me",
@@ -54,7 +55,6 @@ attr_map = {
 }
 
 # -----------------------------
-# ✅ PRESERVE ORIGINAL MONTH ORDER
 @st.cache_data
 def load_filters():
     df_temp = con.execute("""
@@ -79,7 +79,6 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# ✅ ORIGINAL BRAND LOGIC (UNCHANGED)
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
@@ -90,7 +89,7 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# ✅ FIX Twitter only
+# ✅ Fix Twitter
 fixed_map = {}
 for k, v in brand_map.items():
     if k.lower().strip() in ["x","twitter","twitter/x","x (twitter)"]:
@@ -107,9 +106,8 @@ brand_map = fixed_map
 
 default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
 
-# ✅ Country logic intact
+# -----------------------------
 def get_brands_by_country(selected_countries):
-
     if not selected_countries:
         return brand_map
 
@@ -117,16 +115,13 @@ def get_brands_by_country(selected_countries):
         return {b: brand_map[b] for b in default_brands if b in brand_map}
 
     filtered = {}
-
     for brand, code in brand_map.items():
         col = f"Aided_Awareness_{code}_slice"
-
         query = f"""
         SELECT COUNT(*) FROM df
         WHERE Country_New IN ({",".join("'" + c + "'" for c in selected_countries)})
         AND {col} IS NOT NULL
         """
-
         if con.execute(query).fetchone()[0] > 0:
             filtered[brand] = code
 
@@ -150,22 +145,6 @@ def build_where(months_sel, countries_sel, segment):
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 # -----------------------------
-# SIDEBAR
-st.sidebar.header("Filters")
-
-selected_countries = st.sidebar.multiselect("Country", countries)
-selected_months = st.sidebar.multiselect("Month", months)
-segment = st.sidebar.selectbox("Segment", ["Total","Male","Female"])
-
-filtered_brand_map = get_brands_by_country(selected_countries)
-
-selected_brand = st.sidebar.selectbox("Brand", sorted(filtered_brand_map.keys()))
-code = filtered_brand_map[selected_brand]
-
-where_clause = build_where(selected_months, selected_countries, segment)
-weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
-
-# -----------------------------
 def get_metric(col, metric_type="top2"):
     try:
         if metric_type == "yesno":
@@ -182,6 +161,7 @@ def get_metric(col, metric_type="top2"):
             THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
+
         return round(con.execute(q).fetchone()[0] or 0,1)
     except:
         return 0
@@ -190,11 +170,33 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD
+# ✅ DASHBOARD (UPDATED)
 with tab1:
 
-    col1,col2,col3,col4 = st.columns(4)
+    # ✅ Filters (moved here)
+    colf1, colf2, colf3, colf4 = st.columns(4)
 
+    with colf1:
+        selected_countries = st.multiselect("Country", countries)
+
+    with colf2:
+        selected_months = st.multiselect("Month", months)
+
+    with colf3:
+        segment = st.selectbox("Segment", ["Total","Male","Female"])
+
+    filtered_brand_map = get_brands_by_country(selected_countries)
+
+    with colf4:
+        selected_brand = st.selectbox("Brand", sorted(filtered_brand_map.keys()))
+
+    code = filtered_brand_map[selected_brand]
+    where_clause = build_where(selected_months, selected_countries, segment)
+
+    weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
+
+    # ✅ KPIs
+    col1,col2,col3,col4 = st.columns(4)
     col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
     col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
     col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
@@ -202,14 +204,21 @@ with tab1:
 
     st.subheader("Brand Attributes")
 
-    cols = st.columns(4)
-
+    # ✅ TABLE FORMAT
+    attr_data = []
     for i in range(1,18):
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
-        cols[(i-1)%4].metric(attr_map[i], f"{val}%")
+        attr_data.append({
+            "Attribute": attr_map[i],
+            "Value (%)": val
+        })
+
+    attr_df = pd.DataFrame(attr_data)
+
+    st.dataframe(attr_df, use_container_width=True)
 
 # -----------------------------
-# ✅ GRAPH (FIXED ✅)
+# ✅ GRAPH TAB (UNCHANGED)
 with tab2:
 
     g_country = st.multiselect("Country (graph)", countries)
@@ -218,7 +227,6 @@ with tab2:
     graph_where = build_where([], g_country, g_segment)
     brand_map_local = get_brands_by_country(g_country)
 
-    # ✅ REAL ATTRIBUTE NAMES IN DROPDOWN
     metric_options = [
         "All Brands Awareness",
         "All Brands Favorability",
@@ -263,7 +271,6 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ ORDER FIX
     df_chart["Month_order"] = pd.Categorical(
         df_chart["Month"], categories=months, ordered=True
     )
