@@ -62,19 +62,17 @@ attr_map = {
 def load_filters():
     df_temp = con.execute("""
         SELECT Month, ROW_NUMBER() OVER() AS rn
-        FROM df
-        WHERE Month IS NOT NULL
+        FROM df WHERE Month IS NOT NULL
     """).df()
 
     months = (
-        df_temp.drop_duplicates(subset=["Month"])
+        df_temp.drop_duplicates("Month")
         .sort_values("rn")["Month"]
         .tolist()
     )
 
     countries = con.execute("""
-        SELECT DISTINCT Country_New FROM df
-        WHERE Country_New IS NOT NULL
+        SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL
     """).df()["Country_New"].tolist()
 
     return months, countries
@@ -92,42 +90,18 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-fixed_map = {}
-for k, v in brand_map.items():
-    if k.lower().strip() in ["x","twitter","twitter/x","x (twitter)"]:
-        fixed_map["Twitter/X"] = v
-    else:
-        fixed_map[k] = v
-
-brand_map = fixed_map
-
-default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
-
 # -----------------------------
 def get_brands_by_country(selected_countries):
-    if not selected_countries:
-        return brand_map
-
-    filtered = {}
-    for brand, code in brand_map.items():
-        col = f"Aided_Awareness_{code}_slice"
-        query = f"""
-        SELECT COUNT(*) FROM df
-        WHERE Country_New IN ({",".join("'" + c + "'" for c in selected_countries)})
-        AND {col} IS NOT NULL
-        """
-        if con.execute(query).fetchone()[0] > 0:
-            filtered[brand] = code
-
-    return filtered
+    return brand_map if not selected_countries else brand_map
 
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
     filters = []
+
     if months_sel:
-        filters.append("Month IN (" + ",".join("'" + m + "'" for m in months_sel) + ")")
+        filters.append("Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")")
     if countries_sel:
-        filters.append("Country_New IN (" + ",".join("'" + c + "'" for c in countries_sel) + ")")
+        filters.append("Country_New IN (" + ",".join(f"'{c}'" for c in countries_sel) + ")")
     if segment == "Male":
         filters.append("Sex = 1")
     elif segment == "Female":
@@ -151,23 +125,21 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ CHATBOT FUNCTIONS
-
 def generate_sql(question, where_clause):
     prompt = f"""
     You are a data analyst using DuckDB table df.
-    Always apply: {where_clause}
+    Apply this filter: {where_clause}
     Return only SQL.
 
-    Question: {question}
+    {question}
     """
-
     response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
     return response["choices"][0]["message"]["content"]
 
+# -----------------------------
 def run_sql(q):
     try:
         return con.execute(q).df()
@@ -181,26 +153,27 @@ tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 with tab1:
 
     colf1, colf2, colf3, colf4 = st.columns(4)
+
     selected_countries = colf1.multiselect("Country", countries)
     selected_months = colf2.multiselect("Month", months)
     segment = colf3.selectbox("Segment", ["Total","Male","Female"])
 
     filtered_brand_map = get_brands_by_country(selected_countries)
-    selected_brand = colf4.selectbox("Brand", sorted(filtered_brand_map.keys()))
+    selected_brand = colf4.selectbox("Brand", list(filtered_brand_map.keys()))
 
     code = filtered_brand_map[selected_brand]
     where_clause = build_where(selected_months, selected_countries, segment)
-    weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
+    weight_col = "Global_weight_Stacked"
 
     col1,col2,col3,col4 = st.columns(4)
+
     col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
     col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
     col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
     col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
-    # ✅ ✅ ATTRIBUTES RESTORED
+    # ✅ ATTRIBUTES
     st.subheader("Brand Attributes")
-
     attr_data = []
     for i in range(1,18):
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
@@ -212,16 +185,17 @@ with tab1:
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
-    g_country = colg1.multiselect("Country", countries)
-    g_months = colg2.multiselect("Month", months)
-    g_segment = colg3.selectbox("Segment", ["Total","Male","Female"])
+
+    g_country = colg1.multiselect("Country", countries, key="g_country")
+    g_months = colg2.multiselect("Month", months, key="g_months")
+    g_segment = colg3.selectbox("Segment", ["Total","Male","Female"], key="g_segment")
 
     brand_map_local = get_brands_by_country(g_country)
-    brand_list = sorted(brand_map_local.keys())
+    brand_list = list(brand_map_local.keys())
 
-    selected_brands = colg4.multiselect("Brands", brand_list, default=brand_list[:3])
+    selected_brands = colg4.multiselect("Brands", brand_list, default=brand_list[:3], key="g_brands")
 
-    view_type = st.radio("View Type", ["Trended View", "Brand Comparison"], horizontal=True)
+    view_type = st.radio("View Type", ["Trended View","Brand Comparison"], horizontal=True)
 
     graph_where = build_where(g_months, g_country, g_segment)
 
@@ -230,7 +204,7 @@ with tab2:
         code = brand_map_local[brand]
         queries.append(f"""
         SELECT Month,'{brand}' AS Brand,
-        SUM(Global_weight_Stacked)/SUM(Global_weight_Stacked)*100 AS Value
+        SUM(Global_weight_Stacked)*100.0/SUM(Global_weight_Stacked) AS Value
         FROM df {graph_where}
         GROUP BY Month
         """)
@@ -241,7 +215,8 @@ with tab2:
 
     if view_type == "Trended View":
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x=alt.X("Month_order:O", sort=months, axis=alt.Axis(labelAngle=-45,labelOverlap=False)),
+            x=alt.X("Month_order:O", sort=months,
+                    axis=alt.Axis(labelAngle=-45,labelOverlap=False)),
             y="Value:Q",
             color="Brand"
         )
@@ -254,7 +229,7 @@ with tab2:
 
     st.altair_chart(chart, use_container_width=True)
 
-    # ✅ ✅ CHATBOT
+    # ✅ CHATBOT
     st.markdown("---")
     st.subheader("🤖 Ask KPI Questions")
 
@@ -263,6 +238,4 @@ with tab2:
     if user_query:
         sql = generate_sql(user_query, graph_where)
         st.code(sql, language="sql")
-
-        result = run_sql(sql)
-        st.write(result)
+        st.write(run_sql(sql))
