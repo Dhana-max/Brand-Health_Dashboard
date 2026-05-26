@@ -39,7 +39,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# LOAD FILTERS (ORDER PRESERVED)
+# LOAD FILTERS
 # -----------------------------
 @st.cache_data
 def load_filters():
@@ -81,7 +81,7 @@ for _, r in brand_rows.iterrows():
     brand_map[name] = code
 
 # -----------------------------
-# ✅ STANDARDIZE BRAND NAMES
+# STANDARDIZE NAMES
 # -----------------------------
 brand_alias = {
     "x": "Twitter/X",
@@ -98,22 +98,18 @@ for k, v in brand_map.items():
 
 brand_map = normalized_brand_map
 
-# ✅ FIX: ensure Twitter/X always exists (no logic change)
+# ✅ ensure Twitter/X exists
 if "Twitter/X" not in brand_map:
     for k, v in brand_map.items():
         if "twitter" in k.lower():
             brand_map["Twitter/X"] = v
             break
 
-# ✅ CORE BRANDS
 default_brands = ["LinkedIn","Indeed","Facebook","Google","Twitter/X","TikTok"]
 
 # -----------------------------
-# ✅ BRAND FILTER FUNCTION
-# -----------------------------
 def get_brands_by_country(selected_countries):
 
-    # ALL countries → default brands only
     if selected_countries and len(selected_countries) == len(countries):
         return {b: brand_map[b] for b in default_brands if b in brand_map}
 
@@ -121,8 +117,8 @@ def get_brands_by_country(selected_countries):
         return brand_map
 
     filtered = {}
-
     for brand, code in brand_map.items():
+
         col = f"Aided_Awareness_{code}_slice"
 
         try:
@@ -141,12 +137,11 @@ def get_brands_by_country(selected_countries):
     return filtered
 
 # -----------------------------
-# DASHBOARD FILTERS
+# SIDEBAR
 # -----------------------------
 st.sidebar.header("Filters")
 
 selected_countries = st.sidebar.multiselect("Country", countries)
-
 filtered_brand_map = get_brands_by_country(selected_countries)
 
 selected_brand = st.sidebar.selectbox(
@@ -160,7 +155,7 @@ segment = st.sidebar.selectbox("Segment", ["Total","Male","Female"])
 code = filtered_brand_map[selected_brand]
 
 # -----------------------------
-# WHERE CLAUSE
+# WHERE
 # -----------------------------
 filters = []
 
@@ -179,19 +174,14 @@ where_clause = " AND ".join(filters)
 if where_clause:
     where_clause = "WHERE " + where_clause
 
-# -----------------------------
-# WEIGHT
-# -----------------------------
 weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
-# KPI COLS
+# KPI cols
 awareness_col = f"Aided_Awareness_{code}_slice"
 fav_col = f"Brand_Favorability_{code}_slice"
 cons_col = f"Consideration_{code}_slice"
 eff_col = f"Consideration_Effect_{code}_slice"
 
-# -----------------------------
-# KPI FUNCTION
 # -----------------------------
 def get_top2_metric(col):
     try:
@@ -208,9 +198,7 @@ def get_top2_metric(col):
     except:
         return 0
 
-# -----------------------------
-# AWARENESS KPI
-# -----------------------------
+# awareness KPI
 query_awareness = f"""
 SELECT 
 SUM(CASE WHEN LOWER(TRIM({awareness_col}))='yes' THEN {weight_col} ELSE 0 END),
@@ -231,7 +219,11 @@ consideration_effect = get_top2_metric(eff_col)
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
+# -----------------------------
+# DASHBOARD
+# -----------------------------
 with tab1:
+
     st.subheader("Key Metrics")
 
     c1,c2,c3,c4 = st.columns(4)
@@ -253,6 +245,9 @@ with tab1:
         "Score (%)": attr_vals
     }))
 
+# -----------------------------
+# GRAPHS
+# -----------------------------
 with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
@@ -294,10 +289,72 @@ with tab2:
     trend_df = con.execute(" UNION ALL ".join(queries)).df()
 
     if not trend_df.empty:
-        chart = alt.Chart(trend_df).mark_line(interpolate="monotone").encode(
+        chart = alt.Chart(trend_df).mark_line(point=True).encode(
             x=alt.X("Month:N", sort=months),
             y=alt.Y("Awareness:Q"),
             color="Brand"
         )
 
-        st.altair_chart(chart + chart.mark_circle(size=40), use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
+
+    # -----------------------------
+    # ✅ KPI GRAPH SELECTOR
+    # -----------------------------
+    st.divider()
+    st.subheader("📊 KPI Trend (Select Metric)")
+
+    metric_options = [
+        "Awareness",
+        "Favorability",
+        "Consideration",
+        "Consideration Effect"
+    ] + [f"Attribute {i}" for i in range(1,18)]
+
+    selected_metric = st.selectbox("Select KPI", metric_options)
+
+    if selected_metric == "Awareness":
+        selected_col = awareness_col
+        is_awareness = True
+    else:
+        is_awareness = False
+
+        if selected_metric == "Favorability":
+            selected_col = fav_col
+        elif selected_metric == "Consideration":
+            selected_col = cons_col
+        elif selected_metric == "Consideration Effect":
+            selected_col = eff_col
+        else:
+            i = int(selected_metric.split()[-1])
+            selected_col = f"Attributes_New_DP_{code}_Q12a_{i}_slice"
+
+    if is_awareness:
+        metric_query = f"""
+        SELECT Month,
+        SUM(CASE WHEN LOWER(TRIM({selected_col}))='yes'
+            THEN {weight_col} ELSE 0 END)*100.0 /
+        SUM({weight_col}) AS Value
+        FROM df {graph_where}
+        GROUP BY Month
+        """
+    else:
+        metric_query = f"""
+        SELECT Month,
+        SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({selected_col}), '\\d+') AS INTEGER) IN (4,5)
+            THEN {weight_col} ELSE 0 END)*100.0 /
+        SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({selected_col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
+            THEN {weight_col} ELSE 0 END) AS Value
+        FROM df {graph_where}
+        GROUP BY Month
+        """
+
+    metric_df = con.execute(metric_query).df()
+
+    if not metric_df.empty:
+        chart2 = alt.Chart(metric_df).mark_line(point=True).encode(
+            x=alt.X("Month:N", sort=months),
+            y=alt.Y("Value:Q", title=selected_metric)
+        )
+        st.altair_chart(chart2, use_container_width=True)
+    else:
+        st.warning("No data available")
