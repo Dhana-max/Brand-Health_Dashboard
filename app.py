@@ -81,7 +81,7 @@ for _, r in brand_rows.iterrows():
     brand_map[name] = code
 
 # -----------------------------
-# ✅ STANDARDIZE BRAND NAMES (UPDATED)
+# ✅ STANDARDIZE BRAND NAMES
 # -----------------------------
 brand_alias = {
     "x": "Twitter/X",
@@ -98,7 +98,14 @@ for k, v in brand_map.items():
 
 brand_map = normalized_brand_map
 
-# ✅ CORE BRANDS (UPDATED)
+# ✅ FIX: ensure Twitter/X always exists (no logic change)
+if "Twitter/X" not in brand_map:
+    for k, v in brand_map.items():
+        if "twitter" in k.lower():
+            brand_map["Twitter/X"] = v
+            break
+
+# ✅ CORE BRANDS
 default_brands = ["LinkedIn","Indeed","Facebook","Google","Twitter/X","TikTok"]
 
 # -----------------------------
@@ -110,7 +117,6 @@ def get_brands_by_country(selected_countries):
     if selected_countries and len(selected_countries) == len(countries):
         return {b: brand_map[b] for b in default_brands if b in brand_map}
 
-    # No filter → all brands
     if not selected_countries:
         return brand_map
 
@@ -225,11 +231,7 @@ consideration_effect = get_top2_metric(eff_col)
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
-# -----------------------------
-# DASHBOARD
-# -----------------------------
 with tab1:
-
     st.subheader("Key Metrics")
 
     c1,c2,c3,c4 = st.columns(4)
@@ -251,9 +253,6 @@ with tab1:
         "Score (%)": attr_vals
     }))
 
-# -----------------------------
-# GRAPH
-# -----------------------------
 with tab2:
 
     st.subheader("📈 Awareness Trend (All Brands)")
