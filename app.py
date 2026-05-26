@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# Attributes
+# Attribute labels
 attr_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Attributes_New_DP_", na=False)
 ]
@@ -69,7 +69,7 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# Brand map
+# Brand map (SAFE)
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
@@ -80,7 +80,6 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# ✅ Twitter fix only (safe)
 fixed_map = {}
 for k, v in brand_map.items():
     if k.lower().strip() in ["x", "twitter", "twitter/x", "x (twitter)"]:
@@ -249,15 +248,23 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ ✅ ONLY CHANGE → CLEAN AXIS
+    # ✅ ✅ IMPROVED WIDE SCROLLABLE CHART
+    chart_width = max(1200, len(months) * 80)
+
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x=alt.X(
-            "Month:N",
-            sort=months,
-            axis=alt.Axis(labelAngle=45, labelOverlap="greedy")
-        ),
+        x=alt.X("Month:N", sort=months, axis=alt.Axis(labelAngle=45)),
         y="Value:Q",
         color="Brand"
+    ).properties(
+        width=chart_width,
+        height=450
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.markdown(
+        f"""
+        <div style="overflow-x: auto;">
+            {chart.to_html()}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
