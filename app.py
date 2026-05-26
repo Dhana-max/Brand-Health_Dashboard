@@ -258,13 +258,12 @@ with tab2:
         df_chart["Month"], categories=months, ordered=True
     )
 
-    # ✅ FIXED ORDER HERE
     if view_type == "Trended View":
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
             x=alt.X(
                 "Month_order:O",
                 sort=months,
-                axis=alt.Axis(labelAngle=-45)
+                axis=alt.Axis(labelAngle=-45, labelOverlap=False, labelFontSize=9)
             ),
             y="Value:Q",
             color="Brand"
