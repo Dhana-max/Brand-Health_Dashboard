@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ KEEP ORIGINAL MONTH ORDER
+# ✅ PRESERVE MONTH ORDER
 @st.cache_data
 def load_filters():
     months = con.execute("""
@@ -66,7 +66,7 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# normalize
+# normalize names
 brand_alias = {
     "x": "Twitter/X",
     "twitter": "Twitter/X",
@@ -78,13 +78,22 @@ brand_map = {
     for k, v in brand_map.items()
 }
 
+# ✅ DEFAULT BRANDS FOR ALL COUNTRY
+default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
+
 # -----------------------------
-# ✅ FILTER BRANDS BASED ON COUNTRY
+# ✅ BRAND FILTER LOGIC
 def get_brands_by_country(selected_countries):
 
+    # no country filter → show all
     if not selected_countries:
         return brand_map
 
+    # all countries selected → show default brands
+    if len(selected_countries) == len(countries):
+        return {b: brand_map[b] for b in default_brands if b in brand_map}
+
+    # specific countries → dynamic brands
     filtered = {}
 
     for brand, code in brand_map.items():
@@ -145,13 +154,13 @@ def get_metric(col, metric_type="top2"):
         if metric_type == "yesno":
             q = f"""
             SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col})
+            THEN {weight_col} ELSE 0 END)*100.0 / SUM({weight_col})
             FROM df {where_clause}
             """
         else:
             q = f"""
             SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100.0/
+            THEN {weight_col} ELSE 0 END)*100.0 /
             SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
             THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
@@ -159,7 +168,6 @@ def get_metric(col, metric_type="top2"):
 
         result = con.execute(q).fetchone()[0]
         return round(result or 0, 1)
-
     except:
         return 0
 
@@ -183,7 +191,7 @@ with tab1:
         f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
 # -----------------------------
-# ✅ GRAPH
+# GRAPH
 with tab2:
 
     st.subheader("📈 Trend Chart")
@@ -205,10 +213,12 @@ with tab2:
 
     for brand, bcode in brand_map_local.items():
 
+        # Awareness
         if selected_metric in ["All Brands Awareness","Awareness"]:
             col = f"Aided_Awareness_{bcode}_slice"
             formula = f"LOWER(TRIM({col}))='yes'"
 
+        # KPIs
         elif selected_metric in ["Favorability","Consideration","Consideration Effect"]:
             col_map = {
                 "Favorability": f"Brand_Favorability_{bcode}_slice",
@@ -220,6 +230,8 @@ with tab2:
             formula = f"""
             TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
             """
+
+        # Attributes
         else:
             i = int(selected_metric.split()[-1])
             col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
