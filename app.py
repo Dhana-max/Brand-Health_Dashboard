@@ -41,30 +41,41 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-brand_rows = map_df[map_df["Variable"].astype(str).str.contains("Aided_Awareness_")]
+# BRAND MAP
+# -----------------------------
+brand_rows = map_df[
+    map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
+]
 
 brand_map = {
     str(r["Label"]).split(" - ")[-1].strip(): int(re.findall(r"\d+", str(r["Variable"]))[0])
     for _, r in brand_rows.iterrows()
 }
 
-# normalize
+# normalize names
 brand_alias = {
     "x": "Twitter/X",
     "twitter": "Twitter/X"
 }
 
-brand_map = {brand_alias.get(k.lower(), k): v for k, v in brand_map.items()}
+brand_map = {
+    brand_alias.get(k.lower().strip(), k): v
+    for k, v in brand_map.items()
+}
 
+# -----------------------------
+# ✅ WHERE BUILDER (FIXED)
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
     filters = []
 
     if months_sel:
-        filters.append(f"Month IN ({','.join(f\"'{m}'\" for m in months_sel)})")
+        month_vals = ",".join("'" + str(m) + "'" for m in months_sel)
+        filters.append(f"Month IN ({month_vals})")
 
     if countries_sel:
-        filters.append(f"Country_New IN ({','.join(f\"'{c}'\" for c in countries_sel)})")
+        country_vals = ",".join("'" + str(c) + "'" for c in countries_sel)
+        filters.append(f"Country_New IN ({country_vals})")
 
     if segment == "Male":
         filters.append("Sex = 1")
@@ -73,6 +84,8 @@ def build_where(months_sel, countries_sel, segment):
 
     return "WHERE " + " AND ".join(filters) if filters else ""
 
+# -----------------------------
+# SIDEBAR
 # -----------------------------
 st.sidebar.header("Filters")
 
@@ -87,7 +100,7 @@ where_clause = build_where(selected_months, selected_countries, segment)
 weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
 # -----------------------------
-# ✅ METRIC FUNCTION FIX
+# ✅ METRIC FUNCTION
 # -----------------------------
 def get_metric(col, metric_type="top2"):
     try:
@@ -98,8 +111,7 @@ def get_metric(col, metric_type="top2"):
             SUM({weight_col})
             FROM df {where_clause}
             """
-            return round(con.execute(q).fetchone()[0] or 0,1)
-
+            result = con.execute(q).fetchone()[0]
         else:
             q = f"""
             SELECT 
@@ -109,7 +121,10 @@ def get_metric(col, metric_type="top2"):
             THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
-            return round(con.execute(q).fetchone()[0] or 0,1)
+            result = con.execute(q).fetchone()[0]
+
+        return round(result or 0, 1)
+
     except:
         return 0
 
@@ -117,7 +132,7 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD (fixed awareness)
+# DASHBOARD
 # -----------------------------
 with tab1:
     st.subheader("Key Metrics")
@@ -135,7 +150,7 @@ with tab1:
         f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
 # -----------------------------
-# ✅ GRAPH SECTION (MULTI BRAND FIX)
+# ✅ GRAPH (ALL BRANDS FIX)
 # -----------------------------
 with tab2:
 
@@ -146,7 +161,13 @@ with tab2:
 
     graph_where = build_where(selected_months, g_country, g_segment)
 
-    metric_options = ["All Brands Awareness","Awareness","Favorability","Consideration","Consideration Effect"] + [f"Attribute {i}" for i in range(1,18)]
+    metric_options = [
+        "All Brands Awareness",
+        "Awareness",
+        "Favorability",
+        "Consideration",
+        "Consideration Effect"
+    ] + [f"Attribute {i}" for i in range(1,18)]
 
     selected_metric = st.selectbox("Select Metric", metric_options)
 
@@ -154,46 +175,48 @@ with tab2:
 
     for brand, bcode in brand_map.items():
 
-        if selected_metric == "All Brands Awareness" or selected_metric == "Awareness":
+        # --- Awareness ---
+        if selected_metric in ["All Brands Awareness", "Awareness"]:
             col = f"Aided_Awareness_{bcode}_slice"
 
             queries.append(f"""
-            SELECT Month,'{brand}' Brand,
+            SELECT Month,'{brand}' AS Brand,
             SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col}) Value
+            THEN {weight_col} ELSE 0 END)*100.0 / SUM({weight_col}) AS Value
             FROM df {graph_where}
             GROUP BY Month
             """)
 
+        # --- Other KPIs ---
         elif selected_metric in ["Favorability","Consideration","Consideration Effect"]:
             col_map = {
                 "Favorability": f"Brand_Favorability_{bcode}_slice",
                 "Consideration": f"Consideration_{bcode}_slice",
                 "Consideration Effect": f"Consideration_Effect_{bcode}_slice"
             }
-
             col = col_map[selected_metric]
 
             queries.append(f"""
-            SELECT Month,'{brand}' Brand,
+            SELECT Month,'{brand}' AS Brand,
             SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100.0/
+            THEN {weight_col} ELSE 0 END)*100.0 /
             SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-            THEN {weight_col} ELSE 0 END) Value
+            THEN {weight_col} ELSE 0 END) AS Value
             FROM df {graph_where}
             GROUP BY Month
             """)
 
-        else:  # attributes
+        # --- Attributes ---
+        else:
             i = int(selected_metric.split()[-1])
             col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
 
             queries.append(f"""
-            SELECT Month,'{brand}' Brand,
+            SELECT Month,'{brand}' AS Brand,
             SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100.0/
+            THEN {weight_col} ELSE 0 END)*100.0 /
             SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-            THEN {weight_col} ELSE 0 END) Value
+            THEN {weight_col} ELSE 0 END) AS Value
             FROM df {graph_where}
             GROUP BY Month
             """)
