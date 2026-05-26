@@ -272,7 +272,7 @@ with tab2:
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
             x="Brand:N",
             y="Value:Q",
-            color="Month"
+            color=alt.Color("Month:O", sort=months)   # ✅ FIX
         )
 
     st.altair_chart(chart, use_container_width=True)
