@@ -33,7 +33,6 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ ATTRIBUTE LABELS
 attr_map = {
     1: "Helps me move forward professionally",
     2: "Helps me find the right job for me",
@@ -89,7 +88,6 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# ✅ Fix Twitter
 fixed_map = {}
 for k, v in brand_map.items():
     if k.lower().strip() in ["x","twitter","twitter/x","x (twitter)"]:
@@ -161,7 +159,6 @@ def get_metric(col, metric_type="top2"):
             THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
-
         return round(con.execute(q).fetchone()[0] or 0,1)
     except:
         return 0
@@ -170,10 +167,8 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD (UPDATED)
 with tab1:
 
-    # ✅ Filters (moved here)
     colf1, colf2, colf3, colf4 = st.columns(4)
 
     with colf1:
@@ -195,7 +190,6 @@ with tab1:
 
     weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
-    # ✅ KPIs
     col1,col2,col3,col4 = st.columns(4)
     col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
     col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
@@ -204,28 +198,45 @@ with tab1:
 
     st.subheader("Brand Attributes")
 
-    # ✅ TABLE FORMAT
     attr_data = []
     for i in range(1,18):
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
-        attr_data.append({
-            "Attribute": attr_map[i],
-            "Value (%)": val
-        })
+        attr_data.append({"Attribute": attr_map[i], "Value (%)": val})
 
-    attr_df = pd.DataFrame(attr_data)
-
-    st.dataframe(attr_df, use_container_width=True)
+    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
 # -----------------------------
-# ✅ GRAPH TAB (UNCHANGED)
 with tab2:
 
-    g_country = st.multiselect("Country (graph)", countries)
-    g_segment = st.selectbox("Segment (graph)", ["Total","Male","Female"])
+    colg1, colg2, colg3, colg4 = st.columns(4)
 
-    graph_where = build_where([], g_country, g_segment)
+    with colg1:
+        g_country = st.multiselect("Country (graph)", countries)
+
+    with colg2:
+        select_all_months = st.checkbox("Select All Months", value=True)
+
+        if select_all_months:
+            g_months = months
+            st.multiselect("Month (graph)", months, default=months, disabled=True)
+        else:
+            g_months = st.multiselect("Month (graph)", months, default=months[:3])
+
+    with colg3:
+        g_segment = st.selectbox("Segment (graph)", ["Total","Male","Female"])
+
     brand_map_local = get_brands_by_country(g_country)
+    brand_list = sorted(brand_map_local.keys())
+
+    with colg4:
+        select_all = st.checkbox("Select All Brands", value=True)
+
+    if select_all:
+        selected_brands = brand_list
+    else:
+        selected_brands = st.multiselect("Brands", brand_list, default=brand_list[:3])
+
+    graph_where = build_where(g_months, g_country, g_segment)
 
     metric_options = [
         "All Brands Awareness",
@@ -238,7 +249,8 @@ with tab2:
 
     queries = []
 
-    for brand,bcode in brand_map_local.items():
+    for brand in selected_brands:
+        bcode = brand_map_local[brand]
 
         if selected_metric in attr_map.values():
             i = list(attr_map.keys())[list(attr_map.values()).index(selected_metric)]
@@ -275,14 +287,21 @@ with tab2:
         df_chart["Month"], categories=months, ordered=True
     )
 
-    chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x=alt.X(
-            "Month_order:O",
-            sort=months,
-            axis=alt.Axis(labelAngle=-45,labelOverlap=False,labelFontSize=9)
-        ),
-        y="Value:Q",
-        color="Brand"
-    ).properties(height=450)
+    if len(g_months) == 1:
+        chart = alt.Chart(df_chart).mark_bar().encode(
+            x="Brand",
+            y="Value",
+            color="Brand"
+        )
+    else:
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x=alt.X(
+                "Month_order:O",
+                sort=months,
+                axis=alt.Axis(labelAngle=-45,labelOverlap=False,labelFontSize=9)
+            ),
+            y="Value:Q",
+            color=alt.Color("Brand", legend=alt.Legend(columns=2))
+        )
 
     st.altair_chart(chart, use_container_width=True)
