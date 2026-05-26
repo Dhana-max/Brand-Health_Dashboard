@@ -3,7 +3,10 @@ import duckdb
 import pandas as pd
 import re
 import altair as alt
-import openai
+from openai import OpenAI
+
+# ✅ OpenAI client (ONLY CHANGE)
+client = OpenAI(api_key="YOUR_API_KEY")
 
 st.set_page_config(layout="wide")
 
@@ -11,9 +14,6 @@ st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
 MAP_FILE = "Map.xlsx"
-
-# ✅ API KEY
-openai.api_key = "YOUR_API_KEY"
 
 # -----------------------------
 @st.cache_resource
@@ -131,6 +131,8 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
+# ✅ ONLY UPDATED FUNCTION (NEW API)
+
 def generate_sql(question, where_clause):
     prompt = f"""
     You are a data analyst using DuckDB table df.
@@ -138,11 +140,13 @@ def generate_sql(question, where_clause):
     Return only SQL.
     {question}
     """
-    response = openai.ChatCompletion.create(
+
+    response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
-    return response["choices"][0]["message"]["content"]
+
+    return response.choices[0].message.content
 
 def run_sql(q):
     try:
@@ -154,7 +158,7 @@ def run_sql(q):
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD (UNCHANGED)
+# ✅ DASHBOARD
 with tab1:
 
     colf1, colf2, colf3, colf4 = st.columns(4)
@@ -188,7 +192,7 @@ with tab1:
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
 # -----------------------------
-# ✅ GRAPH (FIXED)
+# ✅ GRAPH
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
