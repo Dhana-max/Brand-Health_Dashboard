@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ LOAD ATTRIBUTE LABELS
+# ✅ ATTRIBUTE LABELS (FULL TEXT, NO SPLIT)
 attr_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Attributes_New_DP_", na=False)
 ]
@@ -40,13 +40,14 @@ attr_rows = map_df[
 attr_map = {}
 for _, r in attr_rows.iterrows():
     var = str(r["Variable"])
-    label = str(r["Label"]).split(" - ")[-1].strip()
+    label = str(r["Label"]).strip()   # ✅ FULL LABEL
+
     match = re.findall(r"Q12a_(\d+)", var)
     if match:
         attr_map[int(match[0])] = label
 
 # -----------------------------
-# MONTH + COUNTRY
+# MONTH / COUNTRY
 @st.cache_data
 def load_filters():
     months = con.execute("""
@@ -70,24 +71,30 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# BRAND MAP
+# ✅ BRAND MAP (SAFE TWITTER MERGE)
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
 
-brand_map = {
-    str(r["Label"]).split(" - ")[-1].strip(): int(re.findall(r"\d+", str(r["Variable"]))[0])
+raw_brand_map = {
+    str(r["Label"]).strip(): int(re.findall(r"\d+", str(r["Variable"]))[0])
     for _, r in brand_rows.iterrows()
 }
 
-# fix Twitter/X
-brand_alias = {
-    "x": "Twitter/X",
-    "twitter": "Twitter/X",
-    "twitter/x": "Twitter/X"
-}
+brand_map = {}
 
-brand_map = {brand_alias.get(k.lower(), k): v for k, v in brand_map.items()}
+for name, code in raw_brand_map.items():
+    key = name.lower().strip()
+
+    if key in ["x", "twitter", "twitter/x", "x (twitter)"]:
+        brand_map["Twitter/X"] = code
+    else:
+        brand_map[name] = code
+
+# ✅ ENSURE Twitter/X exists
+for k, v in raw_brand_map.items():
+    if "twitter" in k.lower():
+        brand_map["Twitter/X"] = v
 
 # -----------------------------
 default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
@@ -101,13 +108,16 @@ def get_brands_by_country(selected_countries):
         return {b: brand_map[b] for b in default_brands if b in brand_map}
 
     filtered = {}
+
     for brand, code in brand_map.items():
         col = f"Aided_Awareness_{code}_slice"
+
         query = f"""
         SELECT COUNT(*) FROM df
         WHERE Country_New IN ({",".join("'" + c + "'" for c in selected_countries)})
         AND {col} IS NOT NULL
         """
+
         if con.execute(query).fetchone()[0] > 0:
             filtered[brand] = code
 
@@ -171,10 +181,10 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD (ALL 17 ATTRIBUTES + LABELS)
+# ✅ DASHBOARD
 with tab1:
 
-    col1,col2,col3,col4 = st.columns(4)
+    col1, col2, col3, col4 = st.columns(4)
 
     col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
     col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
@@ -186,12 +196,12 @@ with tab1:
     cols = st.columns(4)
 
     for i in range(1,18):
-        label = attr_map.get(i, f"Attr {i}")
+        label = attr_map.get(i, f"Attribute {i}")
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
         cols[(i-1)%4].metric(label, f"{val}%")
 
 # -----------------------------
-# ✅ GRAPH WITH ALL BRAND ATTRIBUTES
+# ✅ GRAPH
 with tab2:
 
     g_country = st.multiselect("Country (graph)", countries)
@@ -216,6 +226,7 @@ with tab2:
         if "Attribute" in selected_metric:
             i = int(selected_metric.split()[-1])
             col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
+
             formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         elif selected_metric == "All Brands Awareness":
