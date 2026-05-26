@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ ATTRIBUTES
+# ATTRIBUTES
 attr_map = {
     1: "Helps me move forward professionally",
     2: "Helps me find the right job for me",
@@ -54,19 +54,15 @@ attr_map = {
 }
 
 # -----------------------------
-# ✅ MONTH ORDER
+# MONTH ORDER
 @st.cache_data
 def load_filters():
     df_temp = con.execute("""
-        SELECT Month, ROW_NUMBER() OVER() AS rn
+        SELECT Month, ROW_NUMBER() OVER() rn
         FROM df WHERE Month IS NOT NULL
     """).df()
 
-    months = (
-        df_temp.drop_duplicates(subset=["Month"])
-        .sort_values("rn")["Month"]
-        .tolist()
-    )
+    months = df_temp.drop_duplicates("Month").sort_values("rn")["Month"].tolist()
 
     countries = con.execute("""
         SELECT DISTINCT Country_New FROM df
@@ -77,7 +73,7 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# ✅ BRAND LOGIC (UNCHANGED)
+# BRAND LOGIC (UNCHANGED)
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
@@ -89,14 +85,14 @@ brand_map = {
 }
 
 fixed_map = {}
-for k, v in brand_map.items():
+for k,v in brand_map.items():
     if k.lower() in ["x","twitter","twitter/x","x (twitter)"]:
         fixed_map["Twitter/X"] = v
     else:
         fixed_map[k] = v
 
 if "Twitter/X" not in fixed_map:
-    for k, v in brand_map.items():
+    for k,v in brand_map.items():
         if "twitter" in k.lower():
             fixed_map["Twitter/X"] = v
 
@@ -113,7 +109,6 @@ def get_brands_by_country(selected_countries):
         return {b: brand_map[b] for b in default_brands if b in brand_map}
 
     filtered = {}
-
     for brand, code in brand_map.items():
         col = f"Aided_Awareness_{code}_slice"
         query = f"""
@@ -149,15 +144,13 @@ def get_metric(col, where_clause, weight_col, metric_type="top2"):
         if metric_type == "yesno":
             q = f"""
             SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col})
+            THEN {weight_col} ELSE 0 END)*100/SUM({weight_col})
             FROM df {where_clause}
             """
         else:
             q = f"""
-            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INT) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100.0/
-            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INT) BETWEEN 1 AND 5
-            THEN {weight_col} ELSE 0 END)
+            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)
+            THEN {weight_col} ELSE 0 END)*100/SUM({weight_col})
             FROM df {where_clause}
             """
         return round(con.execute(q).fetchone()[0] or 0,1)
@@ -168,11 +161,10 @@ def get_metric(col, where_clause, weight_col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD WITH FILTERS INSIDE
+# ✅ DASHBOARD (UPDATED UI)
 with tab1:
 
     st.subheader("Filters")
-
     f1,f2,f3,f4 = st.columns(4)
 
     selected_countries = f1.multiselect("Country", countries)
@@ -186,8 +178,8 @@ with tab1:
     where_clause = build_where(selected_months, selected_countries, segment)
     weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
+    # KPIs
     st.subheader("KPIs")
-
     c1,c2,c3,c4 = st.columns(4)
 
     c1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice',where_clause,weight_col,'yesno')}%")
@@ -195,19 +187,30 @@ with tab1:
     c3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice',where_clause,weight_col)}%")
     c4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice',where_clause,weight_col)}%")
 
+    # ✅ TABLE FORMAT (NO SCROLL, COMPACT)
     st.subheader("Brand Attributes")
 
-    # ✅ Vertical listing (NO SCROLL)
+    attr_data = []
     for i in range(1,18):
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice",where_clause,weight_col)
-        st.metric(attr_map[i], f"{val}%")
+        attr_data.append([attr_map[i], f"{val}%"])
+
+    df_attr = pd.DataFrame(attr_data, columns=["Attribute","Score"])
+
+    st.table(df_attr)
 
 # -----------------------------
-# ✅ GRAPH
+# ✅ GRAPH (FILTERS RESTORED)
 with tab2:
 
-    graph_where = build_where([], selected_countries, segment)
-    brand_map_local = get_brands_by_country(selected_countries)
+    st.subheader("Filters")
+    g1,g2 = st.columns(2)
+
+    g_country = g1.multiselect("Country", countries)
+    g_segment = g2.selectbox("Segment", ["Total","Male","Female"])
+
+    graph_where = build_where([], g_country, g_segment)
+    brand_map_local = get_brands_by_country(g_country)
 
     metric_options = [
         "All Brands Awareness",
@@ -253,12 +256,11 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    df_chart["Month_order"] = pd.Categorical(
-        df_chart["Month"], categories=months, ordered=True
-    )
+    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x=alt.X("Month_order:O", sort=months,
+        x=alt.X("Month_order:O",
+                sort=months,
                 axis=alt.Axis(labelAngle=-45,labelOverlap=False,labelFontSize=9)),
         y="Value:Q",
         color="Brand"
