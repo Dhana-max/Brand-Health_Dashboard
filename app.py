@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ATTRIBUTE LABELS
+# ✅ ATTRIBUTE LABELS
 attr_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Attributes_New_DP_", na=False)
 ]
@@ -46,22 +46,25 @@ for _, r in attr_rows.iterrows():
         attr_map[int(match[0])] = label
 
 # -----------------------------
+# ✅ FIX: PRESERVE ORIGINAL MONTH ORDER
 @st.cache_data
 def load_filters():
-    months = con.execute("""
-        SELECT Month FROM (
-            SELECT Month, ROW_NUMBER() OVER() rn
-            FROM df WHERE Month IS NOT NULL
-        )
-        GROUP BY Month ORDER BY MIN(rn)
-    """).df()["Month"].tolist()
+    df_temp = con.execute("""
+        SELECT Month, ROW_NUMBER() OVER() AS rn
+        FROM df
+        WHERE Month IS NOT NULL
+    """).df()
+
+    months = (
+        df_temp
+        .drop_duplicates(subset=["Month"])
+        .sort_values("rn")["Month"]
+        .tolist()
+    )
 
     countries = con.execute("""
-        SELECT Country_New FROM (
-            SELECT Country_New, ROW_NUMBER() OVER() rn
-            FROM df WHERE Country_New IS NOT NULL
-        )
-        GROUP BY Country_New ORDER BY MIN(rn)
+        SELECT DISTINCT Country_New FROM df
+        WHERE Country_New IS NOT NULL
     """).df()["Country_New"].tolist()
 
     return months, countries
@@ -80,7 +83,7 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# ✅ Fix Twitter
+# ✅ FIX TWITTER
 fixed_map = {}
 for k, v in brand_map.items():
     if k.lower() in ["x", "twitter", "twitter/x", "x (twitter)"]:
@@ -138,6 +141,7 @@ def build_where(months_sel, countries_sel, segment):
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 # -----------------------------
+# SIDEBAR
 st.sidebar.header("Filters")
 
 selected_countries = st.sidebar.multiselect("Country", countries)
@@ -177,7 +181,9 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
+# DASHBOARD
 with tab1:
+
     col1, col2, col3, col4 = st.columns(4)
 
     col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
@@ -186,14 +192,15 @@ with tab1:
     col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
     st.subheader("Attributes")
-
     cols = st.columns(4)
+
     for i in range(1, 18):
         label = attr_map.get(i, f"Attribute {i}")
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
         cols[(i-1) % 4].metric(label, f"{val}%")
 
 # -----------------------------
+# GRAPH
 with tab2:
 
     g_country = st.multiselect("Country (graph)", countries)
@@ -250,16 +257,13 @@ with tab2:
         df_chart["Month"], categories=months, ordered=True
     )
 
-    # ✅ FINAL GRAPH MATCHING IMAGE 2
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
         x=alt.X(
             "Month_order:O",
             axis=alt.Axis(
                 labelAngle=-45,
-                labelOverlap=False,   # ✅ SHOW ALL LABELS
-                labelFontSize=9,
-                labelLimit=200,
-                labelBound=False
+                labelOverlap=False,
+                labelFontSize=9
             )
         ),
         y="Value:Q",
