@@ -215,7 +215,6 @@ with tab2:
 
     with colg2:
         select_all_months = st.checkbox("Select All Months", value=True)
-
         if select_all_months:
             g_months = months
             st.multiselect("Month (graph)", months, default=months, disabled=True)
@@ -252,26 +251,8 @@ with tab2:
     for brand in selected_brands:
         bcode = brand_map_local[brand]
 
-        if selected_metric in attr_map.values():
-            i = list(attr_map.keys())[list(attr_map.values()).index(selected_metric)]
-            col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
-
-        elif selected_metric == "All Brands Awareness":
-            col = f"Aided_Awareness_{bcode}_slice"
-            formula = f"LOWER(TRIM({col}))='yes'"
-
-        elif selected_metric == "All Brands Favorability":
-            col = f"Brand_Favorability_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
-
-        elif selected_metric == "All Brands Consideration":
-            col = f"Consideration_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
-
-        elif selected_metric == "All Brands Effect":
-            col = f"Consideration_Effect_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
+        col = f"Aided_Awareness_{bcode}_slice"
+        formula = f"LOWER(TRIM({col}))='yes'"
 
         queries.append(f"""
         SELECT Month,'{brand}' AS Brand,
@@ -287,15 +268,19 @@ with tab2:
         df_chart["Month"], categories=months, ordered=True
     )
 
-    # ✅ ALWAYS LINE CHART (NO BAR)
-    chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x=alt.X(
-            "Month_order:O",
-            sort=months,
-            axis=alt.Axis(labelAngle=-45,labelOverlap=False,labelFontSize=9)
-        ),
-        y="Value:Q",
-        color=alt.Color("Brand", legend=alt.Legend(columns=2))
-    )
+    # ✅ SWITCH VIEW
+    if select_all:
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Month_order:O",
+            y="Value:Q",
+            color="Brand"
+        )
+    else:
+        df_bar = df_chart.groupby("Brand", as_index=False)["Value"].mean()
+        chart = alt.Chart(df_bar).mark_bar().encode(
+            x=alt.X("Brand:N", sort="-y"),
+            y="Value:Q",
+            color="Brand"
+        )
 
     st.altair_chart(chart, use_container_width=True)
