@@ -249,14 +249,15 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ PERFECT BALANCE AXIS
+    # ✅ FINAL FIXED AXIS (NO labelExpr)
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
         x=alt.X(
             "Month:N",
             sort=months,
             axis=alt.Axis(
                 labelAngle=-45,
-                labelExpr="datum.index % 2 == 0 ? datum.label : ''"  # ✅ KEY FIX
+                labelOverlap="greedy",
+                tickCount=min(len(months), 20)
             )
         ),
         y="Value:Q",
