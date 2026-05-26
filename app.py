@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# Attribute labels
+# ATTRIBUTE LABELS
 attr_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Attributes_New_DP_", na=False)
 ]
@@ -69,7 +69,7 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# Brand map
+# BRAND MAP
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
@@ -249,16 +249,16 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    # ✅ FINAL FIXED AXIS (NO labelExpr)
+    # ✅ KEY FIX: enforce ordered categorical axis
+    df_chart["Month_order"] = pd.Categorical(
+        df_chart["Month"], categories=months, ordered=True
+    )
+
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
         x=alt.X(
-            "Month:N",
-            sort=months,
-            axis=alt.Axis(
-                labelAngle=-45,
-                labelOverlap="greedy",
-                tickCount=min(len(months), 20)
-            )
+            "Month_order:O",
+            title="Month",
+            axis=alt.Axis(labelAngle=-45)
         ),
         y="Value:Q",
         color="Brand"
