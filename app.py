@@ -92,7 +92,7 @@ brand_map = {
 
 # -----------------------------
 def get_brands_by_country(selected_countries):
-    return brand_map if not selected_countries else brand_map
+    return brand_map
 
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
@@ -113,13 +113,19 @@ def build_where(months_sel, countries_sel, segment):
 def get_metric(col, metric_type="top2"):
     try:
         if metric_type == "yesno":
-            q = f"""SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col}) FROM df {where_clause}"""
+            q = f"""
+            SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
+            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col})
+            FROM df {where_clause}
+            """
         else:
-            q = f"""SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
+            q = f"""
+            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
             THEN {weight_col} ELSE 0 END)*100.0 /
             SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-            THEN {weight_col} ELSE 0 END) FROM df {where_clause}"""
+            THEN {weight_col} ELSE 0 END)
+            FROM df {where_clause}
+            """
         return round(con.execute(q).fetchone()[0] or 0,1)
     except:
         return 0
@@ -130,7 +136,6 @@ def generate_sql(question, where_clause):
     You are a data analyst using DuckDB table df.
     Apply this filter: {where_clause}
     Return only SQL.
-
     {question}
     """
     response = openai.ChatCompletion.create(
@@ -139,7 +144,6 @@ def generate_sql(question, where_clause):
     )
     return response["choices"][0]["message"]["content"]
 
-# -----------------------------
 def run_sql(q):
     try:
         return con.execute(q).df()
@@ -149,7 +153,8 @@ def run_sql(q):
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
-# ✅ DASHBOARD
+# -----------------------------
+# ✅ DASHBOARD (UNCHANGED)
 with tab1:
 
     colf1, colf2, colf3, colf4 = st.columns(4)
@@ -162,8 +167,9 @@ with tab1:
     selected_brand = colf4.selectbox("Brand", list(filtered_brand_map.keys()))
 
     code = filtered_brand_map[selected_brand]
+
     where_clause = build_where(selected_months, selected_countries, segment)
-    weight_col = "Global_weight_Stacked"
+    weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
     col1,col2,col3,col4 = st.columns(4)
 
@@ -172,8 +178,8 @@ with tab1:
     col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
     col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
-    # ✅ ATTRIBUTES
     st.subheader("Brand Attributes")
+
     attr_data = []
     for i in range(1,18):
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
@@ -181,7 +187,8 @@ with tab1:
 
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
-# ✅ GRAPH
+# -----------------------------
+# ✅ GRAPH (FIXED)
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
@@ -200,11 +207,18 @@ with tab2:
     graph_where = build_where(g_months, g_country, g_segment)
 
     queries = []
+
     for brand in selected_brands:
         code = brand_map_local[brand]
+
+        col = f"Aided_Awareness_{code}_slice"
+        formula = f"LOWER(TRIM({col}))='yes'"
+
         queries.append(f"""
         SELECT Month,'{brand}' AS Brand,
-        SUM(Global_weight_Stacked)*100.0/SUM(Global_weight_Stacked) AS Value
+        SUM(CASE WHEN {formula}
+        THEN Global_weight_Stacked ELSE 0 END)*100.0 /
+        SUM(Global_weight_Stacked) AS Value
         FROM df {graph_where}
         GROUP BY Month
         """)
