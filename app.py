@@ -32,6 +32,21 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
+# ✅ LOAD ATTRIBUTE LABELS
+attr_rows = map_df[
+    map_df["Variable"].astype(str).str.contains("Attributes_New_DP_", na=False)
+]
+
+attr_map = {}
+for _, r in attr_rows.iterrows():
+    var = str(r["Variable"])
+    label = str(r["Label"]).split(" - ")[-1].strip()
+    match = re.findall(r"Q12a_(\d+)", var)
+    if match:
+        attr_map[int(match[0])] = label
+
+# -----------------------------
+# MONTH + COUNTRY
 @st.cache_data
 def load_filters():
     months = con.execute("""
@@ -65,26 +80,14 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# normalize Twitter/X
+# fix Twitter/X
 brand_alias = {
     "x": "Twitter/X",
     "twitter": "Twitter/X",
-    "twitter/x": "Twitter/X",
-    "x (twitter)": "Twitter/X"
+    "twitter/x": "Twitter/X"
 }
 
-cleaned_map = {}
-for k, v in brand_map.items():
-    clean_key = brand_alias.get(k.lower().strip(), k)
-    cleaned_map[clean_key] = v
-
-brand_map = cleaned_map
-
-if "Twitter/X" not in brand_map:
-    for k, v in brand_map.items():
-        if "twitter" in k.lower():
-            brand_map["Twitter/X"] = v
-            break
+brand_map = {brand_alias.get(k.lower(), k): v for k, v in brand_map.items()}
 
 # -----------------------------
 default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
@@ -100,13 +103,11 @@ def get_brands_by_country(selected_countries):
     filtered = {}
     for brand, code in brand_map.items():
         col = f"Aided_Awareness_{code}_slice"
-
         query = f"""
         SELECT COUNT(*) FROM df
         WHERE Country_New IN ({",".join("'" + c + "'" for c in selected_countries)})
         AND {col} IS NOT NULL
         """
-
         if con.execute(query).fetchone()[0] > 0:
             filtered[brand] = code
 
@@ -130,6 +131,7 @@ def build_where(months_sel, countries_sel, segment):
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 # -----------------------------
+# SIDEBAR
 st.sidebar.header("Filters")
 
 selected_countries = st.sidebar.multiselect("Country", countries)
@@ -142,7 +144,6 @@ selected_brand = st.sidebar.selectbox("Brand", sorted(filtered_brand_map.keys())
 code = filtered_brand_map[selected_brand]
 
 where_clause = build_where(selected_months, selected_countries, segment)
-
 weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
 # -----------------------------
@@ -170,6 +171,7 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
+# ✅ DASHBOARD (ALL 17 ATTRIBUTES + LABELS)
 with tab1:
 
     col1,col2,col3,col4 = st.columns(4)
@@ -181,31 +183,29 @@ with tab1:
 
     st.subheader("Attributes")
 
-    attr_cols = st.columns(4)
-    for i in range(1,9):
+    cols = st.columns(4)
+
+    for i in range(1,18):
+        label = attr_map.get(i, f"Attr {i}")
         val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
-        attr_cols[(i-1)%4].metric(f"Attr {i}", f"{val}%")
+        cols[(i-1)%4].metric(label, f"{val}%")
 
 # -----------------------------
+# ✅ GRAPH WITH ALL BRAND ATTRIBUTES
 with tab2:
 
     g_country = st.multiselect("Country (graph)", countries)
     g_segment = st.selectbox("Segment (graph)", ["Total","Male","Female"])
 
     graph_where = build_where([], g_country, g_segment)
-
     brand_map_local = get_brands_by_country(g_country)
 
     metric_options = [
         "All Brands Awareness",
         "All Brands Favorability",
         "All Brands Consideration",
-        "All Brands Effect",
-        "Awareness",
-        "Favorability",
-        "Consideration",
-        "Consideration Effect"
-    ] + [f"Attribute {i}" for i in range(1,18)]
+        "All Brands Effect"
+    ] + [f"All Brands Attribute {i}" for i in range(1,18)]
 
     selected_metric = st.selectbox("Metric", metric_options)
 
@@ -213,8 +213,12 @@ with tab2:
 
     for brand, bcode in brand_map_local.items():
 
-        # ✅ ALL BRAND KPI OPTIONS
-        if selected_metric == "All Brands Awareness":
+        if "Attribute" in selected_metric:
+            i = int(selected_metric.split()[-1])
+            col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
+
+        elif selected_metric == "All Brands Awareness":
             col = f"Aided_Awareness_{bcode}_slice"
             formula = f"LOWER(TRIM({col}))='yes'"
 
@@ -230,28 +234,6 @@ with tab2:
             col = f"Consideration_Effect_{bcode}_slice"
             formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
-        # ✅ SINGLE BRAND (existing logic)
-        elif selected_metric == "Awareness":
-            col = f"Aided_Awareness_{bcode}_slice"
-            formula = f"LOWER(TRIM({col}))='yes'"
-
-        elif selected_metric == "Favorability":
-            col = f"Brand_Favorability_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
-
-        elif selected_metric == "Consideration":
-            col = f"Consideration_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
-
-        elif selected_metric == "Consideration Effect":
-            col = f"Consideration_Effect_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
-
-        else:
-            i = int(selected_metric.split()[-1])
-            col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
-
         queries.append(f"""
         SELECT Month,'{brand}' AS Brand,
         SUM(CASE WHEN {formula}
@@ -262,10 +244,11 @@ with tab2:
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x=alt.X("Month:N", sort=months),
-        y="Value:Q",
-        color="Brand"
+    st.altair_chart(
+        alt.Chart(df_chart).mark_line(point=True).encode(
+            x=alt.X("Month:N", sort=months),
+            y="Value:Q",
+            color="Brand"
+        ),
+        use_container_width=True
     )
-
-    st.altair_chart(chart, use_container_width=True)
