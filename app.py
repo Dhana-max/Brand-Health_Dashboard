@@ -32,7 +32,7 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# ✅ ATTRIBUTE LABELS (EXACT FROM FILE)
+# Attribute labels
 attr_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Attributes_New_DP_", na=False)
 ]
@@ -41,13 +41,11 @@ attr_map = {}
 for _, r in attr_rows.iterrows():
     var = str(r["Variable"])
     label = str(r["Label"]).strip()
-
     match = re.findall(r"Q12a_(\d+)", var)
     if match:
         attr_map[int(match[0])] = label
 
 # -----------------------------
-# ✅ PRESERVE MONTH ORDER
 @st.cache_data
 def load_filters():
     months = con.execute("""
@@ -71,7 +69,7 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# ✅ BRAND MAP (RESTORED + SAFE TWITTER FIX)
+# Brand map (SAFE)
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
@@ -82,16 +80,13 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# ✅ Fix Twitter ONLY (without breaking others)
 fixed_map = {}
-
 for k, v in brand_map.items():
     if k.lower().strip() in ["x", "twitter", "twitter/x", "x (twitter)"]:
         fixed_map["Twitter/X"] = v
     else:
         fixed_map[k] = v
 
-# ensure twitter exists
 if "Twitter/X" not in fixed_map:
     for k, v in brand_map.items():
         if "twitter" in k.lower():
@@ -111,7 +106,6 @@ def get_brands_by_country(selected_countries):
         return {b: brand_map[b] for b in default_brands if b in brand_map}
 
     filtered = {}
-
     for brand, code in brand_map.items():
         col = f"Aided_Awareness_{code}_slice"
 
@@ -144,7 +138,6 @@ def build_where(months_sel, countries_sel, segment):
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 # -----------------------------
-# SIDEBAR
 st.sidebar.header("Filters")
 
 selected_countries = st.sidebar.multiselect("Country", countries)
@@ -184,7 +177,6 @@ def get_metric(col, metric_type="top2"):
 tab1, tab2 = st.tabs(["📊 Dashboard", "📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD
 with tab1:
 
     col1, col2, col3, col4 = st.columns(4)
@@ -204,7 +196,6 @@ with tab1:
         cols[(i-1) % 4].metric(label, f"{val}%")
 
 # -----------------------------
-# ✅ GRAPH
 with tab2:
 
     g_country = st.multiselect("Country (graph)", countries)
@@ -258,7 +249,11 @@ with tab2:
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x=alt.X("Month:N", sort=months),
+        x=alt.X(
+            "Month:N",
+            sort=months,
+            axis=alt.Axis(labelAngle=45, labelOverlap=False)  # ✅ FIX APPLIED
+        ),
         y="Value:Q",
         color="Brand"
     )
