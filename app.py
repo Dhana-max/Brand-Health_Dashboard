@@ -81,16 +81,15 @@ for _, r in brand_rows.iterrows():
     brand_map[name] = code
 
 # -----------------------------
-# ✅ STANDARDIZE BRAND NAMES
+# ✅ STANDARDIZE BRAND NAMES (UPDATED)
 # -----------------------------
 brand_alias = {
-    "x": "Twitter",
-    "twitter": "Twitter",
-    "twitter/x": "Twitter",
-    "x (twitter)": "Twitter"
+    "x": "Twitter/X",
+    "twitter": "Twitter/X",
+    "twitter/x": "Twitter/X",
+    "x (twitter)": "Twitter/X"
 }
 
-# Normalize keys
 normalized_brand_map = {}
 for k, v in brand_map.items():
     k_clean = k.lower().strip()
@@ -99,8 +98,8 @@ for k, v in brand_map.items():
 
 brand_map = normalized_brand_map
 
-# ✅ CORE BRANDS
-default_brands = ["LinkedIn","Indeed","Facebook","Google","Twitter","TikTok"]
+# ✅ CORE BRANDS (UPDATED)
+default_brands = ["LinkedIn","Indeed","Facebook","Google","Twitter/X","TikTok"]
 
 # -----------------------------
 # ✅ BRAND FILTER FUNCTION
@@ -239,7 +238,6 @@ with tab1:
     c3.metric("Consideration", f"{consideration}%")
     c4.metric("Consideration Effect", f"{consideration_effect}%")
 
-    # ✅ Attributes
     attribute_cols = [
         f"Attributes_New_DP_{code}_Q12a_{i}_slice"
         for i in range(1,18)
