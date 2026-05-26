@@ -166,7 +166,7 @@ def get_metric(col, metric_type="top2"):
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
-# ✅ DASHBOARD RESTORED
+# -----------------------------
 with tab1:
 
     colf1, colf2, colf3, colf4 = st.columns(4)
@@ -204,7 +204,7 @@ with tab1:
 
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
-# ✅ GRAPH (ONLY ADD VIEW TOGGLE)
+# -----------------------------
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
@@ -258,9 +258,14 @@ with tab2:
         df_chart["Month"], categories=months, ordered=True
     )
 
+    # ✅ FIXED ORDER HERE
     if view_type == "Trended View":
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Month_order:O",
+            x=alt.X(
+                "Month_order:O",
+                sort=months,
+                axis=alt.Axis(labelAngle=-45)
+            ),
             y="Value:Q",
             color="Brand"
         )
