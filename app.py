@@ -143,67 +143,7 @@ def build_where(months_sel, countries_sel, segment):
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 # -----------------------------
-def get_metric(col, metric_type="top2"):
-    try:
-        if metric_type == "yesno":
-            q = f"""
-            SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col})
-            FROM df {where_clause}
-            """
-        else:
-            q = f"""
-            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100.0/
-            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-            THEN {weight_col} ELSE 0 END)
-            FROM df {where_clause}
-            """
-        return round(con.execute(q).fetchone()[0] or 0,1)
-    except:
-        return 0
-
-# -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
-
-# -----------------------------
-with tab1:
-
-    colf1, colf2, colf3, colf4 = st.columns(4)
-
-    with colf1:
-        selected_countries = st.multiselect("Country", countries)
-
-    with colf2:
-        selected_months = st.multiselect("Month", months)
-
-    with colf3:
-        segment = st.selectbox("Segment", ["Total","Male","Female"])
-
-    filtered_brand_map = get_brands_by_country(selected_countries)
-
-    with colf4:
-        selected_brand = st.selectbox("Brand", sorted(filtered_brand_map.keys()))
-
-    code = filtered_brand_map[selected_brand]
-    where_clause = build_where(selected_months, selected_countries, segment)
-
-    weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
-
-    col1,col2,col3,col4 = st.columns(4)
-    col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
-    col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
-    col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
-    col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
-
-    st.subheader("Brand Attributes")
-
-    attr_data = []
-    for i in range(1,18):
-        val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
-        attr_data.append({"Attribute": attr_map[i], "Value (%)": val})
-
-    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
 # -----------------------------
 with tab2:
@@ -235,29 +175,22 @@ with tab2:
     else:
         selected_brands = st.multiselect("Brands", brand_list, default=brand_list[:3])
 
+    # ✅ NEW VIEW TOGGLE
+    view_type = st.radio("View Type", ["Trended View", "Brand Comparison"], horizontal=True)
+
     graph_where = build_where(g_months, g_country, g_segment)
-
-    metric_options = [
-        "All Brands Awareness",
-        "All Brands Favorability",
-        "All Brands Consideration",
-        "All Brands Effect"
-    ] + list(attr_map.values())
-
-    selected_metric = st.selectbox("Metric", metric_options)
 
     queries = []
 
     for brand in selected_brands:
         bcode = brand_map_local[brand]
-
         col = f"Aided_Awareness_{bcode}_slice"
         formula = f"LOWER(TRIM({col}))='yes'"
 
         queries.append(f"""
         SELECT Month,'{brand}' AS Brand,
         SUM(CASE WHEN {formula}
-        THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col}) AS Value
+        THEN Global_weight_Stacked ELSE 0 END)*100.0/SUM(Global_weight_Stacked) AS Value
         FROM df {graph_where}
         GROUP BY Month
         """)
@@ -268,19 +201,20 @@ with tab2:
         df_chart["Month"], categories=months, ordered=True
     )
 
-    # ✅ SWITCH VIEW
-    if select_all:
+    # ✅ SWITCH BASED ON USER CHOICE
+
+    if view_type == "Trended View":
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
             x="Month_order:O",
             y="Value:Q",
             color="Brand"
         )
+
     else:
-        df_bar = df_chart.groupby("Brand", as_index=False)["Value"].mean()
-        chart = alt.Chart(df_bar).mark_bar().encode(
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
             x=alt.X("Brand:N", sort="-y"),
             y="Value:Q",
-            color="Brand"
+            color="Month"
         )
 
     st.altair_chart(chart, use_container_width=True)
