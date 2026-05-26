@@ -8,6 +8,7 @@ st.set_page_config(layout="wide")
 st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
+MAP_FILE = "Map.xlsx"
 
 # -----------------------------
 @st.cache_resource
@@ -22,7 +23,16 @@ def get_connection():
 con = get_connection()
 
 # -----------------------------
-# ✅ FINAL ATTRIBUTE LABEL MAP (YOUR PROVIDED VALUES)
+@st.cache_data
+def load_map():
+    df = pd.read_excel(MAP_FILE, header=1)
+    df.columns = df.columns.astype(str).str.strip()
+    return df
+
+map_df = load_map()
+
+# -----------------------------
+# ✅ ATTRIBUTE LABELS (YOUR FINAL LIST)
 attr_map = {
     1: "Helps me move forward professionally",
     2: "Helps me find the right job for me",
@@ -44,7 +54,7 @@ attr_map = {
 }
 
 # -----------------------------
-# ✅ FIX: GET MONTH ORDER FROM DATA
+# ✅ PRESERVE ORIGINAL MONTH ORDER
 @st.cache_data
 def load_filters():
     df_temp = con.execute("""
@@ -69,25 +79,59 @@ def load_filters():
 months, countries = load_filters()
 
 # -----------------------------
-# ✅ BRAND MAP (SIMPLIFIED)
-brand_codes = con.execute("""
-    SELECT DISTINCT regexp_extract(column_name, '\\d+') AS code
-    FROM information_schema.columns
-    WHERE column_name LIKE 'Aided_Awareness_%_slice'
-""").df()["code"].dropna().tolist()
+# ✅ ORIGINAL BRAND LOGIC (UNCHANGED ✅)
+brand_rows = map_df[
+    map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
+]
 
-# simple mapping (you already validated names earlier)
-brand_map = {f"Brand {c}": int(c) for c in brand_codes}
+brand_map = {
+    str(r["Label"]).split(" - ")[-1].strip():
+    int(re.findall(r"\d+", str(r["Variable"]))[0])
+    for _, r in brand_rows.iterrows()
+}
 
-# ✅ overwrite known brands (optional but safe)
-brand_map.update({
-    "LinkedIn": 1,
-    "Facebook": 2,
-    "Indeed": 3,
-    "Twitter/X": 4,
-    "TikTok": 5,
-    "Google": 6
-})
+# ✅ FIX Twitter ONLY
+fixed_map = {}
+for k, v in brand_map.items():
+    if k.lower().strip() in ["x", "twitter", "twitter/x", "x (twitter)"]:
+        fixed_map["Twitter/X"] = v
+    else:
+        fixed_map[k] = v
+
+if "Twitter/X" not in fixed_map:
+    for k, v in brand_map.items():
+        if "twitter" in k.lower():
+            fixed_map["Twitter/X"] = v
+
+brand_map = fixed_map
+
+# ✅ Default brands logic
+default_brands = ["LinkedIn","Facebook","Indeed","Twitter/X","TikTok","Google"]
+
+# ✅ Country-based brand filter (UNCHANGED)
+def get_brands_by_country(selected_countries):
+
+    if not selected_countries:
+        return brand_map
+
+    if len(selected_countries) == len(countries):
+        return {b: brand_map[b] for b in default_brands if b in brand_map}
+
+    filtered = {}
+
+    for brand, code in brand_map.items():
+        col = f"Aided_Awareness_{code}_slice"
+
+        query = f"""
+        SELECT COUNT(*) FROM df
+        WHERE Country_New IN ({",".join("'" + c + "'" for c in selected_countries)})
+        AND {col} IS NOT NULL
+        """
+
+        if con.execute(query).fetchone()[0] > 0:
+            filtered[brand] = code
+
+    return filtered
 
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
@@ -113,11 +157,13 @@ selected_countries = st.sidebar.multiselect("Country", countries)
 selected_months = st.sidebar.multiselect("Month", months)
 segment = st.sidebar.selectbox("Segment", ["Total","Male","Female"])
 
-selected_brand = st.sidebar.selectbox("Brand", list(brand_map.keys()))
-code = brand_map[selected_brand]
+filtered_brand_map = get_brands_by_country(selected_countries)
+
+selected_brand = st.sidebar.selectbox("Brand", sorted(filtered_brand_map.keys()))
+code = filtered_brand_map[selected_brand]
 
 where_clause = build_where(selected_months, selected_countries, segment)
-weight_col = "Global_weight_Stacked"
+weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
 # -----------------------------
 def get_metric(col, metric_type="top2"):
@@ -130,11 +176,13 @@ def get_metric(col, metric_type="top2"):
             """
         else:
             q = f"""
-            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100/SUM({weight_col})
+            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
+            THEN {weight_col} ELSE 0 END)*100.0/
+            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
+            THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
-        return round(con.execute(q).fetchone()[0] or 0,1)
+        return round(con.execute(q).fetchone()[0] or 0, 1)
     except:
         return 0
 
@@ -168,23 +216,25 @@ with tab2:
     g_segment = st.selectbox("Segment (graph)", ["Total","Male","Female"])
 
     graph_where = build_where([], g_country, g_segment)
+    brand_map_local = get_brands_by_country(g_country)
 
-    metric_options = (
-        ["All Brands Awareness","All Brands Favorability","All Brands Consideration","All Brands Effect"]
-        + list(attr_map.values())
-    )
+    metric_options = [
+        "All Brands Awareness",
+        "All Brands Favorability",
+        "All Brands Consideration",
+        "All Brands Effect"
+    ] + [f"Attribute {i}" for i in range(1,18)]
 
     selected_metric = st.selectbox("Metric", metric_options)
 
     queries = []
 
-    for brand, bcode in brand_map.items():
+    for brand, bcode in brand_map_local.items():
 
-        # ✅ ATTRIBUTE MATCH BY LABEL
-        if selected_metric in attr_map.values():
-            idx = list(attr_map.keys())[list(attr_map.values()).index(selected_metric)]
-            col = f"Attributes_New_DP_{bcode}_Q12a_{idx}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)"
+        if "Attribute" in selected_metric:
+            i = int(selected_metric.split()[-1])
+            col = f"Attributes_New_DP_{bcode}_Q12a_{i}_slice"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         elif selected_metric == "All Brands Awareness":
             col = f"Aided_Awareness_{bcode}_slice"
@@ -192,32 +242,39 @@ with tab2:
 
         elif selected_metric == "All Brands Favorability":
             col = f"Brand_Favorability_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         elif selected_metric == "All Brands Consideration":
             col = f"Consideration_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         elif selected_metric == "All Brands Effect":
             col = f"Consideration_Effect_{bcode}_slice"
-            formula = f"TRY_CAST(REGEXP_EXTRACT({col}, '\\d+') AS INT) IN (4,5)"
+            formula = f"TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)"
 
         queries.append(f"""
         SELECT Month,'{brand}' AS Brand,
         SUM(CASE WHEN {formula}
-        THEN {weight_col} ELSE 0 END)*100/SUM({weight_col}) AS Value
+        THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col}) AS Value
         FROM df {graph_where}
         GROUP BY Month
         """)
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
+    # ✅ ORDER FIX
+    df_chart["Month_order"] = pd.Categorical(
+        df_chart["Month"], categories=months, ordered=True
+    )
 
     chart = alt.Chart(df_chart).mark_line(point=True).encode(
         x=alt.X(
             "Month_order:O",
-            axis=alt.Axis(labelAngle=-45, labelOverlap=False, labelFontSize=9)
+            axis=alt.Axis(
+                labelAngle=-45,
+                labelOverlap=False,
+                labelFontSize=9
+            )
         ),
         y="Value:Q",
         color="Brand"
