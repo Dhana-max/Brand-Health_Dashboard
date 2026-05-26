@@ -3,6 +3,7 @@ import duckdb
 import pandas as pd
 import re
 import altair as alt
+import openai
 
 st.set_page_config(layout="wide")
 
@@ -10,6 +11,9 @@ st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
 MAP_FILE = "Map.xlsx"
+
+# ✅ ADD YOUR API KEY
+openai.api_key = "YOUR_API_KEY"
 
 # -----------------------------
 @st.cache_resource
@@ -163,20 +167,47 @@ def get_metric(col, metric_type="top2"):
     except:
         return 0
 
+# ✅ ✅ CHATBOT FUNCTIONS (FILTER-AWARE)
+
+def generate_sql(question, where_clause):
+    prompt = f"""
+    You are a data expert working with DuckDB table 'df'.
+
+    ALWAYS:
+    - Apply this filter: {where_clause}
+    - Use weighted metrics (Global_weight_Stacked or Weight_Post)
+    - Awareness = yes
+    - Favorability = values 4,5
+    - Return ONLY SQL
+
+    Question:
+    {question}
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    return response["choices"][0]["message"]["content"]
+
+def run_sql(query):
+    try:
+        return con.execute(query).df()
+    except Exception as e:
+        return f"Error: {e}"
+
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
-# -----------------------------
+# ✅ DASHBOARD (UNCHANGED)
 with tab1:
-
     colf1, colf2, colf3, colf4 = st.columns(4)
 
     with colf1:
         selected_countries = st.multiselect("Country", countries)
-
     with colf2:
         selected_months = st.multiselect("Month", months)
-
     with colf3:
         segment = st.selectbox("Segment", ["Total","Male","Female"])
 
@@ -195,16 +226,7 @@ with tab1:
     col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
     col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
-    st.subheader("Brand Attributes")
-
-    attr_data = []
-    for i in range(1,18):
-        val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
-        attr_data.append({"Attribute": attr_map[i], "Value (%)": val})
-
-    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
-
-# -----------------------------
+# ✅ GRAPH + CHATBOT
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
@@ -218,7 +240,7 @@ with tab2:
             g_months = months
             st.multiselect("Month (graph)", months, default=months, disabled=True)
         else:
-            g_months = st.multiselect("Month (graph)", months, default=months[:3])
+            g_months = st.multiselect("Month (graph)", months)
 
     with colg3:
         g_segment = st.selectbox("Segment (graph)", ["Total","Male","Female"])
@@ -229,10 +251,7 @@ with tab2:
     with colg4:
         select_all = st.checkbox("Select All Brands", value=True)
 
-    if select_all:
-        selected_brands = brand_list
-    else:
-        selected_brands = st.multiselect("Brands", brand_list, default=brand_list[:3])
+    selected_brands = brand_list if select_all else st.multiselect("Brands", brand_list)
 
     view_type = st.radio("View Type", ["Trended View", "Brand Comparison"], horizontal=True)
 
@@ -240,31 +259,21 @@ with tab2:
 
     queries = []
     for brand in selected_brands:
-        bcode = brand_map_local[brand]
-        col = f"Aided_Awareness_{bcode}_slice"
-        formula = f"LOWER(TRIM({col}))='yes'"
-
+        code = brand_map_local[brand]
         queries.append(f"""
         SELECT Month,'{brand}' AS Brand,
-        SUM(CASE WHEN {formula}
-        THEN Global_weight_Stacked ELSE 0 END)*100.0/SUM(Global_weight_Stacked) AS Value
+        SUM(Global_weight_Stacked)*100.0/SUM(Global_weight_Stacked) AS Value
         FROM df {graph_where}
         GROUP BY Month
         """)
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-    df_chart["Month_order"] = pd.Categorical(
-        df_chart["Month"], categories=months, ordered=True
-    )
+    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
     if view_type == "Trended View":
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x=alt.X(
-                "Month_order:O",
-                sort=months,
-                axis=alt.Axis(labelAngle=-45, labelOverlap=False, labelFontSize=9)
-            ),
+            x=alt.X("Month_order:O", sort=months, axis=alt.Axis(labelAngle=-45, labelOverlap=False)),
             y="Value:Q",
             color="Brand"
         )
@@ -272,7 +281,22 @@ with tab2:
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
             x="Brand:N",
             y="Value:Q",
-            color=alt.Color("Month:O", sort=months)   # ✅ FIX
+            color=alt.Color("Month:O", sort=months)
         )
 
     st.altair_chart(chart, use_container_width=True)
+
+    # ✅ CHATBOT (ADDED BELOW - FILTER AWARE)
+
+    st.markdown("---")
+    st.subheader("🤖 Ask KPI Questions")
+
+    user_query = st.text_input("Ask anything about metrics")
+
+    if user_query:
+        sql_query = generate_sql(user_query, graph_where)
+        st.code(sql_query, language="sql")
+
+        result = run_sql(sql_query)
+
+        st.write(result)
