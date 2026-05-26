@@ -104,7 +104,7 @@ def get_brands_by_country(selected_countries):
         try:
             query = f"""
             SELECT COUNT(*) FROM df
-            WHERE Country_New IN ({",".join([f"'{c}'" for c in selected_countries])})
+            WHERE Country_New IN ({",".join(f"'{c}'" for c in selected_countries)})
             AND {col} IS NOT NULL
             """
             if con.execute(query).fetchone()[0] > 0:
@@ -129,15 +129,17 @@ segment = st.sidebar.selectbox("Segment", ["Total","Male","Female"])
 code = filtered_brand_map[selected_brand]
 
 # -----------------------------
-# WHERE
+# WHERE CLAUSE (✅ FIXED)
 # -----------------------------
 filters = []
 
 if selected_months:
-    filters.append(f"Month IN ({','.join([f'\\'{m}\\'' for m in selected_months])})")
+    month_values = ",".join(f"'{m}'" for m in selected_months)
+    filters.append(f"Month IN ({month_values})")
 
 if selected_countries:
-    filters.append(f"Country_New IN ({','.join([f'\\'{c}\\'' for c in selected_countries])})")
+    country_values = ",".join(f"'{c}'" for c in selected_countries)
+    filters.append(f"Country_New IN ({country_values})")
 
 if segment == "Male":
     filters.append("Sex = 1")
@@ -186,7 +188,7 @@ with tab1:
     st.metric("Consideration Effect", f"{get_top2_metric(eff_col)}%")
 
 # -----------------------------
-# ✅ SINGLE GRAPH WITH METRIC SELECTOR
+# GRAPH
 # -----------------------------
 with tab2:
 
@@ -195,18 +197,12 @@ with tab2:
     g_country = st.multiselect("Country", countries)
     g_segment = st.selectbox("Segment", ["Total","Male","Female"])
 
-    graph_where = ""
-
-    # ✅ Metric Selector added here
     metric_options = ["All Brands Awareness"] + [
         "Awareness","Favorability","Consideration","Consideration Effect"
     ] + [f"Attribute {i}" for i in range(1,18)]
 
     selected_metric = st.selectbox("Select Metric", metric_options)
 
-    # -----------------------------
-    # ALL BRANDS
-    # -----------------------------
     if selected_metric == "All Brands Awareness":
 
         brand_map_local = get_brands_by_country(g_country)
@@ -231,9 +227,6 @@ with tab2:
             color="Brand"
         )
 
-    # -----------------------------
-    # SINGLE KPI
-    # -----------------------------
     else:
 
         if selected_metric == "Awareness":
