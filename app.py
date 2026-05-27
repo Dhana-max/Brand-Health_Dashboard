@@ -455,7 +455,7 @@ def local_chatbot(query):
             return "Please mention a metric to compare — awareness, favorability, consideration, or effect.", None
  
         summary, chart = chatbot_compare(brand_match[0], brand_match[1], metric)
-        return summary, chart
+        return summary, None
  
     # ── TREND INTENT ────────────────────────────────────────────────
     if intent == "trend":
@@ -466,7 +466,7 @@ def local_chatbot(query):
  
         trend_type = "yoy" if any(k in q for k in ["yoy", "year on year", "year-on-year", "yearly", "annual"]) else "mom"
         summary, chart = chatbot_trend(brand_match[0], metric, trend_type)
-        return summary, chart
+        return summary, None
  
     # ── ORIGINAL SINGLE BRAND LOGIC (unchanged) ─────────────────────
     if not brand_match:
@@ -622,9 +622,7 @@ with tab3:
  
         # Show latest response
         st.markdown(response_text)
-        if response_chart is not None:
-            st.altair_chart(response_chart, use_container_width=True)
- 
+         
     # ── Conversation history ─────────────────────────────────────────
     if st.session_state.chat_history:
         st.divider()
