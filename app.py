@@ -119,136 +119,109 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ CHATBOT HELPERS
+# ✅ SIMPLE CHATBOT (SAFE VERSION — DOES NOT BREAK UI)
 
-def find_metric(q):
-    keys=["awareness","favorability","favourability","consideration","effect"]
-    for k in keys:
-        if k in q:
-            return "favorability" if "favor" in k else k
-    m=get_close_matches(q,keys,1,0.5)
-    return ("favorability" if "favor" in m[0] else m[0]) if m else None
-
-def find_brands(q):
-    found=[b for b in brand_map if b.lower() in q]
-    if not found:
-        for w in q.split():
-            m=get_close_matches(w,list(brand_map.keys()),1,0.6)
-            if m:
-                found.append(m[0])
-    return list(set(found))
-
-def find_month(q):
-    for m in months:
-        if m.lower() in q:
-            return [m]
-    return None
-
-def find_country(q):
-    for c in countries:
-        if c.lower() in q:
-            return [c]
-    return None
-
-def find_segment(q):
-    if "male" in q:
-        return "Male"
-    elif "female" in q:
-        return "Female"
-    return "Total"
-
-def find_attribute(q):
-    best=None;score=0
-    for i,t in attr_map.items():
-        s=len(set(q.split())&set(t.lower().split()))
-        if s>score:
-            best=i;score=s
-    return best
-
-# -----------------------------
-def get_kpi(code,metric,where):
-    col=f"Aided_Awareness_{code}_slice"
-    formula=f"LOWER(TRIM({col}))='yes'"
-    q=f"""
-    SELECT SUM(CASE WHEN {formula}
-    THEN Global_weight_Stacked ELSE 0 END)/SUM(Global_weight_Stacked)*100
-    FROM df {where}
-    """
-    return round(con.execute(q).fetchone()[0] or 0,1)
-
-# -----------------------------
-def get_prev_month(m):
-    if m and m[0] in months:
-        i=months.index(m[0])
-        if i>0: return [months[i-1]]
-    return None
-
-def get_last_year(m):
-    if m:
-        parts=m[0].split()
-        if len(parts)==2:
-            try:
-                y=str(int(parts[1])-1)
-                t=f"{parts[0]} {y}"
-                if t in months: return [t]
-            except: pass
-    return None
-
-# -----------------------------
 def local_chatbot(query):
+    q = query.lower()
 
-    q=query.lower()
+    for b in brand_map:
+        if b.lower() in q:
+            code = brand_map[b]
 
-    brands=find_brands(q)
-    metric=find_metric(q)
-    attr=find_attribute(q)
-    month=find_month(q)
-    country=find_country(q)
-    seg=find_segment(q)
+            if "awareness" in q:
+                val = get_metric(f"Aided_Awareness_{code}_slice","yesno")
+                return f"{b} awareness is {val}%"
 
-    if not brands:
-        return "Please mention a valid brand."
+            if "favor" in q:
+                val = get_metric(f"Brand_Favorability_{code}_slice")
+                return f"{b} favorability is {val}%"
 
-    temp_where=build_where(month or selected_months,
-                           country or selected_countries,
-                           seg)
+    return "Try asking about awareness or favorability."
 
-    # ✅ comparison
-    if ("compare" in q or "vs" in q) and len(brands)>=2:
-        if metric:
-            v1=get_kpi(brand_map[brands[0]],metric,temp_where)
-            v2=get_kpi(brand_map[brands[1]],metric,temp_where)
-            diff=round(v1-v2,1)
-            leader=brands[0] if diff>=0 else brands[1]
+# -----------------------------
+tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
 
-            return f"{brands[0]}: {v1}% | {brands[1]}: {v2}%\n✅ {leader} leads by {abs(diff)}% ({seg})"
+# ✅ Dashboard
+with tab1:
 
-    # ✅ KPI with wave + segment
-    if metric:
-        curr=get_kpi(brand_map[brands[0]],metric,temp_where)
+    colf1, colf2, colf3, colf4 = st.columns(4)
 
-        insight=""
+    selected_countries = colf1.multiselect("Country", countries)
+    selected_months = colf2.multiselect("Month", months)
+    segment = colf3.selectbox("Segment", ["Total","Male","Female"])
+    selected_brand = colf4.selectbox("Brand", list(brand_map.keys()))
 
-        pm=get_prev_month(month)
-        ly=get_last_year(month)
+    code = brand_map[selected_brand]
 
-        if pm:
-            prev=build_where(pm,country or selected_countries,seg)
-            v=get_kpi(brand_map[brands[0]],metric,prev)
-            d=round(curr-v,1)
-            insight+=f"\n• vs {pm[0]}: {d}% {'📈' if d>0 else '📉'}"
+    where_clause = build_where(selected_months, selected_countries, segment)
+    weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
-        if ly:
-            prev=build_where(ly,country or selected_countries,seg)
-            v=get_kpi(brand_map[brands[0]],metric,prev)
-            d=round(curr-v,1)
-            insight+=f"\n• vs {ly[0]}: {d}% {'📈' if d>0 else '📉'}"
+    col1,col2,col3,col4 = st.columns(4)
 
-        return f"{brands[0]} {metric} ({seg}) is {curr}%\n📊 Insights:{insight}"
+    col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
+    col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
+    col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
+    col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
-    # ✅ attribute
-    if attr:
-        val=get_metric(f"Attributes_New_DP_{brand_map[brands[0]]}_Q12a_{attr}_slice")
-        return f"{brands[0]} ({seg}) attribute '{attr_map[attr]}' is {val}%"
+    st.subheader("Brand Attributes")
 
-    return "Ask KPI, comparison, attribute, trend"
+    attr_data = [{"Attribute": attr_map[i], 
+                  "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")} 
+                 for i in range(1,18)]
+
+    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
+
+# ✅ Graphs (RESTORED FULLY)
+with tab2:
+
+    colg1, colg2, colg3, colg4 = st.columns(4)
+
+    g_country = colg1.multiselect("Country", countries, key="g_country")
+    g_months = colg2.multiselect("Month", months, key="g_months")
+    g_segment = colg3.selectbox("Segment", ["Total","Male","Female"], key="g_segment")
+
+    selected_brands = colg4.multiselect("Brands", list(brand_map.keys()),
+                                       default=list(brand_map.keys())[:3])
+
+    view_type = st.radio("View Type", ["Trended View","Brand Comparison"], horizontal=True)
+
+    graph_where = build_where(g_months, g_country, g_segment)
+
+    queries = []
+
+    for brand in selected_brands:
+        code = brand_map[brand]
+
+        queries.append(f"""
+        SELECT Month,'{brand}' AS Brand,
+        SUM(CASE WHEN LOWER(TRIM(Aided_Awareness_{code}_slice))='yes'
+        THEN Global_weight_Stacked ELSE 0 END)*100.0 /
+        SUM(Global_weight_Stacked) AS Value
+        FROM df {graph_where}
+        GROUP BY Month
+        """)
+
+    df_chart = con.execute(" UNION ALL ".join(queries)).df()
+
+    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
+
+    if view_type == "Trended View":
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Month_order",
+            y="Value",
+            color="Brand"
+        )
+    else:
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Brand",
+            y="Value",
+            color="Month"
+        )
+
+    st.altair_chart(chart, use_container_width=True)
+
+# ✅ Chatbot
+with tab3:
+    user_query = st.text_input("Ask KPI Questions")
+    if user_query:
+        st.success(local_chatbot(user_query))
