@@ -1,5 +1,4 @@
-import streamlit as st
-import duckdb
+import streamlit as stimport streamlitimport duckdb
 import pandas as pd
 import re
 import altair as alt
@@ -49,7 +48,7 @@ def load_filters():
 
 months, countries = load_filters()
 
-# ✅ SAFE DEFAULTS (very important)
+# ✅ SAFE DEFAULTS (prevents crash)
 selected_countries = []
 selected_months = []
 segment = "Total"
@@ -87,18 +86,17 @@ def build_where(months_sel, countries_sel, segment):
 # -----------------------------
 def get_metric(col, metric_type="yesno"):
     try:
-        if metric_type == "yesno":
-            q = f"""
-            SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0 / SUM({weight_col})
-            FROM df {where_clause}
-            """
+        q = f"""
+        SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
+        THEN {weight_col} ELSE 0 END)*100.0 / SUM({weight_col})
+        FROM df {where_clause}
+        """
         return round(con.execute(q).fetchone()[0] or 0, 1)
     except:
         return 0
 
 # -----------------------------
-# ✅ CHATBOT (SAFE VERSION)
+# ✅ CHATBOT (simple + working)
 
 def local_chatbot(query):
 
@@ -109,7 +107,7 @@ def local_chatbot(query):
 
             code = brand_map[b]
 
-            # ✅ TREND (simple, safe)
+            # ✅ TREND
             if "trend" in q:
 
                 trend_data = []
@@ -153,7 +151,7 @@ with tab1:
     where_clause = build_where(selected_months, selected_countries, segment)
     weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
-    m1 = st.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice')}%")
+    st.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice')}%")
 
 # -----------------------------
 with tab2:
@@ -182,6 +180,7 @@ with tab2:
         GROUP BY Month
         """)
 
+    # ✅ ONLY FIX APPLIED HERE
     if queries:
         df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
@@ -190,6 +189,8 @@ with tab2:
         )
 
         st.altair_chart(chart, use_container_width=True)
+    else:
+        st.warning("Please select at least one brand")
 
 # -----------------------------
 with tab3:
