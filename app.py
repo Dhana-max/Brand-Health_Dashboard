@@ -127,21 +127,41 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ ✅ TYPO-FRIENDLY CHATBOT (FIXED VERSION)
+# ✅ ✅ IMPROVED CHATBOT (FINAL)
 
 def find_metric_word(q):
-    words = ["awareness", "favorability", "favourability", "consideration", "effect"]
-    match = get_close_matches(q, words, n=1, cutoff=0.5)
+    keywords = ["awareness", "favorability", "favourability", "consideration", "effect"]
+
+    for word in keywords:
+        if word in q:
+            if word in ["favorability", "favourability"]:
+                return "favorability"
+            return word
+
+    match = get_close_matches(q, keywords, n=1, cutoff=0.5)
     if match:
-        if match[0] in ["favorability", "favourability"]:
-            return "favorability"
-        return match[0]
+        return "favorability" if match[0] in ["favorability","favourability"] else match[0]
+
     return None
 
 def find_brand(q):
-    return get_close_matches(q, list(brand_map.keys()), n=1, cutoff=0.5)
+    words = q.split()
+
+    # exact match
+    for b in brand_map.keys():
+        if b.lower() in q:
+            return [b]
+
+    # fuzzy match per word
+    for w in words:
+        match = get_close_matches(w, list(brand_map.keys()), n=1, cutoff=0.6)
+        if match:
+            return match
+
+    return []
 
 def local_chatbot(query):
+
     q = query.lower()
 
     metric = find_metric_word(q)
@@ -199,7 +219,7 @@ with tab1:
     attr_data = [{"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")} for i in range(1,18)]
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
-# ✅ Graphs (FULL restored)
+# ✅ Graphs
 with tab2:
     colg1, colg2, colg3, colg4 = st.columns(4)
 
@@ -209,12 +229,8 @@ with tab2:
 
     brand_map_local = get_brands_by_country(g_country)
 
-    selected_brands = colg4.multiselect(
-        "Brands",
-        list(brand_map_local.keys()),
-        default=list(brand_map_local.keys())[:3],
-        key="g_brands"
-    )
+    selected_brands = colg4.multiselect("Brands", list(brand_map_local.keys()),
+                                        default=list(brand_map_local.keys())[:3], key="g_brands")
 
     view_type = st.radio("View Type", ["Trended View","Brand Comparison"], horizontal=True)
 
@@ -240,7 +256,7 @@ with tab2:
 
     if view_type == "Trended View":
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x=alt.X("Month_order:O", sort=months),
+            x="Month_order:O",
             y="Value:Q",
             color="Brand"
         )
@@ -248,7 +264,7 @@ with tab2:
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
             x="Brand",
             y="Value:Q",
-            color=alt.Color("Month:O", sort=months)
+            color="Month"
         )
 
     st.altair_chart(chart, use_container_width=True)
