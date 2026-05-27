@@ -70,6 +70,13 @@ def load_filters():
 
 months, countries = load_filters()
 
+# ✅ ✅ ADD DEFAULT VARIABLES (FIX)
+selected_countries = []
+selected_months = months[-1:] if months else []
+segment = "Total"
+where_clause = ""
+weight_col = "Global_weight_Stacked"
+
 # -----------------------------
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
@@ -84,17 +91,14 @@ brand_map = {
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
     filters = []
-
     if months_sel:
         filters.append("Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")")
     if countries_sel:
         filters.append("Country_New IN (" + ",".join(f"'{c}'" for c in countries_sel) + ")")
-
     if segment == "Male":
         filters.append("Sex = 1")
     elif segment == "Female":
         filters.append("Sex = 2")
-
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 # -----------------------------
@@ -125,11 +129,8 @@ def run_with_filters(month_sel, country_sel, seg, func):
     old_where = where_clause
     old_weight = weight_col
 
-    temp_where = build_where(month_sel, country_sel, seg)
-    temp_weight = "Weight_Post" if country_sel and len(country_sel)==1 else "Global_weight_Stacked"
-
-    where_clause = temp_where
-    weight_col = temp_weight
+    where_clause = build_where(month_sel, country_sel, seg)
+    weight_col = "Weight_Post" if country_sel and len(country_sel)==1 else "Global_weight_Stacked"
 
     result = func()
 
@@ -139,95 +140,63 @@ def run_with_filters(month_sel, country_sel, seg, func):
     return result
 
 # -----------------------------
-# ✅ CHATBOT
+# ✅ CHATBOT (FINAL FIXED)
 
 def local_chatbot(query):
-
     q = query.lower()
-
     brands = [b for b in brand_map if b.lower() in q]
 
     if not brands:
         return "Please mention a valid brand."
 
-    # ✅ detect month (flexible)
-    selected_month = None
-    for m in months:
-        m_clean = m.lower()
-        m_compact = m_clean.replace(" ", "")
-
-        if m_clean in q or m_compact in q:
-            selected_month = m
-            break
-
-    # ✅ COMPARISON
-    if ("compare" in q or "vs" in q) and len(brands) >= 2:
-
-        b1, b2 = brands[0], brands[1]
-
-        v1 = get_metric(f"Aided_Awareness_{brand_map[b1]}_slice","yesno")
-        v2 = get_metric(f"Aided_Awareness_{brand_map[b2]}_slice","yesno")
-
-        diff = round(v1 - v2, 1)
-        leader = b1 if diff >= 0 else b2
-
-        return f"{b1}: {v1}% | {b2}: {v2}%\n✅ {leader} leads by {abs(diff)}%"
-
     brand = brands[0]
 
-    # ✅ TREND WITH MONTH → MoM + YoY
+    # ✅ Comparison
+    if ("compare" in q or "vs" in q) and len(brands)>=2:
+        b1,b2=brands[0],brands[1]
+        v1=get_metric(f"Aided_Awareness_{brand_map[b1]}_slice","yesno")
+        v2=get_metric(f"Aided_Awareness_{brand_map[b2]}_slice","yesno")
+        diff=round(v1-v2,1)
+        leader=b1 if diff>=0 else b2
+        return f"{b1}: {v1}% | {b2}: {v2}%\n✅ {leader} leads by {abs(diff)}%"
+
+    # ✅ Month detection
+    selected_month=None
+    for m in months:
+        if m.lower() in q or m.lower().replace(" ","") in q:
+            selected_month=m
+            break
+
+    # ✅ Trend with month
     if "trend" in q and selected_month:
+        idx=months.index(selected_month)
+        current=run_with_filters([selected_month],selected_countries,segment,
+            lambda:get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno"))
 
-        idx = months.index(selected_month)
+        output=f"{brand} awareness in {selected_month} is {current}%\n\n📊 Insights:"
 
-        current = run_with_filters([selected_month], selected_countries, segment, lambda:
-            get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
-        )
-
-        output = f"{brand} awareness in {selected_month} is {current}%\n\n📊 Insights:"
-
-        # MoM
-        if idx > 0:
-            prev = months[idx-1]
-            prev_val = run_with_filters([prev], selected_countries, segment, lambda:
-                get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
-            )
-            diff = round(current - prev_val,1)
-            output += f"\n• vs {prev}: {diff}% {'📈' if diff>0 else '📉'}"
-
-        # YoY
-        parts = selected_month.split()
-        if len(parts)==2:
-            yoy = f"{parts[0]} {int(parts[1])-1}"
-            if yoy in months:
-                yoy_val = run_with_filters([yoy], selected_countries, segment, lambda:
-                    get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
-                )
-                diff = round(current - yoy_val,1)
-                output += f"\n• vs {yoy}: {diff}% {'📈' if diff>0 else '📉'}"
+        if idx>0:
+            prev=months[idx-1]
+            prev_val=run_with_filters([prev],selected_countries,segment,
+                lambda:get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno"))
+            d=round(current-prev_val,1)
+            output+=f"\n• vs {prev}: {d}% {'📈' if d>0 else '📉'}"
 
         return output
 
-    # ✅ TREND WITHOUT MONTH
+    # ✅ Trend full
     if "trend" in q:
-
-        trend_data = []
-
+        data=[]
         for m in months:
-            val = run_with_filters([m], selected_countries, segment, lambda:
-                get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
-            )
-            trend_data.append(f"{m}: {val}%")
+            val=run_with_filters([m],selected_countries,segment,
+                lambda:get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno"))
+            data.append(f"{m}: {val}%")
 
-        return f"Trend for {brand} (Awareness):\n\n" + "\n".join(trend_data[:8])
+        return f"Trend for {brand}:\n\n"+"\n".join(data[:8])
 
-    # ✅ SINGLE KPI
+    # ✅ KPI
     if "awareness" in q:
-        val = get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
+        val=get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
         return f"{brand} awareness is {val}%"
 
-    if "favor" in q:
-        val = get_metric(f"Brand_Favorability_{brand_map[brand]}_slice")
-        return f"{brand} favorability is {val}%"
-
-    return "Try: LinkedIn awareness, trend linkedin, compare linkedin vs indeed awareness"
+    return "Try: LinkedIn awareness or compare LinkedIn vs Indeed"
