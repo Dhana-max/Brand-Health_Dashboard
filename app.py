@@ -6,7 +6,7 @@ import altair as alt
 from openai import OpenAI
 
 # ✅ ✅ FIX: Direct API key (NO secrets error)
-client = OpenAI(api_key="sk-xxxxxxxxxxxxxxxx")
+client = OpenAI(api_key="sk-your-real-valid-key")
 
 st.set_page_config(layout="wide")
 
