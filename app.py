@@ -5,6 +5,7 @@ import re
 import altair as alt
 
 st.set_page_config(layout="wide")
+
 st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
@@ -33,23 +34,23 @@ map_df = load_map()
 
 # -----------------------------
 attr_map = {
-    1:"Helps me move forward professionally",
-    2:"Helps me find the right job for me",
-    3:"Helps me navigate my professional life",
-    4:"Is a place I feel I belong",
-    5:"Cares about issues that matter to me",
-    6:"Is a brand I love",
-    7:"Is a brand I trust",
-    8:"Makes me feel like I'm part of a community",
-    9:"Helps me stay informed on professional topics that matter to me",
-    10:"Is a place where discussions related to my work life happen",
-    11:"Is useful for me to visit every day",
-    12:"Is a platform where I create/share content",
-    13:"I use this more frequently to create/share content than before",
-    14:"Is a platform I would use as part of my job",
-    15:"Helps me reach my goals",
-    16:"Is a locally relevant professional network",
-    17:"Helps me move forward in my career/business"
+    1: "Helps me move forward professionally",
+    2: "Helps me find the right job for me",
+    3: "Helps me navigate my professional life",
+    4: "Is a place I feel I belong",
+    5: "Cares about issues that matter to me",
+    6: "Is a brand I love",
+    7: "Is a brand I trust",
+    8: "Makes me feel like I'm part of a community",
+    9: "Helps me stay informed on professional topics that matter to me",
+    10: "Is a place where discussions related to my work life happen",
+    11: "Is useful for me to visit every day",
+    12: "Is a platform where I create/share content",
+    13: "I use this more frequently to create/share content than before",
+    14: "Is a platform I would use as part of my job",
+    15: "Helps me reach my goals",
+    16: "Is a locally relevant professional network",
+    17: "Helps me move forward in my career/business"
 }
 
 # -----------------------------
@@ -70,13 +71,6 @@ def load_filters():
 
 months, countries = load_filters()
 
-# ✅ ✅ ADD DEFAULT VARIABLES (FIX)
-selected_countries = []
-selected_months = months[-1:] if months else []
-segment = "Total"
-where_clause = ""
-weight_col = "Global_weight_Stacked"
-
 # -----------------------------
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
@@ -91,14 +85,17 @@ brand_map = {
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
     filters = []
+
     if months_sel:
         filters.append("Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")")
     if countries_sel:
         filters.append("Country_New IN (" + ",".join(f"'{c}'" for c in countries_sel) + ")")
+
     if segment == "Male":
         filters.append("Sex = 1")
     elif segment == "Female":
         filters.append("Sex = 2")
+
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 # -----------------------------
@@ -123,80 +120,132 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-def run_with_filters(month_sel, country_sel, seg, func):
-    global where_clause, weight_col
-
-    old_where = where_clause
-    old_weight = weight_col
-
-    where_clause = build_where(month_sel, country_sel, seg)
-    weight_col = "Weight_Post" if country_sel and len(country_sel)==1 else "Global_weight_Stacked"
-
-    result = func()
-
-    where_clause = old_where
-    weight_col = old_weight
-
-    return result
-
-# -----------------------------
-# ✅ CHATBOT (FINAL FIXED)
+# ✅ SIMPLE CHATBOT WITH TREND (WORKING)
 
 def local_chatbot(query):
+
     q = query.lower()
-    brands = [b for b in brand_map if b.lower() in q]
 
-    if not brands:
-        return "Please mention a valid brand."
+    for b in brand_map:
+        if b.lower() in q:
 
-    brand = brands[0]
+            code = brand_map[b]
 
-    # ✅ Comparison
-    if ("compare" in q or "vs" in q) and len(brands)>=2:
-        b1,b2=brands[0],brands[1]
-        v1=get_metric(f"Aided_Awareness_{brand_map[b1]}_slice","yesno")
-        v2=get_metric(f"Aided_Awareness_{brand_map[b2]}_slice","yesno")
-        diff=round(v1-v2,1)
-        leader=b1 if diff>=0 else b2
-        return f"{b1}: {v1}% | {b2}: {v2}%\n✅ {leader} leads by {abs(diff)}%"
+            # ✅ TREND (simple working version)
+            if "trend" in q:
 
-    # ✅ Month detection
-    selected_month=None
-    for m in months:
-        if m.lower() in q or m.lower().replace(" ","") in q:
-            selected_month=m
-            break
+                trend_data = []
 
-    # ✅ Trend with month
-    if "trend" in q and selected_month:
-        idx=months.index(selected_month)
-        current=run_with_filters([selected_month],selected_countries,segment,
-            lambda:get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno"))
+                for m in months:
+                    temp_where = build_where([m], selected_countries, segment)
 
-        output=f"{brand} awareness in {selected_month} is {current}%\n\n📊 Insights:"
+                    global where_clause
+                    old_where = where_clause
+                    where_clause = temp_where
 
-        if idx>0:
-            prev=months[idx-1]
-            prev_val=run_with_filters([prev],selected_countries,segment,
-                lambda:get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno"))
-            d=round(current-prev_val,1)
-            output+=f"\n• vs {prev}: {d}% {'📈' if d>0 else '📉'}"
+                    val = get_metric(f"Aided_Awareness_{code}_slice","yesno")
 
-        return output
+                    where_clause = old_where
 
-    # ✅ Trend full
-    if "trend" in q:
-        data=[]
-        for m in months:
-            val=run_with_filters([m],selected_countries,segment,
-                lambda:get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno"))
-            data.append(f"{m}: {val}%")
+                    trend_data.append(f"{m}: {val}%")
 
-        return f"Trend for {brand}:\n\n"+"\n".join(data[:8])
+                return f"Trend for {b} (Awareness):\n\n" + "\n".join(trend_data[:8])
 
-    # ✅ KPI
-    if "awareness" in q:
-        val=get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
-        return f"{brand} awareness is {val}%"
+            # ✅ KPI
+            if "awareness" in q:
+                val = get_metric(f"Aided_Awareness_{code}_slice","yesno")
+                return f"{b} awareness is {val}%"
 
-    return "Try: LinkedIn awareness or compare LinkedIn vs Indeed"
+            if "favor" in q:
+                val = get_metric(f"Brand_Favorability_{code}_slice")
+                return f"{b} favorability is {val}%"
+
+    return "Try asking: LinkedIn awareness or trend of LinkedIn"
+
+# -----------------------------
+tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
+
+# -----------------------------
+with tab1:
+
+    colf1, colf2, colf3, colf4 = st.columns(4)
+
+    selected_countries = colf1.multiselect("Country", countries)
+    selected_months = colf2.multiselect("Month", months)
+    segment = colf3.selectbox("Segment", ["Total","Male","Female"])
+    selected_brand = colf4.selectbox("Brand", list(brand_map.keys()))
+
+    code = brand_map[selected_brand]
+
+    where_clause = build_where(selected_months, selected_countries, segment)
+    weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
+
+    col1,col2,col3,col4 = st.columns(4)
+
+    col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
+    col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
+    col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
+    col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
+
+    st.subheader("Brand Attributes")
+
+    attr_data = [{"Attribute": attr_map[i],
+                  "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")}
+                 for i in range(1,18)]
+
+    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
+
+# -----------------------------
+with tab2:
+
+    colg1, colg2, colg3, colg4 = st.columns(4)
+
+    g_country = colg1.multiselect("Country", countries, key="g_country")
+    g_months = colg2.multiselect("Month", months, key="g_months")
+    g_segment = colg3.selectbox("Segment", ["Total","Male","Female"], key="g_segment")
+
+    selected_brands = colg4.multiselect("Brands", list(brand_map.keys()),
+                                       default=list(brand_map.keys())[:3])
+
+    view_type = st.radio("View Type", ["Trended View","Brand Comparison"], horizontal=True)
+
+    graph_where = build_where(g_months, g_country, g_segment)
+
+    queries = []
+
+    for brand in selected_brands:
+        code = brand_map[brand]
+
+        queries.append(f"""
+        SELECT Month,'{brand}' AS Brand,
+        SUM(CASE WHEN LOWER(TRIM(Aided_Awareness_{code}_slice))='yes'
+        THEN Global_weight_Stacked ELSE 0 END)*100.0 /
+        SUM(Global_weight_Stacked) AS Value
+        FROM df {graph_where}
+        GROUP BY Month
+        """)
+
+    df_chart = con.execute(" UNION ALL ".join(queries)).df()
+
+    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
+
+    if view_type == "Trended View":
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Month_order",
+            y="Value",
+            color="Brand"
+        )
+    else:
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Brand",
+            y="Value",
+            color="Month"
+        )
+
+    st.altair_chart(chart, use_container_width=True)
+
+# -----------------------------
+with tab3:
+    user_query = st.text_input("Ask KPI Questions")
+    if user_query:
+        st.success(local_chatbot(user_query))
