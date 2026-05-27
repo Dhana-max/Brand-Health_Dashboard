@@ -120,8 +120,6 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ SAFE FILTER WRAPPER
-
 def run_with_filters(month_sel, country_sel, seg, func):
     global where_clause, weight_col
 
@@ -142,28 +140,61 @@ def run_with_filters(month_sel, country_sel, seg, func):
     return result
 
 # -----------------------------
-# ✅ CHATBOT (ONLY TREND ADDED)
+# ✅ CHATBOT (ONLY TREND UPDATED)
 
 def local_chatbot(query):
 
     q = query.lower()
-
     brands = [b for b in brand_map if b.lower() in q]
-
-    metric = None
-    if "awareness" in q:
-        metric = "awareness"
-    elif "favor" in q:
-        metric = "favorability"
 
     if not brands:
         return "Please mention a valid brand."
 
     brand = brands[0]
 
-    # ✅ NEW FEATURE: TREND SUPPORT
+    # ✅ IMPROVED TREND BLOCK
     if "trend" in q:
 
+        selected_month = None
+        for m in months:
+            if m.lower() in q:
+                selected_month = m
+                break
+
+        # ✅ if specific month → show insights
+        if selected_month:
+
+            idx = months.index(selected_month)
+
+            current = run_with_filters([selected_month], selected_countries, segment, lambda:
+                get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
+            )
+
+            output = f"{brand} awareness in {selected_month} is {current}%\n\n📊 Insights:"
+
+            # MoM
+            if idx > 0:
+                prev = months[idx-1]
+                prev_val = run_with_filters([prev], selected_countries, segment, lambda:
+                    get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
+                )
+                diff = round(current - prev_val,1)
+                output += f"\n• vs {prev}: {diff}% {'📈' if diff>0 else '📉'}"
+
+            # YoY
+            parts = selected_month.split()
+            if len(parts)==2:
+                yoy = f"{parts[0]} {int(parts[1])-1}"
+                if yoy in months:
+                    yoy_val = run_with_filters([yoy], selected_countries, segment, lambda:
+                        get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
+                    )
+                    diff = round(current - yoy_val,1)
+                    output += f"\n• vs {yoy}: {diff}% {'📈' if diff>0 else '📉'}"
+
+            return output
+
+        # ✅ else show full trend
         trend_data = []
 
         for m in months:
@@ -175,11 +206,11 @@ def local_chatbot(query):
         return f"Trend for {brand} (Awareness):\n\n" + "\n".join(trend_data[:8])
 
     # ✅ NORMAL KPI
-    if metric == "awareness":
+    if "awareness" in q:
         val = get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
         return f"{brand} awareness is {val}%"
 
-    if metric == "favorability":
+    if "favor" in q:
         val = get_metric(f"Brand_Favorability_{brand_map[brand]}_slice")
         return f"{brand} favorability is {val}%"
 
