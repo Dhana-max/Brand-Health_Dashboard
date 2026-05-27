@@ -3,9 +3,9 @@ import duckdb
 import pandas as pd
 import re
 import altair as alt
-from difflib import get_close_matches
 
 st.set_page_config(layout="wide")
+
 st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
@@ -34,23 +34,23 @@ map_df = load_map()
 
 # -----------------------------
 attr_map = {
-    1:"Helps me move forward professionally",
-    2:"Helps me find the right job for me",
-    3:"Helps me navigate my professional life",
-    4:"Is a place I feel I belong",
-    5:"Cares about issues that matter to me",
-    6:"Is a brand I love",
-    7:"Is a brand I trust",
-    8:"Makes me feel like I'm part of a community",
-    9:"Helps me stay informed on professional topics",
-    10:"Work-related discussions happen",
-    11:"Useful daily",
-    12:"Create/share content",
-    13:"Increased content usage",
-    14:"Used for job",
-    15:"Helps reach goals",
-    16:"Local relevance",
-    17:"Helps business growth"
+    1: "Helps me move forward professionally",
+    2: "Helps me find the right job for me",
+    3: "Helps me navigate my professional life",
+    4: "Is a place I feel I belong",
+    5: "Cares about issues that matter to me",
+    6: "Is a brand I love",
+    7: "Is a brand I trust",
+    8: "Makes me feel like I'm part of a community",
+    9: "Helps me stay informed on professional topics that matter to me",
+    10: "Is a place where discussions related to my work life happen",
+    11: "Is useful for me to visit every day",
+    12: "Is a platform where I create/share content",
+    13: "I use this more frequently to create/share content than before",
+    14: "Is a platform I would use as part of my job",
+    15: "Helps me reach my goals",
+    16: "Is a locally relevant professional network",
+    17: "Helps me move forward in my career/business"
 }
 
 # -----------------------------
@@ -111,7 +111,8 @@ def get_metric(col, metric_type="top2"):
             q = f"""
             SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
             THEN {weight_col} ELSE 0 END)*100.0 /
-            SUM(Global_weight_Stacked)
+            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
+            THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
         return round(con.execute(q).fetchone()[0] or 0,1)
@@ -119,7 +120,7 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ SIMPLE CHATBOT (SAFE VERSION — DOES NOT BREAK UI)
+# ✅ SIMPLE CHATBOT (SAFE)
 
 def local_chatbot(query):
     q = query.lower()
@@ -136,7 +137,7 @@ def local_chatbot(query):
                 val = get_metric(f"Brand_Favorability_{code}_slice")
                 return f"{b} favorability is {val}%"
 
-    return "Try asking about awareness or favorability."
+    return "Try asking: LinkedIn awareness"
 
 # -----------------------------
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
@@ -171,7 +172,7 @@ with tab1:
 
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
-# ✅ Graphs (RESTORED FULLY)
+# ✅ Graphs
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
