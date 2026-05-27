@@ -5,7 +5,6 @@ import re
 import altair as alt
 
 st.set_page_config(layout="wide")
-
 st.title("Brand Health Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
@@ -34,23 +33,23 @@ map_df = load_map()
 
 # -----------------------------
 attr_map = {
-    1: "Helps me move forward professionally",
-    2: "Helps me find the right job for me",
-    3: "Helps me navigate my professional life",
-    4: "Is a place I feel I belong",
-    5: "Cares about issues that matter to me",
-    6: "Is a brand I love",
-    7: "Is a brand I trust",
-    8: "Makes me feel like I'm part of a community",
-    9: "Helps me stay informed on professional topics that matter to me",
-    10: "Is a place where discussions related to my work life happen",
-    11: "Is useful for me to visit every day",
-    12: "Is a platform where I create/share content",
-    13: "I use this more frequently to create/share content than before",
-    14: "Is a platform I would use as part of my job",
-    15: "Helps me reach my goals",
-    16: "Is a locally relevant professional network",
-    17: "Helps me move forward in my career/business"
+    1:"Helps me move forward professionally",
+    2:"Helps me find the right job for me",
+    3:"Helps me navigate my professional life",
+    4:"Is a place I feel I belong",
+    5:"Cares about issues that matter to me",
+    6:"Is a brand I love",
+    7:"Is a brand I trust",
+    8:"Makes me feel like I'm part of a community",
+    9:"Helps me stay informed on professional topics that matter to me",
+    10:"Is a place where discussions related to my work life happen",
+    11:"Is useful for me to visit every day",
+    12:"Is a platform where I create/share content",
+    13:"I use this more frequently to create/share content than before",
+    14:"Is a platform I would use as part of my job",
+    15:"Helps me reach my goals",
+    16:"Is a locally relevant professional network",
+    17:"Helps me move forward in my career/business"
 }
 
 # -----------------------------
@@ -140,7 +139,7 @@ def run_with_filters(month_sel, country_sel, seg, func):
     return result
 
 # -----------------------------
-# ✅ CHATBOT (ONLY TREND UPDATED)
+# ✅ CHATBOT (FINAL FIXED TREND)
 
 def local_chatbot(query):
 
@@ -152,49 +151,49 @@ def local_chatbot(query):
 
     brand = brands[0]
 
-    # ✅ IMPROVED TREND BLOCK
-    if "trend" in q:
+    # ✅ detect month first
+    selected_month = None
+    for m in months:
+        if m.lower() in q:
+            selected_month = m
+            break
 
-        selected_month = None
-        for m in months:
-            if m.lower() in q:
-                selected_month = m
-                break
+    # ✅ TREND WITH MONTH → MoM + YoY
+    if "trend" in q and selected_month:
 
-        # ✅ if specific month → show insights
-        if selected_month:
+        idx = months.index(selected_month)
 
-            idx = months.index(selected_month)
+        current = run_with_filters([selected_month], selected_countries, segment, lambda:
+            get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
+        )
 
-            current = run_with_filters([selected_month], selected_countries, segment, lambda:
+        output = f"{brand} awareness in {selected_month} is {current}%\n\n📊 Insights:"
+
+        # MoM
+        if idx > 0:
+            prev = months[idx-1]
+            prev_val = run_with_filters([prev], selected_countries, segment, lambda:
                 get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
             )
+            diff = round(current - prev_val,1)
+            output += f"\n• vs {prev}: {diff}% {'📈' if diff>0 else '📉'}"
 
-            output = f"{brand} awareness in {selected_month} is {current}%\n\n📊 Insights:"
-
-            # MoM
-            if idx > 0:
-                prev = months[idx-1]
-                prev_val = run_with_filters([prev], selected_countries, segment, lambda:
+        # YoY
+        parts = selected_month.split()
+        if len(parts)==2:
+            yoy = f"{parts[0]} {int(parts[1])-1}"
+            if yoy in months:
+                yoy_val = run_with_filters([yoy], selected_countries, segment, lambda:
                     get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
                 )
-                diff = round(current - prev_val,1)
-                output += f"\n• vs {prev}: {diff}% {'📈' if diff>0 else '📉'}"
+                diff = round(current - yoy_val,1)
+                output += f"\n• vs {yoy}: {diff}% {'📈' if diff>0 else '📉'}"
 
-            # YoY
-            parts = selected_month.split()
-            if len(parts)==2:
-                yoy = f"{parts[0]} {int(parts[1])-1}"
-                if yoy in months:
-                    yoy_val = run_with_filters([yoy], selected_countries, segment, lambda:
-                        get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
-                    )
-                    diff = round(current - yoy_val,1)
-                    output += f"\n• vs {yoy}: {diff}% {'📈' if diff>0 else '📉'}"
+        return output
 
-            return output
+    # ✅ TREND WITHOUT MONTH → full trend
+    if "trend" in q:
 
-        # ✅ else show full trend
         trend_data = []
 
         for m in months:
@@ -205,7 +204,7 @@ def local_chatbot(query):
 
         return f"Trend for {brand} (Awareness):\n\n" + "\n".join(trend_data[:8])
 
-    # ✅ NORMAL KPI
+    # ✅ SIMPLE KPI
     if "awareness" in q:
         val = get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
         return f"{brand} awareness is {val}%"
