@@ -142,7 +142,7 @@ def run_with_filters(month_sel, country_sel, seg, func):
     return result
 
 # -----------------------------
-# ✅ ADVANCED CHATBOT (SAFE)
+# ✅ CHATBOT (ONLY TREND ADDED)
 
 def local_chatbot(query):
 
@@ -155,111 +155,42 @@ def local_chatbot(query):
         metric = "awareness"
     elif "favor" in q:
         metric = "favorability"
-    elif "consideration" in q:
-        metric = "consideration"
-    elif "effect" in q:
-        metric = "effect"
-
-    attr = None
-    for i, txt in attr_map.items():
-        if any(w in q for w in txt.lower().split()):
-            attr = i
-
-    # detect month
-    month = None
-    for m in months:
-        if m.lower() in q:
-            month = m
-
-    prev_month = None
-    yoy_month = None
-
-    if month and month in months:
-        idx = months.index(month)
-
-        if idx > 0:
-            prev_month = months[idx-1]
-
-        parts = month.split()
-        if len(parts)==2:
-            try:
-                yoy = f"{parts[0]} {int(parts[1])-1}"
-                if yoy in months:
-                    yoy_month = yoy
-            except:
-                pass
 
     if not brands:
         return "Please mention a valid brand."
 
-    # ✅ comparison
-    if ("compare" in q or "vs" in q) and len(brands) >= 2:
-
-        results = []
-
-        for b in brands[:2]:
-
-            def calc():
-                if metric == "awareness":
-                    return get_metric(f"Aided_Awareness_{brand_map[b]}_slice","yesno")
-                elif metric:
-                    col_map = {
-                        "favorability":"Brand_Favorability",
-                        "consideration":"Consideration",
-                        "effect":"Consideration_Effect"
-                    }
-                    return get_metric(f"{col_map[metric]}_{brand_map[b]}_slice")
-                elif attr:
-                    return get_metric(f"Attributes_New_DP_{brand_map[b]}_Q12a_{attr}_slice")
-
-            val = run_with_filters(selected_months, selected_countries, segment, calc)
-            results.append((b, val))
-
-        diff = round(results[0][1] - results[1][1], 1)
-        leader = results[0][0] if diff >= 0 else results[1][0]
-
-        return (
-            f"{results[0][0]}: {results[0][1]}% | {results[1][0]}: {results[1][1]}%\n"
-            f"✅ {leader} leads by {abs(diff)}%"
-        )
-
-    # ✅ single brand insights
     brand = brands[0]
 
-    def get_val(m):
-        return run_with_filters(m, selected_countries, segment, lambda:
-            get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
-            if metric=="awareness"
-            else get_metric(f"Attributes_New_DP_{brand_map[brand]}_Q12a_{attr}_slice")
-        )
+    # ✅ NEW FEATURE: TREND SUPPORT
+    if "trend" in q:
 
-    if metric or attr:
+        trend_data = []
 
-        current_val = get_val(selected_months)
+        for m in months:
+            val = run_with_filters([m], selected_countries, segment, lambda:
+                get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
+            )
+            trend_data.append(f"{m}: {val}%")
 
-        insight = ""
+        return f"Trend for {brand} (Awareness):\n\n" + "\n".join(trend_data[:8])
 
-        if prev_month:
-            v = get_val([prev_month])
-            d = round(current_val - v, 1)
-            insight += f"\n• vs {prev_month}: {d}% {'📈' if d>0 else '📉'}"
+    # ✅ NORMAL KPI
+    if metric == "awareness":
+        val = get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
+        return f"{brand} awareness is {val}%"
 
-        if yoy_month:
-            v = get_val([yoy_month])
-            d = round(current_val - v, 1)
-            insight += f"\n• vs {yoy_month}: {d}% {'📈' if d>0 else '📉'}"
+    if metric == "favorability":
+        val = get_metric(f"Brand_Favorability_{brand_map[brand]}_slice")
+        return f"{brand} favorability is {val}%"
 
-        title = metric if metric else attr_map[attr]
-
-        return f"{brand} {title} is {current_val}%\n\n📊 Insights:{insight}"
-
-    return "Ask KPI, attribute or comparison queries."
+    return "Try asking: LinkedIn awareness or trend of LinkedIn"
 
 # -----------------------------
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
 
 # -----------------------------
 with tab1:
+
     colf1, colf2, colf3, colf4 = st.columns(4)
 
     selected_countries = colf1.multiselect("Country", countries)
@@ -281,8 +212,8 @@ with tab1:
 
     st.subheader("Brand Attributes")
 
-    attr_data = [{"Attribute": attr_map[i], 
-                  "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")} 
+    attr_data = [{"Attribute": attr_map[i],
+                  "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")}
                  for i in range(1,18)]
 
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
