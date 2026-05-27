@@ -94,6 +94,7 @@ def get_brands_by_country(selected_countries):
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
     filters = []
+
     if months_sel:
         filters.append("Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")")
     if countries_sel:
@@ -127,10 +128,11 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ ✅ ✅ ADVANCED FREE CHATBOT
+# ✅ CHATBOT
 
 def find_metric(q):
     keywords = ["awareness","favorability","favourability","consideration","effect"]
+
     for k in keywords:
         if k in q:
             return "favorability" if k in ["favorability","favourability"] else k
@@ -138,10 +140,12 @@ def find_metric(q):
     match = get_close_matches(q, keywords, n=1, cutoff=0.5)
     if match:
         return "favorability" if match[0] in ["favorability","favourability"] else match[0]
+
     return None
 
 def find_brands(q):
     found = []
+
     for b in brand_map.keys():
         if b.lower() in q:
             found.append(b)
@@ -149,8 +153,7 @@ def find_brands(q):
     if found:
         return found
 
-    words = q.split()
-    for w in words:
+    for w in q.split():
         match = get_close_matches(w, list(brand_map.keys()), n=1, cutoff=0.6)
         if match:
             found.append(match[0])
@@ -196,7 +199,7 @@ def local_chatbot(query):
             return "Comparison ("+metric+") → " + " | ".join(res)
         return "Please specify a metric."
 
-    # ✅ Top brand
+    # ✅ Top
     if "top" in q or "highest" in q:
         if metric:
             vals = [(b, get_kpi(brand_map[b], metric)) for b in brand_map.keys()]
@@ -217,7 +220,7 @@ def local_chatbot(query):
     if "trend" in q:
         return f"Check Graph tab for trend of {brands[0]}"
 
-    # ✅ Single KPI
+    # ✅ KPI
     val = get_kpi(brand_map[brands[0]], metric)
     return f"{brands[0]} {metric} is {val}%"
 
@@ -248,11 +251,13 @@ with tab1:
     col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
     st.subheader("Brand Attributes")
+
     attr_data = [{"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")} for i in range(1,18)]
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
 # -----------------------------
 with tab2:
+
     colg1, colg2, colg3, colg4 = st.columns(4)
 
     g_country = colg1.multiselect("Country", countries, key="g_country")
@@ -261,8 +266,12 @@ with tab2:
 
     brand_map_local = get_brands_by_country(g_country)
 
-    selected_brands = colg4.multiselect("Brands", list(brand_map_local.keys()),
-                                        default=list(brand_map_local.keys())[:3], key="g_brands")
+    selected_brands = colg4.multiselect(
+        "Brands",
+        list(brand_map_local.keys()),
+        default=list(brand_map_local.keys())[:3],
+        key="g_brands"
+    )
 
     view_type = st.radio("View Type", ["Trended View","Brand Comparison"], horizontal=True)
 
@@ -286,16 +295,25 @@ with tab2:
 
     df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
-    chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x="Month_order:O",
-        y="Value:Q",
-        color="Brand"
-    )
+    # ✅ ✅ FIXED CHART SWITCH
+    if view_type == "Trended View":
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Month_order:O",
+            y="Value:Q",
+            color="Brand"
+        )
+    else:
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Brand",
+            y="Value:Q",
+            color="Month"
+        )
 
     st.altair_chart(chart, use_container_width=True)
 
 # -----------------------------
 with tab3:
+
     st.subheader("🤖 Ask KPI Questions")
 
     user_query = st.text_input("Ask about KPIs")
