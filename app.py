@@ -3,6 +3,7 @@ import duckdb
 import pandas as pd
 import re
 import altair as alt
+from difflib import get_close_matches
 
 st.set_page_config(layout="wide")
 
@@ -126,91 +127,52 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ ✅ SMART FREE CHATBOT
+# ✅ ✅ TYPO-FRIENDLY CHATBOT
 
-def extract_month(query):
-    for m in months:
-        if m.lower() in query:
-            return m
+def find_metric_word(query):
+    words = ["awareness", "favorability", "favourability", "consideration", "effect"]
+
+    matches = get_close_matches(query, words, n=1, cutoff=0.6)
+
+    if matches:
+        m = matches[0]
+        if m in ["favorability", "favourability"]:
+            return "favorability"
+        return m
     return None
 
-def extract_brands(query):
-    return [b for b in brand_map.keys() if b.lower() in query]
+def extract_brand(query):
+    matches = get_close_matches(query, list(brand_map.keys()), n=1, cutoff=0.6)
+    return matches[0] if matches else None
 
 def local_chatbot(query):
 
     q = query.lower()
-    brands = extract_brands(q)
-    month = extract_month(q)
 
-    temp_months = [month] if month else selected_months
-    temp_where = build_where(temp_months, selected_countries, segment)
+    brand = extract_brand(q)
+    metric = find_metric_word(q)
 
-    def metric_value(brand, metric_type):
-        code = brand_map[brand]
+    if not brand:
+        return "Please mention a brand."
 
-        if metric_type == "awareness":
-            col = f"Aided_Awareness_{code}_slice"
-            formula = f"LOWER(TRIM({col}))='yes'"
+    code = brand_map[brand]
 
-            q_sql = f"""
-            SELECT SUM(CASE WHEN {formula}
-            THEN Global_weight_Stacked ELSE 0 END)*100.0 /
-            SUM(Global_weight_Stacked)
-            FROM df {temp_where}
-            """
-        else:
-            col_map = {
-                "favorability": f"Brand_Favorability_{code}_slice",
-                "consideration": f"Consideration_{code}_slice",
-                "effect": f"Consideration_Effect_{code}_slice"
-            }
+    if not metric:
+        return "Ask about awareness, favorability, consideration or effect."
 
-            col = col_map[metric_type]
-
-            q_sql = f"""
-            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN Global_weight_Stacked ELSE 0 END)*100.0 /
-            SUM(Global_weight_Stacked)
-            FROM df {temp_where}
-            """
-
-        return round(con.execute(q_sql).fetchone()[0] or 0, 1)
-
-    if "awareness" in q:
-        metric = "awareness"
-    elif "favorability" in q:
-        metric = "favorability"
-    elif "consideration" in q:
-        metric = "consideration"
-    elif "effect" in q:
-        metric = "effect"
+    if metric == "awareness":
+        col = f"Aided_Awareness_{code}_slice"
+        val = get_metric(col, "yesno")
     else:
-        metric = None
+        col_map = {
+            "favorability": "Brand_Favorability",
+            "consideration": "Consideration",
+            "effect": "Consideration_Effect"
+        }
+        col = f"{col_map[metric]}_{code}_slice"
+        val = get_metric(col)
 
-    if ("compare" in q or "vs" in q) and len(brands) >= 2 and metric:
-        results = [f"{b}: {metric_value(b, metric)}%" for b in brands]
-        return f"Comparison ({metric}): " + " | ".join(results)
-
-    if brands and metric:
-        val = metric_value(brands[0], metric)
-        return f"{brands[0]} {metric}" + (f" in {month}" if month else "") + f" is {val}%"
-
-    if ("top" in q or "highest" in q) and metric:
-        results = [(b, metric_value(b, metric)) for b in brand_map.keys()]
-        top = max(results, key=lambda x: x[1])
-        return f"Top brand for {metric}: {top[0]} ({top[1]}%)"
-
-    if "trend" in q and brands:
-        return f"Please check the graph tab for trend of {brands[0]}"
-
-    if "attribute" in q and brands:
-        code = brand_map[brands[0]]
-        results = [(attr_map[i], get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")) for i in range(1,18)]
-        top = max(results, key=lambda x: x[1])
-        return f"Top attribute for {brands[0]}: {top[0]} ({top[1]}%)"
-
-    return "Try: LinkedIn awareness, Compare LinkedIn vs Facebook, Top brand, or attributes."
+    return f"{brand} {metric} is {val}%"
 
 # -----------------------------
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
@@ -230,69 +192,6 @@ with tab1:
 
     where_clause = build_where(selected_months, selected_countries, segment)
     weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
-
-    col1,col2,col3,col4 = st.columns(4)
-
-    col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
-    col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
-    col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
-    col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
-
-    st.subheader("Brand Attributes")
-
-    attr_data = [{"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")} for i in range(1,18)]
-    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
-
-# -----------------------------
-with tab2:
-    colg1, colg2, colg3, colg4 = st.columns(4)
-
-    g_country = colg1.multiselect("Country", countries, key="g_country")
-    g_months = colg2.multiselect("Month", months, key="g_months")
-    g_segment = colg3.selectbox("Segment", ["Total","Male","Female"], key="g_segment")
-
-    brand_map_local = get_brands_by_country(g_country)
-    brand_list = list(brand_map_local.keys())
-
-    selected_brands = colg4.multiselect("Brands", brand_list, default=brand_list[:3], key="g_brands")
-
-    view_type = st.radio("View Type", ["Trended View","Brand Comparison"], horizontal=True)
-
-    graph_where = build_where(g_months, g_country, g_segment)
-
-    queries = []
-    for brand in selected_brands:
-        code = brand_map_local[brand]
-        col = f"Aided_Awareness_{code}_slice"
-        formula = f"LOWER(TRIM({col}))='yes'"
-
-        queries.append(f"""
-        SELECT Month,'{brand}' AS Brand,
-        SUM(CASE WHEN {formula}
-        THEN Global_weight_Stacked ELSE 0 END)*100.0 /
-        SUM(Global_weight_Stacked) AS Value
-        FROM df {graph_where}
-        GROUP BY Month
-        """)
-
-    df_chart = con.execute(" UNION ALL ".join(queries)).df()
-
-    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
-
-    if view_type == "Trended View":
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x=alt.X("Month_order:O", sort=months, axis=alt.Axis(labelAngle=-45,labelOverlap=False)),
-            y="Value:Q",
-            color="Brand"
-        )
-    else:
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Brand",
-            y="Value:Q",
-            color=alt.Color("Month:O", sort=months)
-        )
-
-    st.altair_chart(chart, use_container_width=True)
 
 # -----------------------------
 with tab3:
