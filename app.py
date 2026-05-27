@@ -1,4 +1,6 @@
-import streamlit as stimport stream pandas as pd
+import streamlit as st
+import duckdb
+import pandas as pd
 import re
 import altair as alt
 from difflib import get_close_matches
@@ -302,4 +304,3 @@ with tab3:
     q=st.text_input("Ask KPI Questions")
     if q:
         st.success(local_chatbot(q))
-import duckdb
