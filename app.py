@@ -3,10 +3,6 @@ import duckdb
 import pandas as pd
 import re
 import altair as alt
-from openai import OpenAI
-
-# ✅ ✅ FIX: Direct API key (NO secrets error)
-client = OpenAI(api_key="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")
 
 st.set_page_config(layout="wide")
 
@@ -131,39 +127,56 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ LLM FUNCTION (UNCHANGED EXCEPT API)
+# ✅ ✅ FREE CHATBOT FUNCTION
 
-def generate_sql(question, where_clause):
-    prompt = f"""
-    You are a data analyst working with a DuckDB table df.
+def local_chatbot(query):
+    q = query.lower()
 
-    Always apply this filter:
-    {where_clause}
+    # detect brand
+    brand = None
+    for b in brand_map.keys():
+        if b.lower() in q:
+            brand = b
+            break
 
-    Return ONLY SQL.
+    if not brand:
+        return "Please mention a brand (e.g. LinkedIn, Facebook)."
 
-    Question:
-    {question}
-    """
+    code = brand_map[brand]
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
+    # detect metric
+    if "awareness" in q:
+        val = get_metric(f"Aided_Awareness_{code}_slice", "yesno")
+        return f"{brand} awareness is {val}%"
 
-    return response.choices[0].message.content
+    elif "favorability" in q:
+        val = get_metric(f"Brand_Favorability_{code}_slice")
+        return f"{brand} favorability is {val}%"
 
-def run_sql(q):
-    try:
-        return con.execute(q).df()
-    except Exception as e:
-        return str(e)
+    elif "consideration" in q:
+        val = get_metric(f"Consideration_{code}_slice")
+        return f"{brand} consideration is {val}%"
+
+    elif "effect" in q:
+        val = get_metric(f"Consideration_Effect_{code}_slice")
+        return f"{brand} effect score is {val}%"
+
+    elif "attribute" in q:
+        results = []
+        for i in range(1,18):
+            val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
+            results.append((attr_map[i], val))
+
+        top = max(results, key=lambda x: x[1])
+        return f"Top attribute for {brand}: {top[0]} ({top[1]}%)"
+
+    else:
+        return "I can help with awareness, favorability, consideration, effect, or attributes."
 
 # -----------------------------
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD
 with tab1:
 
     colf1, colf2, colf3, colf4 = st.columns(4)
@@ -197,7 +210,6 @@ with tab1:
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
 # -----------------------------
-# ✅ GRAPH
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
@@ -216,10 +228,8 @@ with tab2:
     graph_where = build_where(g_months, g_country, g_segment)
 
     queries = []
-
     for brand in selected_brands:
         code = brand_map_local[brand]
-
         col = f"Aided_Awareness_{code}_slice"
         formula = f"LOWER(TRIM({col}))='yes'"
 
@@ -252,13 +262,12 @@ with tab2:
 
     st.altair_chart(chart, use_container_width=True)
 
-    # ✅ CHATBOT
+    # ✅ FREE CHATBOT
     st.markdown("---")
-    st.subheader("🤖 Ask KPI Questions")
+    st.subheader("🤖 Ask KPI Questions (Free)")
 
-    user_query = st.text_input("Ask anything about metrics")
+    user_query = st.text_input("Ask about KPIs")
 
     if user_query:
-        sql = generate_sql(user_query, graph_where)
-        st.code(sql, language="sql")
-        st.write(run_sql(sql))
+        response = local_chatbot(user_query)
+        st.success(response)
