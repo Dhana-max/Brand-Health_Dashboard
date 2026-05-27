@@ -127,10 +127,10 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ ✅ CHATBOT (FINAL)
+# ✅ ✅ ✅ ADVANCED FREE CHATBOT
 
-def find_metric_word(q):
-    keywords = ["awareness", "favorability", "favourability", "consideration", "effect"]
+def find_metric(q):
+    keywords = ["awareness","favorability","favourability","consideration","effect"]
     for k in keywords:
         if k in q:
             return "favorability" if k in ["favorability","favourability"] else k
@@ -140,65 +140,86 @@ def find_metric_word(q):
         return "favorability" if match[0] in ["favorability","favourability"] else match[0]
     return None
 
-def find_brand(q):
+def find_brands(q):
+    found = []
     for b in brand_map.keys():
         if b.lower() in q:
-            return [b]
+            found.append(b)
+
+    if found:
+        return found
 
     words = q.split()
     for w in words:
         match = get_close_matches(w, list(brand_map.keys()), n=1, cutoff=0.6)
         if match:
-            return match
-    return []
+            found.append(match[0])
+
+    return list(set(found))
 
 def find_attribute(q):
-    best_match = None
+    best = None
     best_score = 0
 
     for i, text in attr_map.items():
         score = len(set(q.split()) & set(text.lower().split()))
         if score > best_score:
             best_score = score
-            best_match = i
+            best = i
 
-    return best_match
+    return best
+
+def get_kpi(code, metric):
+    if metric == "awareness":
+        return get_metric(f"Aided_Awareness_{code}_slice","yesno")
+    else:
+        col_map = {
+            "favorability":"Brand_Favorability",
+            "consideration":"Consideration",
+            "effect":"Consideration_Effect"
+        }
+        return get_metric(f"{col_map[metric]}_{code}_slice")
 
 def local_chatbot(query):
 
     q = query.lower()
+    brands = find_brands(q)
+    metric = find_metric(q)
 
-    metric = find_metric_word(q)
-    brand_match = find_brand(q)
-
-    if not brand_match:
+    if not brands:
         return "Please mention a valid brand."
 
-    brand = brand_match[0]
-    code = brand_map[brand]
+    # ✅ Comparison
+    if ("compare" in q or "vs" in q) and len(brands) >= 2:
+        if metric:
+            res = [f"{b}: {get_kpi(brand_map[b], metric)}%" for b in brands[:2]]
+            return "Comparison ("+metric+") → " + " | ".join(res)
+        return "Please specify a metric."
 
-    # ✅ ATTRIBUTE LOGIC
+    # ✅ Top brand
+    if "top" in q or "highest" in q:
+        if metric:
+            vals = [(b, get_kpi(brand_map[b], metric)) for b in brand_map.keys()]
+            top = max(vals, key=lambda x: x[1])
+            return f"Top brand for {metric} → {top[0]} ({top[1]}%)"
+        return "Specify a metric."
+
+    # ✅ Attribute
     if not metric:
         attr_id = find_attribute(q)
-
         if attr_id:
-            val = get_metric(f"Attributes_New_DP_{code}_Q12a_{attr_id}_slice")
-            return f"{brand} attribute \"{attr_map[attr_id]}\" is {val}%"
+            val = get_metric(f"Attributes_New_DP_{brand_map[brands[0]]}_Q12a_{attr_id}_slice")
+            return f"{brands[0]} attribute \"{attr_map[attr_id]}\" is {val}%"
 
         return "Ask about awareness, favorability, consideration, effect or attributes."
 
-    # ✅ KPI LOGIC
-    if metric == "awareness":
-        val = get_metric(f"Aided_Awareness_{code}_slice", "yesno")
-    else:
-        col_map = {
-            "favorability": "Brand_Favorability",
-            "consideration": "Consideration",
-            "effect": "Consideration_Effect"
-        }
-        val = get_metric(f"{col_map[metric]}_{code}_slice")
+    # ✅ Trend
+    if "trend" in q:
+        return f"Check Graph tab for trend of {brands[0]}"
 
-    return f"{brand} {metric} is {val}%"
+    # ✅ Single KPI
+    val = get_kpi(brand_map[brands[0]], metric)
+    return f"{brands[0]} {metric} is {val}%"
 
 # -----------------------------
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
@@ -227,7 +248,6 @@ with tab1:
     col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
 
     st.subheader("Brand Attributes")
-
     attr_data = [{"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")} for i in range(1,18)]
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
@@ -266,18 +286,11 @@ with tab2:
 
     df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
-    if view_type == "Trended View":
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Month_order:O",
-            y="Value:Q",
-            color="Brand"
-        )
-    else:
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Brand",
-            y="Value:Q",
-            color="Month"
-        )
+    chart = alt.Chart(df_chart).mark_line(point=True).encode(
+        x="Month_order:O",
+        y="Value:Q",
+        color="Brand"
+    )
 
     st.altair_chart(chart, use_container_width=True)
 
