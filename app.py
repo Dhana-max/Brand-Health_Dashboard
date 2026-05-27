@@ -127,38 +127,42 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ ✅ IMPROVED CHATBOT (FINAL)
+# ✅ ✅ CHATBOT (FINAL)
 
 def find_metric_word(q):
     keywords = ["awareness", "favorability", "favourability", "consideration", "effect"]
-
-    for word in keywords:
-        if word in q:
-            if word in ["favorability", "favourability"]:
-                return "favorability"
-            return word
+    for k in keywords:
+        if k in q:
+            return "favorability" if k in ["favorability","favourability"] else k
 
     match = get_close_matches(q, keywords, n=1, cutoff=0.5)
     if match:
         return "favorability" if match[0] in ["favorability","favourability"] else match[0]
-
     return None
 
 def find_brand(q):
-    words = q.split()
-
-    # exact match
     for b in brand_map.keys():
         if b.lower() in q:
             return [b]
 
-    # fuzzy match per word
+    words = q.split()
     for w in words:
         match = get_close_matches(w, list(brand_map.keys()), n=1, cutoff=0.6)
         if match:
             return match
-
     return []
+
+def find_attribute(q):
+    best_match = None
+    best_score = 0
+
+    for i, text in attr_map.items():
+        score = len(set(q.split()) & set(text.lower().split()))
+        if score > best_score:
+            best_score = score
+            best_match = i
+
+    return best_match
 
 def local_chatbot(query):
 
@@ -173,9 +177,17 @@ def local_chatbot(query):
     brand = brand_match[0]
     code = brand_map[brand]
 
+    # ✅ ATTRIBUTE LOGIC
     if not metric:
-        return "Ask about awareness, favorability, consideration or effect."
+        attr_id = find_attribute(q)
 
+        if attr_id:
+            val = get_metric(f"Attributes_New_DP_{code}_Q12a_{attr_id}_slice")
+            return f"{brand} attribute \"{attr_map[attr_id]}\" is {val}%"
+
+        return "Ask about awareness, favorability, consideration, effect or attributes."
+
+    # ✅ KPI LOGIC
     if metric == "awareness":
         val = get_metric(f"Aided_Awareness_{code}_slice", "yesno")
     else:
@@ -191,7 +203,7 @@ def local_chatbot(query):
 # -----------------------------
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
 
-# ✅ Dashboard
+# -----------------------------
 with tab1:
     colf1, colf2, colf3, colf4 = st.columns(4)
 
@@ -219,7 +231,7 @@ with tab1:
     attr_data = [{"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")} for i in range(1,18)]
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
-# ✅ Graphs
+# -----------------------------
 with tab2:
     colg1, colg2, colg3, colg4 = st.columns(4)
 
@@ -269,7 +281,7 @@ with tab2:
 
     st.altair_chart(chart, use_container_width=True)
 
-# ✅ Chatbot
+# -----------------------------
 with tab3:
     st.subheader("🤖 Ask KPI Questions")
 
