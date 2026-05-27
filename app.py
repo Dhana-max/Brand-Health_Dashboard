@@ -127,50 +127,96 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ FREE CHATBOT
+# ✅ ✅ SMART FREE CHATBOT (ONLY CHANGE)
+
+def extract_month(query):
+    for m in months:
+        if m.lower() in query:
+            return m
+    return None
+
+def extract_brands(query):
+    found = []
+    for b in brand_map.keys():
+        if b.lower() in query:
+            found.append(b)
+    return found
+
 def local_chatbot(query):
+
     q = query.lower()
 
-    brand = None
-    for b in brand_map.keys():
-        if b.lower() in q:
-            brand = b
-            break
+    brands = extract_brands(q)
+    month = extract_month(q)
 
-    if not brand:
-        return "Please mention a brand."
+    temp_months = [month] if month else selected_months
+    temp_where = build_where(temp_months, selected_countries, segment)
 
-    code = brand_map[brand]
+    def metric_value(brand, metric_type):
+        code = brand_map[brand]
+
+        if metric_type == "awareness":
+            col = f"Aided_Awareness_{code}_slice"
+            formula = f"LOWER(TRIM({col}))='yes'"
+            q_sql = f"""
+            SELECT SUM(CASE WHEN {formula}
+            THEN Global_weight_Stacked ELSE 0 END)*100.0 /
+            SUM(Global_weight_Stacked)
+            FROM df {temp_where}
+            """
+        else:
+            col_map = {
+                "favorability": f"Brand_Favorability_{code}_slice",
+                "consideration": f"Consideration_{code}_slice",
+                "effect": f"Consideration_Effect_{code}_slice"
+            }
+            col = col_map[metric_type]
+
+            q_sql = f"""
+            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
+            THEN Global_weight_Stacked ELSE 0 END)*100.0 /
+            SUM(Global_weight_Stacked)
+            FROM df {temp_where}
+            """
+
+        return round(con.execute(q_sql).fetchone()[0] or 0, 1)
 
     if "awareness" in q:
-        val = get_metric(f"Aided_Awareness_{code}_slice", "yesno")
-        return f"{brand} awareness is {val}%"
-
+        metric = "awareness"
     elif "favorability" in q:
-        val = get_metric(f"Brand_Favorability_{code}_slice")
-        return f"{brand} favorability is {val}%"
-
+        metric = "favorability"
     elif "consideration" in q:
-        val = get_metric(f"Consideration_{code}_slice")
-        return f"{brand} consideration is {val}%"
-
+        metric = "consideration"
     elif "effect" in q:
-        val = get_metric(f"Consideration_Effect_{code}_slice")
-        return f"{brand} effect is {val}%"
-
-    elif "attribute" in q:
-        results = []
-        for i in range(1,18):
-            val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
-            results.append((attr_map[i], val))
-        top = max(results, key=lambda x: x[1])
-        return f"Top attribute for {brand}: {top[0]} ({top[1]}%)"
-
+        metric = "effect"
     else:
-        return "Ask about awareness, favorability, consideration, or attributes."
+        metric = None
+
+    if ("compare" in q or "vs" in q) and len(brands) >= 2 and metric:
+        results = [f"{b}: {metric_value(b, metric)}%" for b in brands]
+        return f"Comparison ({metric}): " + " | ".join(results)
+
+    if brands and metric:
+        val = metric_value(brands[0], metric)
+        return f"{brands[0]} {metric}" + (f" in {month}" if month else "") + f" is {val}%"
+
+    if ("top" in q or "highest" in q) and metric:
+        results = [(b, metric_value(b, metric)) for b in brand_map.keys()]
+        top = max(results, key=lambda x: x[1])
+        return f"Top brand for {metric}: {top[0]} ({top[1]}%)"
+
+    if "trend" in q and brands:
+        return f"Please check the graph tab for trend of {brands[0]}"
+
+    if "attribute" in q and brands:
+        code = brand_map[brands[0]]
+        results = [(attr_map[i], get_metric(f\"Attributes_New_DP_{code}_Q12a_{i}_slice\")) for i in range(1,18)]
+        top = max(results, key=lambda x: x[1])
+        return f"Top attribute for {brands[0]}: {top[0]} ({top[1]}%)"
+
+    return "Try: LinkedIn awareness, Compare LinkedIn vs Facebook, Top brand, or attributes."
 
 # -----------------------------
-# ✅ ✅ ONLY CHANGE: ADDED TAB3
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
 
 # -----------------------------
@@ -198,11 +244,7 @@ with tab1:
 
     st.subheader("Brand Attributes")
 
-    attr_data = []
-    for i in range(1,18):
-        val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
-        attr_data.append({"Attribute": attr_map[i], "Value (%)": val})
-
+    attr_data = [{"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")} for i in range(1,18)]
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
 # -----------------------------
@@ -259,7 +301,6 @@ with tab2:
     st.altair_chart(chart, use_container_width=True)
 
 # -----------------------------
-# ✅ ✅ CHATBOT TAB (NEW)
 with tab3:
 
     st.subheader("🤖 Ask KPI Questions")
