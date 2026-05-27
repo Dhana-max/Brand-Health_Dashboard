@@ -127,12 +127,10 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ ✅ FREE CHATBOT FUNCTION
-
+# ✅ FREE CHATBOT
 def local_chatbot(query):
     q = query.lower()
 
-    # detect brand
     brand = None
     for b in brand_map.keys():
         if b.lower() in q:
@@ -140,11 +138,10 @@ def local_chatbot(query):
             break
 
     if not brand:
-        return "Please mention a brand (e.g. LinkedIn, Facebook)."
+        return "Please mention a brand."
 
     code = brand_map[brand]
 
-    # detect metric
     if "awareness" in q:
         val = get_metric(f"Aided_Awareness_{code}_slice", "yesno")
         return f"{brand} awareness is {val}%"
@@ -159,26 +156,25 @@ def local_chatbot(query):
 
     elif "effect" in q:
         val = get_metric(f"Consideration_Effect_{code}_slice")
-        return f"{brand} effect score is {val}%"
+        return f"{brand} effect is {val}%"
 
     elif "attribute" in q:
         results = []
         for i in range(1,18):
             val = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")
             results.append((attr_map[i], val))
-
         top = max(results, key=lambda x: x[1])
         return f"Top attribute for {brand}: {top[0]} ({top[1]}%)"
 
     else:
-        return "I can help with awareness, favorability, consideration, effect, or attributes."
+        return "Ask about awareness, favorability, consideration, or attributes."
 
 # -----------------------------
-tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
+# ✅ ✅ ONLY CHANGE: ADDED TAB3
+tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
 
 # -----------------------------
 with tab1:
-
     colf1, colf2, colf3, colf4 = st.columns(4)
 
     selected_countries = colf1.multiselect("Country", countries)
@@ -262,9 +258,11 @@ with tab2:
 
     st.altair_chart(chart, use_container_width=True)
 
-    # ✅ FREE CHATBOT
-    st.markdown("---")
-    st.subheader("🤖 Ask KPI Questions (Free)")
+# -----------------------------
+# ✅ ✅ CHATBOT TAB (NEW)
+with tab3:
+
+    st.subheader("🤖 Ask KPI Questions")
 
     user_query = st.text_input("Ask about KPIs")
 
