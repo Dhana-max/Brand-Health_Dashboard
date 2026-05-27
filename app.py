@@ -93,7 +93,6 @@ def get_brands_by_country(selected_countries):
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
     filters = []
-
     if months_sel:
         filters.append("Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")")
     if countries_sel:
@@ -127,7 +126,7 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ ✅ SMART FREE CHATBOT (ONLY CHANGE)
+# ✅ ✅ SMART FREE CHATBOT
 
 def extract_month(query):
     for m in months:
@@ -136,16 +135,11 @@ def extract_month(query):
     return None
 
 def extract_brands(query):
-    found = []
-    for b in brand_map.keys():
-        if b.lower() in query:
-            found.append(b)
-    return found
+    return [b for b in brand_map.keys() if b.lower() in query]
 
 def local_chatbot(query):
 
     q = query.lower()
-
     brands = extract_brands(q)
     month = extract_month(q)
 
@@ -158,6 +152,7 @@ def local_chatbot(query):
         if metric_type == "awareness":
             col = f"Aided_Awareness_{code}_slice"
             formula = f"LOWER(TRIM({col}))='yes'"
+
             q_sql = f"""
             SELECT SUM(CASE WHEN {formula}
             THEN Global_weight_Stacked ELSE 0 END)*100.0 /
@@ -170,6 +165,7 @@ def local_chatbot(query):
                 "consideration": f"Consideration_{code}_slice",
                 "effect": f"Consideration_Effect_{code}_slice"
             }
+
             col = col_map[metric_type]
 
             q_sql = f"""
@@ -210,7 +206,7 @@ def local_chatbot(query):
 
     if "attribute" in q and brands:
         code = brand_map[brands[0]]
-        results = [(attr_map[i], get_metric(f\"Attributes_New_DP_{code}_Q12a_{i}_slice\")) for i in range(1,18)]
+        results = [(attr_map[i], get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")) for i in range(1,18)]
         top = max(results, key=lambda x: x[1])
         return f"Top attribute for {brands[0]}: {top[0]} ({top[1]}%)"
 
@@ -249,7 +245,6 @@ with tab1:
 
 # -----------------------------
 with tab2:
-
     colg1, colg2, colg3, colg4 = st.columns(4)
 
     g_country = colg1.multiselect("Country", countries, key="g_country")
@@ -286,8 +281,7 @@ with tab2:
 
     if view_type == "Trended View":
         chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x=alt.X("Month_order:O", sort=months,
-                    axis=alt.Axis(labelAngle=-45,labelOverlap=False)),
+            x=alt.X("Month_order:O", sort=months, axis=alt.Axis(labelAngle=-45,labelOverlap=False)),
             y="Value:Q",
             color="Brand"
         )
@@ -302,7 +296,6 @@ with tab2:
 
 # -----------------------------
 with tab3:
-
     st.subheader("🤖 Ask KPI Questions")
 
     user_query = st.text_input("Ask about KPIs")
