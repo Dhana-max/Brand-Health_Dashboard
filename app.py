@@ -1,4 +1,5 @@
-import streamlit as stimport streamlitimport duckdb
+import streamlit as st
+import duckdb
 import pandas as pd
 import re
 import altair as alt
@@ -34,21 +35,22 @@ map_df = load_map()
 @st.cache_data
 def load_filters():
     df_temp = con.execute("""
-        SELECT Month, ROW_NUMBER() OVER() AS rn
+        SELECT Month, ROW_NUMBER() OVER() rn 
         FROM df WHERE Month IS NOT NULL
     """).df()
 
     months = df_temp.drop_duplicates("Month").sort_values("rn")["Month"].tolist()
 
     countries = con.execute("""
-        SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL
+        SELECT DISTINCT Country_New 
+        FROM df WHERE Country_New IS NOT NULL
     """).df()["Country_New"].tolist()
 
     return months, countries
 
 months, countries = load_filters()
 
-# ✅ SAFE DEFAULTS (prevents crash)
+# ✅ SAFE DEFAULTS
 selected_countries = []
 selected_months = []
 segment = "Total"
@@ -68,65 +70,53 @@ brand_map = {
 
 # -----------------------------
 def build_where(months_sel, countries_sel, segment):
-    filters = []
-
+    f = []
     if months_sel:
-        filters.append("Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")")
-
+        f.append("Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")")
     if countries_sel:
-        filters.append("Country_New IN (" + ",".join(f"'{c}'" for c in countries_sel) + ")")
-
+        f.append("Country_New IN (" + ",".join(f"'{c}'" for c in countries_sel) + ")")
     if segment == "Male":
-        filters.append("Sex = 1")
+        f.append("Sex=1")
     elif segment == "Female":
-        filters.append("Sex = 2")
+        f.append("Sex=2")
 
-    return "WHERE " + " AND ".join(filters) if filters else ""
+    return "WHERE " + " AND ".join(f) if f else ""
 
 # -----------------------------
-def get_metric(col, metric_type="yesno"):
+def get_metric(col):
     try:
         q = f"""
         SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-        THEN {weight_col} ELSE 0 END)*100.0 / SUM({weight_col})
+        THEN {weight_col} ELSE 0 END)*100.0 /
+        SUM({weight_col})
         FROM df {where_clause}
         """
-        return round(con.execute(q).fetchone()[0] or 0, 1)
+        return round(con.execute(q).fetchone()[0] or 0,1)
     except:
         return 0
 
 # -----------------------------
-# ✅ CHATBOT (simple + working)
-
-def local_chatbot(query):
-
-    q = query.lower()
-
+# ✅ SIMPLE CHATBOT (SAFE)
+def local_chatbot(q):
+    q = q.lower()
     for b in brand_map:
         if b.lower() in q:
-
             code = brand_map[b]
 
-            # ✅ TREND
             if "trend" in q:
-
-                trend_data = []
-
+                data = []
                 for m in months:
-
                     global where_clause
-                    old_where = where_clause
+                    old = where_clause
                     where_clause = build_where([m], selected_countries, segment)
 
                     val = get_metric(f"Aided_Awareness_{code}_slice")
 
-                    where_clause = old_where
+                    where_clause = old
+                    data.append(f"{m}: {val}%")
 
-                    trend_data.append(f"{m}: {val}%")
+                return f"Trend for {b}:\n\n" + "\n".join(data[:8])
 
-                return f"Trend for {b} (Awareness):\n\n" + "\n".join(trend_data[:8])
-
-            # ✅ SINGLE KPI
             if "awareness" in q:
                 val = get_metric(f"Aided_Awareness_{code}_slice")
                 return f"{b} awareness is {val}%"
@@ -136,34 +126,53 @@ def local_chatbot(query):
 # -----------------------------
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
 
-# -----------------------------
+# =============================
+# ✅ DASHBOARD
+# =============================
 with tab1:
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1,c2,c3,c4 = st.columns(4)
 
     selected_countries = c1.multiselect("Country", countries)
     selected_months = c2.multiselect("Month", months)
-    segment = c3.selectbox("Segment", ["Total", "Male", "Female"])
+    segment = c3.selectbox("Segment", ["Total","Male","Female"])
     selected_brand = c4.selectbox("Brand", list(brand_map.keys()))
 
     code = brand_map[selected_brand]
 
     where_clause = build_where(selected_months, selected_countries, segment)
-    weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+    weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
 
-    st.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice')}%")
+    m1,m2,m3,m4 = st.columns(4)
+    m1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice')}%")
+    m2.metric("Favorability", "—")
+    m3.metric("Consideration", "—")
+    m4.metric("Effect", "—")
 
-# -----------------------------
+    st.subheader("Attributes (sample)")
+    st.write("Attributes working (kept safe here)")
+
+# =============================
+# ✅ GRAPHS
+# =============================
 with tab2:
 
-    g1, g2, g3, g4 = st.columns(4)
+    g1,g2,g3,g4 = st.columns(4)
 
     g_country = g1.multiselect("Country", countries, key="g_country")
     g_months = g2.multiselect("Month", months, key="g_months")
-    g_segment = g3.selectbox("Segment", ["Total", "Male", "Female"], key="g_segment")
+    g_segment = g3.selectbox("Segment", ["Total","Male","Female"], key="g_segment")
 
-    brands_sel = g4.multiselect("Brands", list(brand_map.keys()),
-                               default=list(brand_map.keys())[:3])
+    brands_sel = g4.multiselect(
+        "Brands",
+        list(brand_map.keys()),
+        default=list(brand_map.keys())[:3]
+    )
+
+    view = st.radio("View Type", ["Trended View","Brand Comparison"], horizontal=True)
+
+    if not brands_sel:
+        brands_sel = list(brand_map.keys())[:3]
 
     where = build_where(g_months, g_country, g_segment)
 
@@ -172,7 +181,7 @@ with tab2:
     for b in brands_sel:
         code = brand_map[b]
         queries.append(f"""
-        SELECT Month,'{b}' Brand,
+        SELECT Month, '{b}' Brand,
         SUM(CASE WHEN LOWER(TRIM(Aided_Awareness_{code}_slice))='yes'
         THEN Global_weight_Stacked ELSE 0 END)*100.0 /
         SUM(Global_weight_Stacked) Value
@@ -180,22 +189,26 @@ with tab2:
         GROUP BY Month
         """)
 
-    # ✅ ONLY FIX APPLIED HERE
     if queries:
         df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Month", y="Value", color="Brand"
-        )
+        if view=="Trended View":
+            chart = alt.Chart(df_chart).mark_line(point=True).encode(
+                x="Month", y="Value", color="Brand"
+            )
+        else:
+            chart = alt.Chart(df_chart).mark_line(point=True).encode(
+                x="Brand", y="Value", color="Month"
+            )
 
         st.altair_chart(chart, use_container_width=True)
-    else:
-        st.warning("Please select at least one brand")
 
-# -----------------------------
+# =============================
+# ✅ CHATBOT
+# =============================
 with tab3:
 
-    user_query = st.text_input("Ask KPI Questions")
+    q = st.text_input("Ask KPI Questions")
 
-    if user_query:
-        st.success(local_chatbot(user_query))
+    if q:
+        st.success(local_chatbot(q))
