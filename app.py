@@ -1,4 +1,13 @@
-import streamlit as stimport streamBrand-Health_Dashboard/releases/download/v1/data.parquet"
+import streamlit as st
+import duckdb
+import pandas as pd
+import re
+import altair as alt
+
+st.set_page_config(layout="wide")
+st.title("Brand Health Dashboard")
+
+PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
 MAP_FILE = "Map.xlsx"
 
 # -----------------------------
@@ -87,7 +96,7 @@ def get_metric(col):
         return 0
 
 # -----------------------------
-# ✅ SIMPLE CHATBOT (SAFE)
+# ✅ SIMPLE CHATBOT
 def local_chatbot(q):
     q = q.lower()
     for b in brand_map:
@@ -172,36 +181,27 @@ with tab2:
     for b in brands_sel:
         code = brand_map[b]
         queries.append(f"""
-        SELECT Month, '{b}' Brand,
+        SELECT Month AS Month, '{b}' AS Brand,
         SUM(CASE WHEN LOWER(TRIM(Aided_Awareness_{code}_slice))='yes'
         THEN Global_weight_Stacked ELSE 0 END)*100.0 /
-        SUM(Global_weight_Stacked) Value
+        SUM(Global_weight_Stacked) AS Value
         FROM df {where}
         GROUP BY Month
         """)
 
-    # ✅ ONLY FIX (safe execution)
     if queries:
-        try:
-            df_chart = con.execute(" UNION ALL ".join(queries)).df()
+        df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-            if df_chart.empty:
-                st.warning("No data available")
-            else:
-                if view=="Trended View":
-                    chart = alt.Chart(df_chart).mark_line(point=True).encode(
-                        x="Month", y="Value", color="Brand"
-                    )
-                else:
-                    chart = alt.Chart(df_chart).mark_line(point=True).encode(
-                        x="Brand", y="Value", color="Month"
-                    )
+        if view=="Trended View":
+            chart = alt.Chart(df_chart).mark_line(point=True).encode(
+                x="Month", y="Value", color="Brand"
+            )
+        else:
+            chart = alt.Chart(df_chart).mark_line(point=True).encode(
+                x="Brand", y="Value", color="Month"
+            )
 
-                st.altair_chart(chart, use_container_width=True)
-
-        except Exception as e:
-            st.error("Graph error")
-            st.write(e)
+        st.altair_chart(chart, use_container_width=True)
 
 # =============================
 # ✅ CHATBOT
@@ -212,11 +212,3 @@ with tab3:
 
     if q:
         st.success(local_chatbot(q))
-``
-import duckdb
-import pandas as pd
-import re
-import altair as alt
-
-st.set_page_config(layout="wide")
-st.title("Brand Health Dashboard")
