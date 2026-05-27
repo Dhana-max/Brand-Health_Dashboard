@@ -139,24 +139,41 @@ def run_with_filters(month_sel, country_sel, seg, func):
     return result
 
 # -----------------------------
-# ✅ CHATBOT (FINAL FIXED TREND)
+# ✅ CHATBOT
 
 def local_chatbot(query):
 
     q = query.lower()
+
     brands = [b for b in brand_map if b.lower() in q]
 
     if not brands:
         return "Please mention a valid brand."
 
-    brand = brands[0]
-
-    # ✅ detect month first
+    # ✅ detect month (flexible)
     selected_month = None
     for m in months:
-        if m.lower() in q:
+        m_clean = m.lower()
+        m_compact = m_clean.replace(" ", "")
+
+        if m_clean in q or m_compact in q:
             selected_month = m
             break
+
+    # ✅ COMPARISON
+    if ("compare" in q or "vs" in q) and len(brands) >= 2:
+
+        b1, b2 = brands[0], brands[1]
+
+        v1 = get_metric(f"Aided_Awareness_{brand_map[b1]}_slice","yesno")
+        v2 = get_metric(f"Aided_Awareness_{brand_map[b2]}_slice","yesno")
+
+        diff = round(v1 - v2, 1)
+        leader = b1 if diff >= 0 else b2
+
+        return f"{b1}: {v1}% | {b2}: {v2}%\n✅ {leader} leads by {abs(diff)}%"
+
+    brand = brands[0]
 
     # ✅ TREND WITH MONTH → MoM + YoY
     if "trend" in q and selected_month:
@@ -191,7 +208,7 @@ def local_chatbot(query):
 
         return output
 
-    # ✅ TREND WITHOUT MONTH → full trend
+    # ✅ TREND WITHOUT MONTH
     if "trend" in q:
 
         trend_data = []
@@ -204,7 +221,7 @@ def local_chatbot(query):
 
         return f"Trend for {brand} (Awareness):\n\n" + "\n".join(trend_data[:8])
 
-    # ✅ SIMPLE KPI
+    # ✅ SINGLE KPI
     if "awareness" in q:
         val = get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
         return f"{brand} awareness is {val}%"
@@ -213,92 +230,4 @@ def local_chatbot(query):
         val = get_metric(f"Brand_Favorability_{brand_map[brand]}_slice")
         return f"{brand} favorability is {val}%"
 
-    return "Try asking: LinkedIn awareness or trend of LinkedIn"
-
-# -----------------------------
-tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
-
-# -----------------------------
-with tab1:
-
-    colf1, colf2, colf3, colf4 = st.columns(4)
-
-    selected_countries = colf1.multiselect("Country", countries)
-    selected_months = colf2.multiselect("Month", months)
-    segment = colf3.selectbox("Segment", ["Total","Male","Female"])
-    selected_brand = colf4.selectbox("Brand", list(brand_map.keys()))
-
-    code = brand_map[selected_brand]
-
-    where_clause = build_where(selected_months, selected_countries, segment)
-    weight_col = "Weight_Post" if len(selected_countries)==1 else "Global_weight_Stacked"
-
-    col1,col2,col3,col4 = st.columns(4)
-
-    col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice','yesno')}%")
-    col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice')}%")
-    col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice')}%")
-    col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice')}%")
-
-    st.subheader("Brand Attributes")
-
-    attr_data = [{"Attribute": attr_map[i],
-                  "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice")}
-                 for i in range(1,18)]
-
-    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
-
-# -----------------------------
-with tab2:
-
-    colg1, colg2, colg3, colg4 = st.columns(4)
-
-    g_country = colg1.multiselect("Country", countries, key="g_country")
-    g_months = colg2.multiselect("Month", months, key="g_months")
-    g_segment = colg3.selectbox("Segment", ["Total","Male","Female"], key="g_segment")
-
-    selected_brands = colg4.multiselect("Brands", list(brand_map.keys()),
-                                       default=list(brand_map.keys())[:3])
-
-    view_type = st.radio("View Type", ["Trended View","Brand Comparison"], horizontal=True)
-
-    graph_where = build_where(g_months, g_country, g_segment)
-
-    queries = []
-
-    for brand in selected_brands:
-        code = brand_map[brand]
-
-        queries.append(f"""
-        SELECT Month,'{brand}' AS Brand,
-        SUM(CASE WHEN LOWER(TRIM(Aided_Awareness_{code}_slice))='yes'
-        THEN Global_weight_Stacked ELSE 0 END)*100.0 /
-        SUM(Global_weight_Stacked) AS Value
-        FROM df {graph_where}
-        GROUP BY Month
-        """)
-
-    df_chart = con.execute(" UNION ALL ".join(queries)).df()
-
-    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
-
-    if view_type == "Trended View":
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Month_order",
-            y="Value",
-            color="Brand"
-        )
-    else:
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Brand",
-            y="Value",
-            color="Month"
-        )
-
-    st.altair_chart(chart, use_container_width=True)
-
-# -----------------------------
-with tab3:
-    user_query = st.text_input("Ask KPI Questions")
-    if user_query:
-        st.success(local_chatbot(user_query))
+    return "Try: LinkedIn awareness, trend linkedin, compare linkedin vs indeed awareness"
