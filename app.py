@@ -120,31 +120,146 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ SIMPLE CHATBOT (SAFE)
+# ✅ SAFE FILTER WRAPPER
+
+def run_with_filters(month_sel, country_sel, seg, func):
+    global where_clause, weight_col
+
+    old_where = where_clause
+    old_weight = weight_col
+
+    temp_where = build_where(month_sel, country_sel, seg)
+    temp_weight = "Weight_Post" if country_sel and len(country_sel)==1 else "Global_weight_Stacked"
+
+    where_clause = temp_where
+    weight_col = temp_weight
+
+    result = func()
+
+    where_clause = old_where
+    weight_col = old_weight
+
+    return result
+
+# -----------------------------
+# ✅ ADVANCED CHATBOT (SAFE)
 
 def local_chatbot(query):
+
     q = query.lower()
 
-    for b in brand_map:
-        if b.lower() in q:
-            code = brand_map[b]
+    brands = [b for b in brand_map if b.lower() in q]
 
-            if "awareness" in q:
-                val = get_metric(f"Aided_Awareness_{code}_slice","yesno")
-                return f"{b} awareness is {val}%"
+    metric = None
+    if "awareness" in q:
+        metric = "awareness"
+    elif "favor" in q:
+        metric = "favorability"
+    elif "consideration" in q:
+        metric = "consideration"
+    elif "effect" in q:
+        metric = "effect"
 
-            if "favor" in q:
-                val = get_metric(f"Brand_Favorability_{code}_slice")
-                return f"{b} favorability is {val}%"
+    attr = None
+    for i, txt in attr_map.items():
+        if any(w in q for w in txt.lower().split()):
+            attr = i
 
-    return "Try asking: LinkedIn awareness"
+    # detect month
+    month = None
+    for m in months:
+        if m.lower() in q:
+            month = m
+
+    prev_month = None
+    yoy_month = None
+
+    if month and month in months:
+        idx = months.index(month)
+
+        if idx > 0:
+            prev_month = months[idx-1]
+
+        parts = month.split()
+        if len(parts)==2:
+            try:
+                yoy = f"{parts[0]} {int(parts[1])-1}"
+                if yoy in months:
+                    yoy_month = yoy
+            except:
+                pass
+
+    if not brands:
+        return "Please mention a valid brand."
+
+    # ✅ comparison
+    if ("compare" in q or "vs" in q) and len(brands) >= 2:
+
+        results = []
+
+        for b in brands[:2]:
+
+            def calc():
+                if metric == "awareness":
+                    return get_metric(f"Aided_Awareness_{brand_map[b]}_slice","yesno")
+                elif metric:
+                    col_map = {
+                        "favorability":"Brand_Favorability",
+                        "consideration":"Consideration",
+                        "effect":"Consideration_Effect"
+                    }
+                    return get_metric(f"{col_map[metric]}_{brand_map[b]}_slice")
+                elif attr:
+                    return get_metric(f"Attributes_New_DP_{brand_map[b]}_Q12a_{attr}_slice")
+
+            val = run_with_filters(selected_months, selected_countries, segment, calc)
+            results.append((b, val))
+
+        diff = round(results[0][1] - results[1][1], 1)
+        leader = results[0][0] if diff >= 0 else results[1][0]
+
+        return (
+            f"{results[0][0]}: {results[0][1]}% | {results[1][0]}: {results[1][1]}%\n"
+            f"✅ {leader} leads by {abs(diff)}%"
+        )
+
+    # ✅ single brand insights
+    brand = brands[0]
+
+    def get_val(m):
+        return run_with_filters(m, selected_countries, segment, lambda:
+            get_metric(f"Aided_Awareness_{brand_map[brand]}_slice","yesno")
+            if metric=="awareness"
+            else get_metric(f"Attributes_New_DP_{brand_map[brand]}_Q12a_{attr}_slice")
+        )
+
+    if metric or attr:
+
+        current_val = get_val(selected_months)
+
+        insight = ""
+
+        if prev_month:
+            v = get_val([prev_month])
+            d = round(current_val - v, 1)
+            insight += f"\n• vs {prev_month}: {d}% {'📈' if d>0 else '📉'}"
+
+        if yoy_month:
+            v = get_val([yoy_month])
+            d = round(current_val - v, 1)
+            insight += f"\n• vs {yoy_month}: {d}% {'📈' if d>0 else '📉'}"
+
+        title = metric if metric else attr_map[attr]
+
+        return f"{brand} {title} is {current_val}%\n\n📊 Insights:{insight}"
+
+    return "Ask KPI, attribute or comparison queries."
 
 # -----------------------------
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard","📈 Graphs","🤖 Chatbot"])
 
-# ✅ Dashboard
+# -----------------------------
 with tab1:
-
     colf1, colf2, colf3, colf4 = st.columns(4)
 
     selected_countries = colf1.multiselect("Country", countries)
@@ -172,7 +287,7 @@ with tab1:
 
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
-# ✅ Graphs
+# -----------------------------
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
@@ -221,7 +336,7 @@ with tab2:
 
     st.altair_chart(chart, use_container_width=True)
 
-# ✅ Chatbot
+# -----------------------------
 with tab3:
     user_query = st.text_input("Ask KPI Questions")
     if user_query:
