@@ -5,8 +5,8 @@ import re
 import altair as alt
 from openai import OpenAI
 
-# ✅ OpenAI client (ONLY CHANGE)
-client = OpenAI(api_key="YOUR_API_KEY")
+# ✅ API KEY (same as before)
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 st.set_page_config(layout="wide")
 
@@ -131,13 +131,34 @@ def get_metric(col, metric_type="top2"):
         return 0
 
 # -----------------------------
-# ✅ ONLY UPDATED FUNCTION (NEW API)
+# ✅ ✅ ONLY CHANGE → IMPROVED PROMPT
 
 def generate_sql(question, where_clause):
     prompt = f"""
-    You are a data analyst using DuckDB table df.
-    Apply this filter: {where_clause}
-    Return only SQL.
+    You are a data analyst working with a DuckDB table called df.
+
+    Rules:
+    - Always apply this filter: {where_clause}
+    - Use correct column naming patterns like:
+        Aided_Awareness_*_slice
+        Brand_Favorability_*_slice
+        Consideration_*_slice
+        Consideration_Effect_*_slice
+
+    - KPI Definitions:
+        Awareness → value = 'yes'
+        Favorability → ratings 4 and 5
+        Consideration → ratings 4 and 5
+        Effect → ratings 4 and 5
+
+    - Use weighted calculation:
+        SUM(CASE WHEN condition THEN Global_weight_Stacked ELSE 0 END) * 100.0 /
+        SUM(Global_weight_Stacked)
+
+    - Always GROUP BY Month if trend requested
+    - Return ONLY SQL (no explanation)
+
+    Question:
     {question}
     """
 
@@ -158,9 +179,7 @@ def run_sql(q):
 tab1, tab2 = st.tabs(["📊 Dashboard","📈 Graphs"])
 
 # -----------------------------
-# ✅ DASHBOARD
 with tab1:
-
     colf1, colf2, colf3, colf4 = st.columns(4)
 
     selected_countries = colf1.multiselect("Country", countries)
@@ -192,7 +211,6 @@ with tab1:
     st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
 # -----------------------------
-# ✅ GRAPH
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
@@ -211,10 +229,8 @@ with tab2:
     graph_where = build_where(g_months, g_country, g_segment)
 
     queries = []
-
     for brand in selected_brands:
         code = brand_map_local[brand]
-
         col = f"Aided_Awareness_{code}_slice"
         formula = f"LOWER(TRIM({col}))='yes'"
 
