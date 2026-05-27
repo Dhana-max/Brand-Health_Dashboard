@@ -1,13 +1,4 @@
-import streamlit as st
-import duckdb
-import pandas as pd
-import re
-import altair as alt
-
-st.set_page_config(layout="wide")
-st.title("Brand Health Dashboard")
-
-PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
+import streamlit as stimport streamBrand-Health_Dashboard/releases/download/v1/data.parquet"
 MAP_FILE = "Map.xlsx"
 
 # -----------------------------
@@ -189,19 +180,28 @@ with tab2:
         GROUP BY Month
         """)
 
+    # ✅ ONLY FIX (safe execution)
     if queries:
-        df_chart = con.execute(" UNION ALL ".join(queries)).df()
+        try:
+            df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-        if view=="Trended View":
-            chart = alt.Chart(df_chart).mark_line(point=True).encode(
-                x="Month", y="Value", color="Brand"
-            )
-        else:
-            chart = alt.Chart(df_chart).mark_line(point=True).encode(
-                x="Brand", y="Value", color="Month"
-            )
+            if df_chart.empty:
+                st.warning("No data available")
+            else:
+                if view=="Trended View":
+                    chart = alt.Chart(df_chart).mark_line(point=True).encode(
+                        x="Month", y="Value", color="Brand"
+                    )
+                else:
+                    chart = alt.Chart(df_chart).mark_line(point=True).encode(
+                        x="Brand", y="Value", color="Month"
+                    )
 
-        st.altair_chart(chart, use_container_width=True)
+                st.altair_chart(chart, use_container_width=True)
+
+        except Exception as e:
+            st.error("Graph error")
+            st.write(e)
 
 # =============================
 # ✅ CHATBOT
@@ -212,3 +212,11 @@ with tab3:
 
     if q:
         st.success(local_chatbot(q))
+``
+import duckdb
+import pandas as pd
+import re
+import altair as alt
+
+st.set_page_config(layout="wide")
+st.title("Brand Health Dashboard")
