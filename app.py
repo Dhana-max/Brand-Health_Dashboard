@@ -7,7 +7,6 @@ import duckdb
 import pandas as pd
 import re
 import plotly.express as px
-import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 
 # =========================================================
@@ -21,14 +20,14 @@ st.set_page_config(
 )
 
 # =========================================================
-# PREMIUM MODERN UI
+# PREMIUM UI
 # =========================================================
 
 st.markdown("""
 <style>
 
 /* =====================================================
-MAIN APP
+MAIN
 ===================================================== */
 
 .stApp {
@@ -52,7 +51,7 @@ section[data-testid="stSidebar"] {
 }
 
 /* =====================================================
-TEXT COLORS
+TEXT
 ===================================================== */
 
 html, body, p, div, span, label {
@@ -86,91 +85,84 @@ FILTERS
     display: none !important;
 }
 
-.stMultiSelect input {
-    color: #111827 !important;
-}
-
-input, textarea {
-    color: #111827 !important;
-}
-
 /* =====================================================
-KPI CARDS
+NEW KPI CARDS
 ===================================================== */
 
 .metric-card {
     background: white;
-    border-radius: 24px;
-    padding: 30px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    border-radius: 22px;
+    padding: 24px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    min-height: 220px;
     transition: 0.3s ease;
-    min-height: 240px;
 }
 
 .metric-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
 }
 
-.metric-top {
+.metric-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    margin-bottom: 18px;
+}
+
+.metric-left {
+    display: flex;
+    flex-direction: column;
 }
 
 .metric-title {
-    color: #64748b !important;
     font-size: 14px;
     font-weight: 700;
+    color: #64748b !important;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-.metric-sub {
+.metric-subtitle {
+    font-size: 13px;
     color: #94a3b8 !important;
-    font-size: 14px;
-    margin-top: 6px;
+    margin-top: 4px;
 }
 
-.metric-circle {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: #ecfdf5;
+.metric-badge {
+    background: linear-gradient(135deg,#2563eb,#7c3aed);
+    color: white !important;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #059669 !important;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 800;
-    box-shadow: 0 0 20px rgba(16,185,129,0.18);
 }
 
-.metric-big {
-    margin-top: 35px;
+.metric-value {
     font-size: 52px;
     font-weight: 800;
-    color: #111827 !important;
+    color: #0f172a !important;
     line-height: 1;
+    margin-top: 10px;
 }
 
 .metric-progress {
     width: 100%;
-    height: 12px;
+    height: 10px;
     background: #e2e8f0;
     border-radius: 999px;
     overflow: hidden;
-    margin-top: 28px;
+    margin-top: 20px;
 }
 
 .metric-fill {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(
-        90deg,
-        #8b5cf6,
-        #3b82f6
-    );
+    background: linear-gradient(90deg,#8b5cf6,#3b82f6);
 }
 
 /* =====================================================
@@ -223,28 +215,6 @@ OPTION MENU
 .nav-link-selected {
     background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
     color: white !important;
-}
-
-/* =====================================================
-RADIO
-===================================================== */
-
-.stRadio label {
-    color: #111827 !important;
-    font-weight: 600 !important;
-}
-
-/* =====================================================
-SCROLLBAR
-===================================================== */
-
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 20px;
 }
 
 </style>
@@ -504,16 +474,10 @@ if selected_page == "Dashboard":
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        selected_countries = st.multiselect(
-            "🌍 Country",
-            countries
-        )
+        selected_countries = st.multiselect("🌍 Country", countries)
 
     with f2:
-        selected_months = st.multiselect(
-            "📅 Month",
-            months
-        )
+        selected_months = st.multiselect("📅 Month", months)
 
     with f3:
         segment = st.selectbox(
@@ -523,9 +487,7 @@ if selected_page == "Dashboard":
 
     with f4:
 
-        filtered_brand_map = get_brands_by_country(
-            selected_countries
-        )
+        filtered_brand_map = get_brands_by_country(selected_countries)
 
         selected_brand = st.selectbox(
             "🏢 Brand",
@@ -592,35 +554,33 @@ if selected_page == "Dashboard":
             st.markdown(f"""
             <div class="metric-card">
 
-                <div class="metric-top">
+                <div class="metric-header">
 
-                    <div>
+                    <div class="metric-left">
 
                         <div class="metric-title">
                             {title}
                         </div>
 
-                        <div class="metric-sub">
+                        <div class="metric-subtitle">
                             KPI Score
                         </div>
 
                     </div>
 
-                    <div class="metric-circle">
+                    <div class="metric-badge">
                         {value}
                     </div>
 
                 </div>
 
-                <div class="metric-big">
+                <div class="metric-value">
                     {value}%
                 </div>
 
                 <div class="metric-progress">
-
                     <div class="metric-fill"
                     style="width:{value}%"></div>
-
                 </div>
 
             </div>
@@ -629,7 +589,7 @@ if selected_page == "Dashboard":
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # =====================================================
-    # ATTRIBUTES SECTION
+    # ATTRIBUTES
     # =====================================================
 
     st.markdown("""
@@ -639,10 +599,8 @@ if selected_page == "Dashboard":
     st.subheader("📊 Brand Attributes")
 
     attr_data = [
-
         {
             "Attribute": attr_map[i],
-
             "Value": get_metric(
                 f"Attributes_New_DP_{code}_Q12a_{i}_slice",
                 "top2",
@@ -650,7 +608,6 @@ if selected_page == "Dashboard":
                 weight_col
             )
         }
-
         for i in range(1, 18)
     ]
 
