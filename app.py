@@ -116,41 +116,6 @@ st.markdown("""
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button {
         color: #94a3b8 !important;
     }
-
-    /* High-Contrast Cyberpunk Matrix Tables */
-    .dark-matrix-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        color: #e2e8f0;
-        font-family: inherit;
-        background-color: rgba(16, 13, 28, 0.6);
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .dark-matrix-table th {
-        background-color: #161326;
-        color: #00f2fe;
-        text-align: left;
-        padding: 14px 18px;
-        font-weight: 600;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    .dark-matrix-table td {
-        padding: 14px 18px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        font-size: 0.95rem;
-    }
-    .dark-matrix-table tr:last-child td {
-        border-bottom: none;
-    }
-    .dark-matrix-table tr:hover {
-        background-color: rgba(255, 255, 255, 0.03);
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -348,21 +313,30 @@ with tab1:
         st.altair_chart(create_sparkline_chart(df_sp4, '#ff9f43'), use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("Brand Attribute Matrix Performance")
+    
+    # ⚡ NEW ATTRACTIVE FEATURE: Brand Attribute Performance Chart
+    st.subheader("🔥 Brand Attribute Strength Leaderboard")
 
-    attr_data = [
-        {"Attribute": attr_map[i], "Value (%)": f"{get_metric(f'Attributes_New_DP_{code}_Q12a_{i}_slice', 'top2', where_clause, weight_col)}%"}
-        for i in range(1, 18)
-    ]
+    attr_data = []
+    for i in range(1, 18):
+        score = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice", "top2", where_clause, weight_col)
+        attr_data.append({"Attribute Statement": attr_map[i], "Score (%)": score})
     
-    df_matrix = pd.DataFrame(attr_data)
+    df_matrix = pd.DataFrame(attr_data).sort_values(by="Score (%)", ascending=False)
     
-    html_table = "<table class='dark-matrix-table'><thead><tr><th>Attribute Statement</th><th>Performance Level</th></tr></thead><tbody>"
-    for _, row in df_matrix.iterrows():
-        html_table += f"<tr><td>{row['Attribute']}</td><td><strong style='color: #00f2fe;'>{row['Value (%)']}</strong></td></tr>"
-    html_table += "</tbody></table>"
+    # Render interactive horizontal bar tracking leaderboard
+    attr_chart = alt.Chart(df_matrix).mark_bar(
+        cornerRadiusTopRight=6,
+        cornerRadiusBottomRight=6
+    ).encode(
+        x=alt.X("Score (%) :Q", title="Top-2 Box Agreement Score (%)", axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
+        y=alt.Y("Attribute Statement:N", sort="-x", title=None, axis=alt.Axis(labelColor="#ffffff", labelFontSize=11, tickSize=0)),
+        color=alt.Color("Score (%):Q", scale=alt.Scale(scheme="cyanpurple"), legend=None),
+        tooltip=["Attribute Statement", "Score (%)"]
+    ).properties(height=500)
     
-    st.markdown(html_table, unsafe_allow_html=True)
+    attr_chart = attr_chart.configure(background='transparent').configure_view(strokeOpacity=0)
+    st.altair_chart(attr_chart, use_container_width=True)
 
 # -----------------------------
 with tab2:
@@ -383,14 +357,11 @@ with tab2:
         g_brand_sel = st.selectbox("Target Brand", list(brand_map_local.keys()), key="g_brand_single", label_visibility="collapsed")
 
     st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Attractive Features Addition: Multi-metric Cross Analysis Line Visualization
     st.subheader("📊 Brand Health Funnel Trends & Cross-Attribute Analytics")
     
     graph_where = build_where(g_months, g_country, g_segment)
     g_code = brand_map_local[g_brand_sel]
     
-    # Multi-Query Compilation to draw full structural trend lines inside a single view
     metrics_to_plot = [
         {"label": "Total Awareness", "col": f"Aided_Awareness_{g_code}_slice", "type": "yesno"},
         {"label": "Brand Favorability", "col": f"Brand_Favorability_{g_code}_slice", "type": "top2"},
@@ -420,8 +391,6 @@ with tab2:
     
     if not df_trends.empty:
         df_trends["Month_order"] = pd.Categorical(df_trends["Month"], categories=months, ordered=True)
-        
-        # Cyberpunk Neon Visual Palette Configuration
         neon_colors = ["#00f2fe", "#38ef7d", "#ff007f", "#ff9f43"]
         
         multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3.5).encode(
@@ -440,6 +409,5 @@ with tab2:
 with tab3:
     st.subheader("🤖 AI Analytics Chatbot (Insights Only)")
     user_query = st.text_input("Interrogate your analytical KPIs:")
-
     if user_query:
         st.markdown("✅ Insight response compiled (no chart visualization needed)")
