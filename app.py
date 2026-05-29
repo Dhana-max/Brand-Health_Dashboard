@@ -4,78 +4,40 @@ import pandas as pd
 import re
 import altair as alt
 
-# 1. Initialize native wide parameters & clean sidebar layout
-st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+# 1. Initialize native wide parameters
+st.set_page_config(layout="wide")
 
-# 2. Premium Enterprise Minimalist White CSS Injector
+# 2. Premium Clean White Executive Theme Custom CSS Injector
 st.markdown(
     """
     <style>
-    /* Force background structure to pristine white */
-    .stApp, [data-testid="stMainSpaceContainer"], [data-testid="stVerticalBlock"] {
+    /* Change the main app background to a crisp premium white */
+    .stApp {
         background-color: #ffffff !important;
     }
     
-    /* Global layout padding adjustment */
-    .block-container {
-        padding-top: 2.5rem !important;
-        padding-bottom: 2rem !important;
-    }
-    
-    /* Clean, floating premium metric card boxes (No harsh dark grays) */
-    [data-testid="stMetricContainer"], div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #ffffff !important;
-        border: 1px solid #f1f5f9 !important;
-        box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 2px 4px -2px rgba(15, 23, 42, 0.03) !important;
-        border-radius: 12px !important;
-        padding: 20px 24px !important;
-    }
-    
-    /* Metric Typography Polish */
+    /* Make custom KPI text display uniform inside containers */
     .client-kpi-label {
-        font-size: 12px;
-        font-weight: 700;
-        color: #64748b;
+        font-size: 14px;
+        font-weight: 600;
+        color: #6c757d;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 6px;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
     }
     .client-kpi-value {
-        font-size: 38px;
-        font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 4px;
-        letter-spacing: -0.03em;
+        font-size: 34px;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 8px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    
-    /* Style Tabs to match luxury look */
-    button[data-baseweb="tab"] {
-        font-size: 15px !important;
-        font-weight: 500 !important;
-        color: #64748b !important;
-    }
-    button[data-baseweb="tab"][aria-selected="true"] {
-        font-weight: 700 !important;
-        color: #4f46e5 !important;
-    }
-    
-    /* Main Dashboard Header weight styling */
-    h1 {
-        font-weight: 800 !important;
-        color: #0f172a !important;
-        letter-spacing: -0.02em !important;
-    }
-    h2, h3 {
-        color: #1e293b !important;
-        font-weight: 700 !important;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# Header Title Area
+# Clean, corporate title matching your specification
 st.title("Consumer Brand Tracker Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
@@ -242,76 +204,78 @@ def get_sparkline_data(col, metric_type, where_clause, weight_col):
         return dummy_df
 
 def create_sparkline_chart(df, color_line):
-    chart = alt.Chart(df).mark_line(interpolate='monotone', strokeWidth=3.5, color=color_line).encode(
+    chart = alt.Chart(df).mark_line(interpolate='monotone', strokeWidth=3, color=color_line).encode(
         x=alt.X('Month:O', title=None, axis=None),
         y=alt.Y('val:Q', title=None, axis=None, scale=alt.Scale(zero=False))
-    ).properties(height=55)
+    ).properties(height=50)
     return chart.configure(background='transparent').configure_view(strokeOpacity=0)
-
-# -----------------------------
-# 🎛️ CENTRALIZED SIDEBAR SYSTEM (Eliminates main canvas clutter entirely)
-# -----------------------------
-with st.sidebar:
-    st.markdown("### 🎛️ Analysis Controls")
-    st.write("Modify global audience parameters:")
-    
-    selected_countries = st.multiselect("🌍 Country", countries, key="sidebar_country")
-    selected_months = st.multiselect("📅 Month", months, key="sidebar_month")
-    segment = st.selectbox("👤 Segment", ["Total", "Male", "Female"], key="sidebar_segment")
-    
-    brand_options = list(brand_map.keys())
-    selected_brand = st.selectbox("🏢 Brand Profile", brand_options, key="sidebar_brand")
-
-# Shared state execution
-code = brand_map.get(selected_brand, 1)
-where_clause = build_where(selected_months, selected_countries, segment)
-weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
 # -----------------------------
 # Dynamic Navigation Tab Structure
 # -----------------------------
-tab1, tab2, tab3 = st.tabs(["📊 Executive Overview", "📈 Strategic Trends", "🤖 Brand AI Chat"])
+tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 
 # -----------------------------
 # TAB 1: EXECUTIVE DASHBOARD
 # -----------------------------
 with tab1:
-    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+    # Segment Control Filters Row
+    with st.container():
+        f1, f2, f3, f4 = st.columns(4)
+        with f1:
+            selected_countries = st.multiselect("🌍 Country", countries, key="main_country_input")
+        with f2:
+            selected_months = st.multiselect("📅 Month", months, key="main_month_input")
+        with f3:
+            segment = st.selectbox("👤 Segment", ["Total", "Male", "Female"], key="main_segment_input")
+        with f4:
+            brand_options = list(brand_map.keys())
+            selected_brand = st.selectbox("🏢 Brand", brand_options, key="main_brand_input")
+
+    code = brand_map.get(selected_brand, 1)
+    where_clause = build_where(selected_months, selected_countries, segment)
+    weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+
+    st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
     
-    # 4-Column Clean Layout Grid with Custom Floating CSS Framework classes
+    # Grid Layout with solid white background modular containers
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         val1 = f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%"
         df_sp1 = get_sparkline_data(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)
+        
         with st.container(border=True):
             st.markdown(f"<div class='client-kpi-label'>Total Awareness</div><div class='client-kpi-value'>{val1}</div>", unsafe_allow_html=True)
-            st.altair_chart(create_sparkline_chart(df_sp1, '#0284c7'), use_container_width=True)
+            st.altair_chart(create_sparkline_chart(df_sp1, '#2bcbba'), use_container_width=True)
 
     with col2:
         val2 = f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%"
         df_sp2 = get_sparkline_data(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)
+        
         with st.container(border=True):
             st.markdown(f"<div class='client-kpi-label'>Brand Favorability</div><div class='client-kpi-value'>{val2}</div>", unsafe_allow_html=True)
-            st.altair_chart(create_sparkline_chart(df_sp2, '#10b981'), use_container_width=True)
+            st.altair_chart(create_sparkline_chart(df_sp2, '#20bf6b'), use_container_width=True)
 
     with col3:
         val3 = f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%"
         df_sp3 = get_sparkline_data(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)
+        
         with st.container(border=True):
             st.markdown(f"<div class='client-kpi-label'>Consideration Rate</div><div class='client-kpi-value'>{val3}</div>", unsafe_allow_html=True)
-            st.altair_chart(create_sparkline_chart(df_sp3, '#6366f1'), use_container_width=True)
+            st.altair_chart(create_sparkline_chart(df_sp3, '#a55eea'), use_container_width=True)
 
     with col4:
         val4 = f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%"
         df_sp4 = get_sparkline_data(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)
+        
         with st.container(border=True):
             st.markdown(f"<div class='client-kpi-label'>Conversion Effect</div><div class='client-kpi-value'>{val4}</div>", unsafe_allow_html=True)
-            st.altair_chart(create_sparkline_chart(df_sp4, '#f43f5e'), use_container_width=True)
+            st.altair_chart(create_sparkline_chart(df_sp4, '#ff7675'), use_container_width=True)
 
-    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 25px; margin-bottom: 20px;'></div>", unsafe_allow_html=True)
     
-    # Strategic Pillars Segment Panel
+    # Strategic Pillars Component Wrapper
     with st.container(border=True):
         st.subheader("🎯 Strategic Pillars Core Breakdown")
         selected_pillar = st.radio(
@@ -330,50 +294,63 @@ with tab1:
         df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
         
         attr_chart = alt.Chart(df_matrix).mark_bar(
-            cornerRadiusTopRight=6,
-            cornerRadiusBottomRight=6,
+            cornerRadiusTopRight=4,
+            cornerRadiusBottomRight=4,
             size=22
         ).encode(
             x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
             y=alt.Y("Strategic Statement Pillar:N", sort="-x", title=None),
-            color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="indigo"), legend=None),
+            color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="purples"), legend=None),
             tooltip=["Strategic Statement Pillar", "Agreement Score (%)"]
-        ).properties(height=240).configure_view(strokeOpacity=0)
+        ).properties(height=220).configure_view(strokeOpacity=0)
         
         st.altair_chart(attr_chart, use_container_width=True)
 
 # -----------------------------
-# TAB 2: GRAPHS VIEW (Synchronized Layout)
+# TAB 2: GRAPHS VIEW
 # -----------------------------
 with tab2:
-    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+    with st.container():
+        colg1, colg2, colg3, colg4 = st.columns(4)
+        with colg1:
+            g_country = st.multiselect("Filter Country (Trends Visuals)", countries, key="graph_country_input")
+        with colg2:
+            g_months = st.multiselect("Filter Month (Trends Visuals)", months, key="graph_month_input")
+        with colg3:
+            g_segment = st.selectbox("Segment Select (Trends Visuals)", ["Total", "Male", "Female"], key="graph_segment_input")
+        with colg4:
+            g_brand_sel = st.selectbox("Select Target Brand (Trends Visuals)", list(brand_map.keys()), key="graph_brand_input")
+
+    st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
     
     with st.container(border=True):
         st.subheader("📊 Brand Health Funnel Trends Analytics")
-        st.write("Visualizing real-time changes based on global filters applied in the sidebar control desk panel.")
+        
+        graph_where = build_where(g_months, g_country, g_segment)
+        g_code = brand_map.get(g_brand_sel, 1)
         
         metrics_to_plot = [
-            {"label": "Total Awareness", "col": f"Aided_Awareness_{code}_slice", "type": "yesno"},
-            {"label": "Brand Favorability", "col": f"Brand_Favorability_{code}_slice", "type": "top2"},
-            {"label": "Consideration Rate", "col": f"Consideration_{code}_slice", "type": "top2"},
-            {"label": "Conversion Effect", "col": f"Consideration_Effect_{code}_slice", "type": "top2"},
+            {"label": "Total Awareness", "col": f"Aided_Awareness_{g_code}_slice", "type": "yesno"},
+            {"label": "Brand Favorability", "col": f"Brand_Favorability_{g_code}_slice", "type": "top2"},
+            {"label": "Consideration Rate", "col": f"Consideration_{g_code}_slice", "type": "top2"},
+            {"label": "Conversion Effect", "col": f"Consideration_Effect_{g_code}_slice", "type": "top2"},
         ]
         
         trend_list = []
         for m_info in metrics_to_plot:
-            tdf = get_sparkline_data(m_info["col"], m_info["type"], where_clause, "Global_weight_Stacked")
+            tdf = get_sparkline_data(m_info["col"], m_info["type"], graph_where, "Global_weight_Stacked")
             tdf["Metric"] = m_info["label"]
             trend_list.append(tdf)
             
         df_trends = pd.concat(trend_list, ignore_index=True)
         
         if not df_trends.empty and df_trends['val'].sum() > 0:
-            multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3.5).encode(
+            multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3).encode(
                 x=alt.X("Month:O", title="Timeline Tracking Phase", sort=months),
                 y=alt.Y("val:Q", title="Percentage Share Score (%)", scale=alt.Scale(zero=False)),
                 color=alt.Color("Metric:N", legend=alt.Legend(title="Brand Funnel Layer")),
                 tooltip=["Month", "Metric", "val"]
-            ).properties(height=420).interactive().configure_view(strokeOpacity=0)
+            ).properties(height=400).interactive().configure_view(strokeOpacity=0)
             
             st.altair_chart(multi_line_chart, use_container_width=True)
         else:
@@ -383,9 +360,8 @@ with tab2:
 # TAB 3: CHATBOT VIEW
 # -----------------------------
 with tab3:
-    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     with st.container(border=True):
         st.subheader("🤖 AI Analytics Chatbot")
         user_query = st.text_input("Interrogate your analytical metrics profile:", key="chatbot_query_input", placeholder="e.g., Show trends analysis summaries...")
         if user_query:
-            st.info("✅ High-level summary metrics compiled using active dataset configurations from the filter module panel.")
+            st.info("✅ High-level summary metrics compiled (no chart generation models required).")
