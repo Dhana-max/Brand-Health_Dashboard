@@ -268,7 +268,7 @@ with tab2:
             col = f"Aided_Awareness_{code}_slice"
 
             queries.append(f"""
-            SELECT Month,'{brand}' AS Brand,
+            SELECT Month, '{brand}' AS Brand,
             SUM(CASE WHEN LOWER(TRIM({col}))='yes'
             THEN Global_weight_Stacked ELSE 0 END)*100.0 /
             SUM(Global_weight_Stacked) AS Value
@@ -277,27 +277,31 @@ with tab2:
             """)
 
         df_chart = con.execute(" UNION ALL ".join(queries)).df()
-        df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
-        # 📊 Altair Dashboard Theme Configuration (Cyberpunk neon colors matching the dashboard screenshot)
-        chart_color_palette = ["#4ef2d2", "#ff4a68", "#e0b3ff", "#f5d061", "#4ca5ff"]
+        # ✅ FIXED: Validate if df_chart yields any structured rows before assigning categories
+        if not df_chart.empty and "Month" in df_chart.columns:
+            df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
-        if view_type == "Trended View":
-            chart = alt.Chart(df_chart).mark_line(point=True, size=3).encode(
-                x=alt.X("Month_order:O", title="Timeline Phase", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff")),
-                y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff"), scale=alt.Scale(zero=False)),
-                color=alt.Color("Brand:N", scale=alt.Scale(range=chart_color_palette))
-            ).properties(height=400)
+            # 📊 Altair Dashboard Theme Configuration
+            chart_color_palette = ["#4ef2d2", "#ff4a68", "#e0b3ff", "#f5d061", "#4ca5ff"]
+
+            if view_type == "Trended View":
+                chart = alt.Chart(df_chart).mark_line(point=True, size=3).encode(
+                    x=alt.X("Month_order:O", title="Timeline Phase", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff")),
+                    y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff"), scale=alt.Scale(zero=False)),
+                    color=alt.Color("Brand:N", scale=alt.Scale(range=chart_color_palette))
+                ).properties(height=400)
+            else:
+                chart = alt.Chart(df_chart).mark_line(point=True, size=3).encode(
+                    x=alt.X("Brand:N", title="Competitor Space", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff")),
+                    y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff"), scale=alt.Scale(zero=False)),
+                    color=alt.Color("Month:O", scale=alt.Scale(range=chart_color_palette))
+                ).properties(height=400)
+
+            chart = chart.configure(background='transparent').configure_view(strokeOpacity=0)
+            st.altair_chart(chart, use_container_width=True)
         else:
-            chart = alt.Chart(df_chart).mark_line(point=True, size=3).encode(
-                x=alt.X("Brand:N", title="Competitor Space", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff")),
-                y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff"), scale=alt.Scale(zero=False)),
-                color=alt.Color("Month:O", scale=alt.Scale(range=chart_color_palette))
-            ).properties(height=400)
-
-        # Apply dark background theme overrides directly to chart layout config
-        chart = chart.configure(background='transparent').configure_view(strokeOpacity=0)
-        st.altair_chart(chart, use_container_width=True)
+            st.warning("⚠️ No data available matching the selected filter variations.")
     else:
         st.info("Please pick at least one brand configuration view.")
 
