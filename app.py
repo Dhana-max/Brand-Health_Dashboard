@@ -3,71 +3,9 @@ import duckdb
 import pandas as pd
 import re
 import altair as alt
-from difflib import get_close_matches
 
+# 1. Native configuration with no layout overrides
 st.set_page_config(layout="wide")
-
-# ==========================================
-# 🌌 FIXED SAFE DARK UI (POINTER EVENTS SAFE)
-# ==========================================
-st.markdown("""
-<style>
-    /* Global Background Canvas */
-    .stApp {
-        background: linear-gradient(180deg, #0f0c1b 0%, #05030a 100%) !important;
-        color: #e2e8f0 !important;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    /* Main Glowing Dashboard Header */
-    h1 {
-        color: #ffffff !important;
-        font-weight: 800 !important;
-        font-size: 2.4rem !important;
-        letter-spacing: -0.02em !important;
-        margin-bottom: 1.5rem !important;
-        text-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
-    }
-    
-    h2, h3, h4, h5, h6 {
-        color: #ffffff !important;
-        font-weight: 600 !important;
-    }
-
-    /* Beautiful Dark Container Cards for KPIs */
-    .premium-card {
-        background: rgba(20, 17, 34, 0.85) !important;
-        padding: 20px !important;
-        border-radius: 12px !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
-        margin-bottom: 10px;
-    }
-
-    .kpi-header {
-        font-size: 0.85rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.08em !important;
-        color: #94a3b8 !important;
-        font-weight: 600 !important;
-        margin-bottom: 6px;
-    }
-    
-    .kpi-value {
-        font-size: 2.3rem !important;
-        font-weight: 700 !important;
-        margin-bottom: 10px;
-        line-height: 1;
-    }
-
-    .filter-label {
-        color: #cbd5e1 !important;
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
-        margin-bottom: 4px !important;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 st.title("Brand Health Intelligence Platform")
 
@@ -216,65 +154,62 @@ def create_sparkline_chart(df, color_line):
     return chart.configure(background='transparent').configure_view(strokeOpacity=0)
 
 # -----------------------------
+# Standard, Ultra-Stable Native Tabs
 tab1, tab2, tab3 = st.tabs(["📊 Executive View", "📈 Deep-Dive Graphs", "🤖 AI Analytics Chatbot"])
 
 # -----------------------------
 with tab1:
-    f1, f2, f3, f4 = st.columns([3, 3, 2, 3])
+    f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        st.markdown('<div class="filter-label">🌍 Region / Country</div>', unsafe_allow_html=True)
-        selected_countries = st.multiselect("Select Country Label", countries, label_visibility="collapsed")
+        selected_countries = st.multiselect("🌍 Region / Country", countries)
     with f2:
-        st.markdown('<div class="filter-label">📅 Historical Phase</div>', unsafe_allow_html=True)
-        selected_months = st.multiselect("Select Month Label", months, label_visibility="collapsed")
+        selected_months = st.multiselect("📅 Historical Phase", months)
     with f3:
-        st.markdown('<div class="filter-label">👤 Demographic Segment</div>', unsafe_allow_html=True)
-        segment = st.selectbox("Select Segment Label", ["Total", "Male", "Female"], label_visibility="collapsed")
+        segment = st.selectbox("👤 Demographic Segment", ["Total", "Male", "Female"])
     with f4:
-        st.markdown('<div class="filter-label">🏢 Target Enterprise Brand</div>', unsafe_allow_html=True)
         filtered_brand_map = get_brands_by_country(selected_countries)
-        selected_brand = st.selectbox("Select Brand Label", list(filtered_brand_map.keys()), label_visibility="collapsed")
+        selected_brand = st.selectbox("🏢 Target Enterprise Brand", list(filtered_brand_map.keys()))
 
     code = filtered_brand_map[selected_brand]
     where_clause = build_where(selected_months, selected_countries, segment)
     weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.write("---")
     
-    # 📈 Safe Structured KPI Block Row
+    # Standard Native Metric Cards Grid
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         val1 = f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%"
-        st.markdown(f'<div class="premium-card"><div class="kpi-header">Total Awareness</div><div class="kpi-value" style="color: #00f2fe;">{val1}</div></div>', unsafe_allow_html=True)
+        st.metric(label="Total Awareness", value=val1)
         df_sp1 = get_sparkline_data(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)
         st.altair_chart(create_sparkline_chart(df_sp1, '#00f2fe'), use_container_width=True)
 
     with col2:
         val2 = f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.markdown(f'<div class="premium-card"><div class="kpi-header">Brand Favorability</div><div class="kpi-value" style="color: #38ef7d;">{val2}</div></div>', unsafe_allow_html=True)
+        st.metric(label="Brand Favorability", value=val2)
         df_sp2 = get_sparkline_data(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)
         st.altair_chart(create_sparkline_chart(df_sp2, '#38ef7d'), use_container_width=True)
 
     with col3:
         val3 = f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.markdown(f'<div class="premium-card"><div class="kpi-header">Consideration Rate</div><div class="kpi-value" style="color: #ff007f;">{val3}</div></div>', unsafe_allow_html=True)
+        st.metric(label="Consideration Rate", value=val3)
         df_sp3 = get_sparkline_data(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)
         st.altair_chart(create_sparkline_chart(df_sp3, '#ff007f'), use_container_width=True)
 
     with col4:
         val4 = f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.markdown(f'<div class="premium-card"><div class="kpi-header">Conversion Effect</div><div class="kpi-value" style="color: #ff9f43;">{val4}</div></div>', unsafe_allow_html=True)
+        st.metric(label="Conversion Effect", value=val4)
         df_sp4 = get_sparkline_data(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)
         st.altair_chart(create_sparkline_chart(df_sp4, '#ff9f43'), use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.write("---")
     
-    # 🕹️ UNLOCKED SCROLL-FREE STRATEGIC PILL MATRIX
-    st.subheader("🎯 Brand Strategic Pillars Core Breakdown")
+    # Safe Interactive Pillar Selection via standard Radio Button
+    st.subheader("🎯 Brand Strategic Pillars Breakdown")
     selected_pillar = st.radio(
-        label="Select Strategic Dimension Segment to Deep-Dive:",
+        label="Choose a Pillar to Inspect:",
         options=list(brand_pillars.keys()),
         horizontal=True
     )
@@ -283,24 +218,21 @@ with tab1:
     attr_data = []
     for idx in active_indices:
         score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
-        attr_data.append({"Strategic Statement": attr_map[idx], "Agreement Score (%)": score})
+        attr_data.append({"Attribute Statement": attr_map[idx], "Agreement Score (%)": score})
     
     df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
     
     attr_chart = alt.Chart(df_matrix).mark_bar(
-        cornerRadiusTopRight=6,
-        cornerRadiusBottomRight=6,
-        size=26
+        cornerRadiusTopRight=4,
+        cornerRadiusBottomRight=4,
+        size=22
     ).encode(
-        x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100]), 
-                axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
-        y=alt.Y("Strategic Statement:N", sort="-x", title=None, 
-                axis=alt.Axis(labelColor="#ffffff", labelFontSize=12, tickSize=0, labelLimit=320)),
+        x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
+        y=alt.Y("Attribute Statement:N", sort="-x", title=None),
         color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="blues"), legend=None),
-        tooltip=["Strategic Statement", "Agreement Score (%)"]
-    ).properties(height=240)
+        tooltip=["Attribute Statement", "Agreement Score (%)"]
+    ).properties(height=220)
     
-    attr_chart = attr_chart.configure(background='transparent').configure_view(strokeOpacity=0)
     st.altair_chart(attr_chart, use_container_width=True)
 
 # -----------------------------
@@ -308,20 +240,16 @@ with tab2:
     colg1, colg2, colg3, colg4 = st.columns(4)
 
     with colg1:
-        st.markdown('<div class="filter-label">🌍 Filter Country</div>', unsafe_allow_html=True)
-        g_country = st.multiselect("Country Graph Box", countries, key="g_country", label_visibility="collapsed")
+        g_country = st.multiselect("Filter Country (Graph)", countries, key="g_country")
     with colg2:
-        st.markdown('<div class="filter-label">📅 Filter Month</div>', unsafe_allow_html=True)
-        g_months = st.multiselect("Month Graph Box", months, key="g_months", label_visibility="collapsed")
+        g_months = st.multiselect("Filter Month (Graph)", months, key="g_months")
     with colg3:
-        st.markdown('<div class="filter-label">👤 Segment Select</div>', unsafe_allow_html=True)
-        g_segment = st.selectbox("Segment Graph Box", ["Total", "Male", "Female"], key="g_segment", label_visibility="collapsed")
+        g_segment = st.selectbox("Segment Select (Graph)", ["Total", "Male", "Female"], key="g_segment")
     with colg4:
-        st.markdown('<div class="filter-label">🏢 Select Target Brand</div>', unsafe_allow_html=True)
         brand_map_local = get_brands_by_country(g_country)
-        g_brand_sel = st.selectbox("Target Brand Graph Box", list(brand_map_local.keys()), key="g_brand_single", label_visibility="collapsed")
+        g_brand_sel = st.selectbox("Select Target Brand (Graph)", list(brand_map_local.keys()), key="g_brand_single")
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.write("---")
     st.subheader("📊 Brand Health Funnel Trends & Cross-Attribute Analytics")
     
     graph_where = build_where(g_months, g_country, g_segment)
@@ -356,16 +284,14 @@ with tab2:
     
     if not df_trends.empty:
         df_trends["Month_order"] = pd.Categorical(df_trends["Month"], categories=months, ordered=True)
-        neon_colors = ["#00f2fe", "#38ef7d", "#ff007f", "#ff9f43"]
         
-        multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3.5).encode(
-            x=alt.X("Month_order:O", title="Timeline Phase", axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
-            y=alt.Y("Value:Q", title="Percentage Share Score (%)", axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1), scale=alt.Scale(zero=False)),
-            color=alt.Color("Metric:N", scale=alt.Scale(range=neon_colors), legend=alt.Legend(title="Brand Funnel Layer", labelColor="#ffffff", titleColor="#00f2fe")),
+        multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3).encode(
+            x=alt.X("Month_order:O", title="Timeline Phase"),
+            y=alt.Y("Value:Q", title="Percentage Share Score (%)", scale=alt.Scale(zero=False)),
+            color=alt.Color("Metric:N", legend=alt.Legend(title="Brand Funnel Layer")),
             tooltip=["Month", "Metric", "Value"]
-        ).properties(height=450).interactive()
+        ).properties(height=400).interactive()
         
-        multi_line_chart = multi_line_chart.configure(background='transparent').configure_view(strokeOpacity=0)
         st.altair_chart(multi_line_chart, use_container_width=True)
     else:
         st.warning("⚠️ No tracking information matches the selected filter configuration parameters.")
@@ -375,4 +301,4 @@ with tab3:
     st.subheader("🤖 AI Analytics Chatbot (Insights Only)")
     user_query = st.text_input("Interrogate your analytical KPIs:", key="chat_input_unique")
     if user_query:
-        st.markdown("✅ Insight response compiled (no chart visualization needed)")
+        st.write("✅ Insight response compiled (no chart visualization needed)")
