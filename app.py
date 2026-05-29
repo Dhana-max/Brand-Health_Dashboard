@@ -53,9 +53,30 @@ st.markdown("""
         color: #ffffff !important;
     }
     
-    /* Style Dataframe table to match dark mode */
-    .stDataFrame div {
-        background-color: #1e1b2e !important;
+    /* ⚡ FIX: Force Native Markdown/HTML Tables to be legible in Dark Theme */
+    .dark-table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #ffffff;
+        font-family: sans-serif;
+        background-color: #1e1b2e;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .dark-table th {
+        background-color: #2a243d;
+        color: #00f2fe;
+        text-align: left;
+        padding: 12px;
+        font-weight: 600;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .dark-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .dark-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.03);
     }
     
     /* Tab Styling styling */
@@ -241,10 +262,19 @@ with tab1:
     st.subheader("Brand Attribute Matrix Breakdown")
 
     attr_data = [
-        {"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice", "top2", where_clause, weight_col)}
+        {"Attribute": attr_map[i], "Value (%)": f"{get_metric(f'Attributes_New_DP_{code}_Q12a_{i}_slice', 'top2', where_clause, weight_col)}%"}
         for i in range(1, 18)
     ]
-    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
+    
+    # ✅ FIXED: Render table using raw HTML with styles injected to resolve the blank dark-screen issue
+    df_matrix = pd.DataFrame(attr_data)
+    
+    html_table = "<table class='dark-table'><thead><tr><th>Attribute</th><th>Value (%)</th></tr></thead><tbody>"
+    for _, row in df_matrix.iterrows():
+        html_table += f"<tr><td>{row['Attribute']}</td><td><strong>{row['Value (%)']}</strong></td></tr>"
+    html_table += "</tbody></table>"
+    
+    st.markdown(html_table, unsafe_allow_html=True)
 
 # -----------------------------
 with tab2:
@@ -278,7 +308,6 @@ with tab2:
 
         df_chart = con.execute(" UNION ALL ".join(queries)).df()
 
-        # ✅ FIXED: Validate if df_chart yields any structured rows before assigning categories
         if not df_chart.empty and "Month" in df_chart.columns:
             df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
