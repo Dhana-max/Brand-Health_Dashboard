@@ -20,14 +20,14 @@ st.set_page_config(
 )
 
 # =========================================================
-# PREMIUM UI
+# MODERN PREMIUM UI
 # =========================================================
 
 st.markdown("""
 <style>
 
 /* =====================================================
-MAIN
+MAIN APP
 ===================================================== */
 
 .stApp {
@@ -86,7 +86,7 @@ FILTERS
 }
 
 /* =====================================================
-NEW KPI CARDS
+KPI CARDS
 ===================================================== */
 
 .metric-card {
@@ -107,7 +107,6 @@ NEW KPI CARDS
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 18px;
 }
 
 .metric-left {
@@ -146,8 +145,7 @@ NEW KPI CARDS
     font-size: 52px;
     font-weight: 800;
     color: #0f172a !important;
-    line-height: 1;
-    margin-top: 10px;
+    margin-top: 25px;
 }
 
 .metric-progress {
@@ -156,7 +154,7 @@ NEW KPI CARDS
     background: #e2e8f0;
     border-radius: 999px;
     overflow: hidden;
-    margin-top: 20px;
+    margin-top: 18px;
 }
 
 .metric-fill {
@@ -474,10 +472,16 @@ if selected_page == "Dashboard":
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        selected_countries = st.multiselect("🌍 Country", countries)
+        selected_countries = st.multiselect(
+            "🌍 Country",
+            countries
+        )
 
     with f2:
-        selected_months = st.multiselect("📅 Month", months)
+        selected_months = st.multiselect(
+            "📅 Month",
+            months
+        )
 
     with f3:
         segment = st.selectbox(
@@ -579,8 +583,10 @@ if selected_page == "Dashboard":
                 </div>
 
                 <div class="metric-progress">
+
                     <div class="metric-fill"
                     style="width:{value}%"></div>
+
                 </div>
 
             </div>
