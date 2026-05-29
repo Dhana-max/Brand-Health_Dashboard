@@ -7,6 +7,7 @@ import duckdb
 import pandas as pd
 import re
 import plotly.express as px
+import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 
 # =========================================================
@@ -20,7 +21,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# PREMIUM MODERN UI
+# MODERN PREMIUM UI
 # =========================================================
 
 st.markdown("""
@@ -51,7 +52,7 @@ section[data-testid="stSidebar"] {
 }
 
 /* =====================================================
-TEXT
+TEXT FIXES
 ===================================================== */
 
 html, body, p, div, span, label {
@@ -81,11 +82,23 @@ FILTERS
     color: #334155 !important;
 }
 
+/* =====================================================
+REMOVE MULTISELECT CHIPS
+===================================================== */
+
 .stMultiSelect span[data-baseweb="tag"] {
     display: none !important;
 }
 
-input {
+/* =====================================================
+INPUTS
+===================================================== */
+
+.stMultiSelect input {
+    color: #111827 !important;
+}
+
+input, textarea {
     color: #111827 !important;
 }
 
@@ -95,17 +108,16 @@ KPI CARDS
 
 .metric-card {
     background: white;
-    border-radius: 26px;
+    border-radius: 24px;
     padding: 30px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 10px 30px rgba(15,23,42,0.08);
-    transition: all 0.25s ease;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    transition: 0.3s ease;
     min-height: 240px;
 }
 
 .metric-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(15,23,42,0.12);
+    transform: translateY(-4px);
 }
 
 .metric-top {
@@ -116,39 +128,38 @@ KPI CARDS
 
 .metric-title {
     color: #64748b !important;
-    font-size: 13px;
-    font-weight: 800;
+    font-size: 14px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
 .metric-sub {
     color: #94a3b8 !important;
-    margin-top: 6px;
     font-size: 14px;
-    font-weight: 600;
+    margin-top: 6px;
 }
 
 .metric-circle {
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg,#ecfeff,#dbeafe);
+    background: #ecfdf5;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #2563eb !important;
+    color: #059669 !important;
     font-size: 24px;
     font-weight: 800;
-    box-shadow: 0 8px 20px rgba(59,130,246,0.18);
+    box-shadow: 0 0 20px rgba(16,185,129,0.18);
 }
 
 .metric-big {
     margin-top: 35px;
     font-size: 52px;
-    font-weight: 900;
+    font-weight: 800;
+    color: #111827 !important;
     line-height: 1;
-    color: #0f172a !important;
 }
 
 .metric-progress {
@@ -163,7 +174,11 @@ KPI CARDS
 .metric-fill {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg,#7c3aed,#2563eb);
+    background: linear-gradient(
+        90deg,
+        #8b5cf6,
+        #3b82f6
+    );
 }
 
 /* =====================================================
@@ -216,6 +231,15 @@ OPTION MENU
 .nav-link-selected {
     background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
     color: white !important;
+}
+
+/* =====================================================
+RADIO
+===================================================== */
+
+.stRadio label {
+    color: #111827 !important;
+    font-weight: 600 !important;
 }
 
 /* =====================================================
@@ -488,10 +512,16 @@ if selected_page == "Dashboard":
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        selected_countries = st.multiselect("🌍 Country", countries)
+        selected_countries = st.multiselect(
+            "🌍 Country",
+            countries
+        )
 
     with f2:
-        selected_months = st.multiselect("📅 Month", months)
+        selected_months = st.multiselect(
+            "📅 Month",
+            months
+        )
 
     with f3:
         segment = st.selectbox(
@@ -595,9 +625,72 @@ if selected_page == "Dashboard":
                 </div>
 
                 <div class="metric-progress">
+
                     <div class="metric-fill"
                     style="width:{value}%"></div>
+
                 </div>
 
             </div>
             """, unsafe_allow_html=True)
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # =====================================================
+    # ATTRIBUTES SECTION
+    # =====================================================
+
+    st.markdown("""
+    <div class='graph-card'>
+    """, unsafe_allow_html=True)
+
+    st.subheader("📊 Brand Attributes")
+
+    attr_data = [
+
+        {
+            "Attribute": attr_map[i],
+
+            "Value": get_metric(
+                f"Attributes_New_DP_{code}_Q12a_{i}_slice",
+                "top2",
+                where_clause,
+                weight_col
+            )
+        }
+
+        for i in range(1, 18)
+    ]
+
+    attr_df = pd.DataFrame(attr_data)
+
+    attr_df = attr_df.sort_values(
+        "Value",
+        ascending=True
+    )
+
+    fig_attr = px.bar(
+        attr_df,
+        x="Value",
+        y="Attribute",
+        orientation='h',
+        text="Value",
+        height=700,
+        color="Value",
+        color_continuous_scale="Blues"
+    )
+
+    fig_attr.update_layout(
+        paper_bgcolor='white',
+        plot_bgcolor='white',
+        font_color='#111827',
+        xaxis_title='',
+        yaxis_title=''
+    )
+
+    st.plotly_chart(
+        fig_attr,
+        use_container_width=True
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
