@@ -63,27 +63,58 @@ h1,h2,h3,h4,h5,h6,p,label,span,div {
 
 /* ---------------- MULTISELECT TAGS ---------------- */
 span[data-baseweb="tag"] {
-    background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
-    border-radius: 30px !important;
+    background: transparent !important;
     border: none !important;
-    padding: 4px 12px !important;
+    padding: 0px !important;
+    margin-right: 6px !important;
 }
 
 span[data-baseweb="tag"] span {
-    color: white !important;
+    color: #cbd5e1 !important;
     font-weight: 600;
+    font-size: 14px !important;
+}
+
+/* REMOVE TAG BACKGROUND CLOSE ICON */
+span[data-baseweb="tag"] svg {
+    display: none !important;
+}
+
+/* INPUT TEXT */
+input, textarea {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+}
+
+/* PLACEHOLDER */
+input::placeholder {
+    color: #64748b !important;
+}
+
+/* SELECTED VALUE */
+.stSelectbox div[data-baseweb="select"] * {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+}
+
+/* MULTISELECT VALUE */
+.stMultiSelect div[data-baseweb="select"] * {
+    color: #0f172a !important;
+    font-weight: 600 !important;
 }
 
 /* ---------------- KPI CARDS ---------------- */
 .metric-card {
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(16px);
-    border-radius: 24px;
+    background: #ffffff;
+    border-radius: 28px;
     padding: 28px;
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    border: 1px solid #dbe4f0;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.12);
     transition: 0.3s ease;
-    text-align: center;
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+    min-height: 240px;
 }
 
 .metric-card:hover {
@@ -91,16 +122,34 @@ span[data-baseweb="tag"] span {
 }
 
 .metric-title {
-    color: #cbd5e1;
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 12px;
+    color: #334155;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
 }
 
 .metric-value {
-    font-size: 42px;
-    font-weight: 700;
-    color: #ffffff;
+    font-size: 44px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 30px;
+}
+
+.metric-progress {
+    width: 100%;
+    height: 14px;
+    border-radius: 20px;
+    background: #e2e8f0;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.metric-fill {
+    height: 100%;
+    border-radius: 20px;
+    background: linear-gradient(90deg,#22c55e,#3b82f6);
 }
 
 /* ---------------- NAVIGATION ---------------- */
@@ -398,7 +447,7 @@ if selected_page == "Dashboard":
         )
 
         if selected_countries:
-            st.caption("Selected: " + ", ".join(selected_countries))
+            st.markdown(f"<p style='color:#cbd5e1;font-size:15px;font-weight:600;'>Selected: {', '.join(selected_countries)}</p>", unsafe_allow_html=True)
 
     with f2:
         selected_months = st.multiselect(
@@ -408,7 +457,7 @@ if selected_page == "Dashboard":
         )
 
         if selected_months:
-            st.caption("Selected: " + ", ".join(selected_months))
+            st.markdown(f"<p style='color:#cbd5e1;font-size:15px;font-weight:600;'>Selected: {', '.join(selected_months)}</p>", unsafe_allow_html=True)
 
     with f3:
         segment = st.selectbox(
@@ -488,6 +537,32 @@ if selected_page == "Dashboard":
             <div class="metric-card">
                 <div class="metric-title">
                     {title}
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="font-size:14px;color:#64748b;font-weight:600;">
+                        KPI SCORE
+                    </div>
+
+                    <div style="
+                        width:70px;
+                        height:70px;
+                        border-radius:50%;
+                        background:#dcfce7;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        color:#166534;
+                        font-weight:800;
+                        font-size:24px;
+                        box-shadow:0 0 18px rgba(34,197,94,0.35);
+                    ">
+                        {value}
+                    </div>
+                </div>
+
+                <div class="metric-progress">
+                    <div class="metric-fill" style="width:{value}%;"></div>
                 </div>
 
                 <div class="metric-value">
