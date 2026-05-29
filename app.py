@@ -1,3 +1,4 @@
+```python
 # =========================================================
 # PREMIUM BRAND HEALTH DASHBOARD
 # =========================================================
@@ -26,10 +27,6 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-/* =====================================================
-MAIN APP
-===================================================== */
-
 .stApp {
     background: #f4f7fb;
 }
@@ -41,18 +38,10 @@ MAIN APP
     max-width: 100%;
 }
 
-/* =====================================================
-SIDEBAR
-===================================================== */
-
 section[data-testid="stSidebar"] {
     background: white;
     border-right: 1px solid #e2e8f0;
 }
-
-/* =====================================================
-TEXT
-===================================================== */
 
 html, body, p, div, span, label {
     color: #111827 !important;
@@ -62,9 +51,7 @@ h1,h2,h3,h4,h5,h6 {
     color: #0f172a !important;
 }
 
-/* =====================================================
-FILTERS
-===================================================== */
+/* FILTERS */
 
 .stSelectbox > div > div,
 .stMultiSelect > div > div {
@@ -79,14 +66,7 @@ FILTERS
     display: none !important;
 }
 
-.stSelectbox label,
-.stMultiSelect label {
-    font-weight: 700 !important;
-}
-
-/* =====================================================
-METRIC CARDS
-===================================================== */
+/* KPI CARDS */
 
 .metric-card {
     background: white;
@@ -155,9 +135,7 @@ METRIC CARDS
     background: linear-gradient(90deg,#8b5cf6,#3b82f6);
 }
 
-/* =====================================================
-GRAPH CARD
-===================================================== */
+/* GRAPH CARD */
 
 .graph-card {
     background: white;
@@ -167,18 +145,14 @@ GRAPH CARD
     box-shadow: 0 8px 24px rgba(15,23,42,0.08);
 }
 
-/* =====================================================
-OPTION MENU
-===================================================== */
+/* CHATBOT */
 
-.nav-link {
-    border-radius: 12px !important;
-    margin-bottom: 8px !important;
-}
-
-.nav-link-selected {
-    background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
-    color: white !important;
+.chat-box {
+    background: white;
+    padding: 24px;
+    border-radius: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
 }
 
 </style>
@@ -262,7 +236,7 @@ attr_map = {
 }
 
 # =========================================================
-# FILTERS
+# LOAD FILTERS
 # =========================================================
 
 @st.cache_data
@@ -344,7 +318,6 @@ def get_metric(
 
     try:
 
-        # YES / NO
         if metric_type == "yesno":
 
             q = f"""
@@ -370,7 +343,6 @@ def get_metric(
             {where_clause}
             """
 
-        # TOP2
         else:
 
             q = f"""
@@ -412,9 +384,7 @@ def get_metric(
 
         return round(result or 0, 1)
 
-    except Exception as e:
-
-        st.error(f"Metric error in {col}")
+    except:
         return 0
 
 # =========================================================
@@ -427,8 +397,8 @@ with st.sidebar:
 
     selected_page = option_menu(
         menu_title=None,
-        options=["Dashboard"],
-        icons=["speedometer2"],
+        options=["Dashboard", "Graphs", "Chatbot"],
+        icons=["speedometer2", "bar-chart", "robot"],
         default_index=0,
     )
 
@@ -478,9 +448,7 @@ if selected_page == "Dashboard":
         else "Global_weight_Stacked"
     )
 
-    # =====================================================
-    # KPI CALCULATIONS
-    # =====================================================
+    # KPI VALUES
 
     awareness = get_metric(
         f'Aided_Awareness_{code}_slice',
@@ -510,9 +478,7 @@ if selected_page == "Dashboard":
         weight_col
     )
 
-    # =====================================================
     # KPI DISPLAY
-    # =====================================================
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -568,9 +534,7 @@ if selected_page == "Dashboard":
             </div>
             """, unsafe_allow_html=True)
 
-    # =====================================================
     # ATTRIBUTES
-    # =====================================================
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
@@ -626,5 +590,127 @@ if selected_page == "Dashboard":
         fig_attr,
         use_container_width=True
     )
+
+# =========================================================
+# GRAPHS PAGE
+# =========================================================
+
+elif selected_page == "Graphs":
+
+    st.markdown("""
+    <div class='graph-card'>
+    """, unsafe_allow_html=True)
+
+    st.subheader("📈 KPI Comparison")
+
+    selected_brand = st.selectbox(
+        "Select Brand",
+        list(brand_map.keys()),
+        key="graph_brand"
+    )
+
+    code = brand_map[selected_brand]
+
+    graph_data = pd.DataFrame({
+        "KPI": [
+            "Awareness",
+            "Favorability",
+            "Consideration",
+            "Effect"
+        ],
+        "Value": [
+            get_metric(f'Aided_Awareness_{code}_slice', 'yesno'),
+            get_metric(f'Brand_Favorability_{code}_slice', 'top2'),
+            get_metric(f'Consideration_{code}_slice', 'top2'),
+            get_metric(f'Consideration_Effect_{code}_slice', 'top2')
+        ]
+    })
+
+    fig = px.bar(
+        graph_data,
+        x="KPI",
+        y="Value",
+        text="Value",
+        color="Value",
+        color_continuous_scale="Blues",
+        height=500
+    )
+
+    fig.update_layout(
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        font_color="#111827",
+        yaxis_title="%",
+        xaxis_title=""
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+# =========================================================
+# CHATBOT PAGE
+# =========================================================
+
+elif selected_page == "Chatbot":
+
+    st.markdown("""
+    <div class='chat-box'>
+    """, unsafe_allow_html=True)
+
+    st.subheader("🤖 Brand Insights Chatbot")
+
+    user_question = st.text_input(
+        "Ask something about brand performance"
+    )
+
+    if user_question:
+
+        question = user_question.lower()
+
+        if "best brand" in question:
+
+            best_brand = None
+            best_score = 0
+
+            for brand, code in brand_map.items():
+
+                score = get_metric(
+                    f'Brand_Favorability_{code}_slice',
+                    'top2'
+                )
+
+                if score > best_score:
+                    best_score = score
+                    best_brand = brand
+
+            st.success(
+                f"🏆 Best Brand: {best_brand} ({best_score}%)"
+            )
+
+        elif "awareness" in question:
+
+            st.info(
+                "Awareness measures how many people recognize the brand."
+            )
+
+        elif "favorability" in question:
+
+            st.info(
+                "Favorability measures positive consumer perception."
+            )
+
+        elif "consideration" in question:
+
+            st.info(
+                "Consideration measures likelihood to choose the brand."
+            )
+
+        else:
+
+            st.warning(
+                "Try asking about awareness, favorability, consideration, or best brand."
+            )
 
     st.markdown("</div>", unsafe_allow_html=True)
