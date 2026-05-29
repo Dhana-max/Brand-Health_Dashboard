@@ -8,11 +8,11 @@ from difflib import get_close_matches
 st.set_page_config(layout="wide")
 
 # ==========================================
-# 🌌 PREMIUM CINEMATIC DARK UI OVERHAUL
+# 🌌 FIXED PREMIUM DARK UI (CLICKABLE)
 # ==========================================
 st.markdown("""
 <style>
-    /* Global Application Canvas */
+    /* Global Background Canvas */
     .stApp {
         background: linear-gradient(180deg, #0f0c1b 0%, #05030a 100%) !important;
         color: #e2e8f0 !important;
@@ -34,7 +34,7 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Top Navigation Tab System Customization */
+    /* Top Navigation Tab System Customization - Made Safe & Clickable */
     div[data-testid="stTabBar"] {
         background-color: rgba(22, 19, 38, 0.8) !important;
         padding: 0px 20px !important;
@@ -49,16 +49,17 @@ st.markdown("""
         padding: 14px 20px !important;
         background-color: transparent !important;
         border: none !important;
+        cursor: pointer !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
         color: #00f2fe !important;
         border-bottom: 3px solid #00f2fe !important;
     }
 
-    /* Structured Grid Container Cards (KPI Blocks) */
-    div[data-testid="column"] {
+    /* Target ONLY localized metric widgets as cards to prevent layout blocking */
+    div[data-testid="stMetric"] {
         background: rgba(20, 17, 34, 0.75) !important;
-        padding: 22px !important;
+        padding: 20px !important;
         border-radius: 12px !important;
         border: 1px solid rgba(255, 255, 255, 0.06) !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
@@ -99,18 +100,9 @@ st.markdown("""
         gap: 6px;
     }
     
-    /* Native Framework Controls */
-    .stSelectbox div, .stMultiSelect div {
-        background-color: #161326 !important;
-        color: #ffffff !important;
-        border-color: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
-        background-color: #2e2a47 !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 6px !important;
-        color: #ffffff !important;
+    /* Native Input Framework Styling - Restored Pointer Controls */
+    .stSelectbox div, .stMultiSelect div, .stRadio div {
+        pointer-events: auto !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -142,7 +134,6 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
-# Category Pillars Mapping to resolve information density issues
 brand_pillars = {
     "🎯 Professional Career Growth": [1, 2, 3, 15, 17],
     "🛡️ Trust & Brand Affinity": [6, 7, 11, 16],
@@ -271,17 +262,17 @@ with tab1:
 
     with f1:
         st.markdown('<div class="filter-label">🌍 Region / Country</div>', unsafe_allow_html=True)
-        selected_countries = st.multiselect("", countries, label_visibility="collapsed")
+        selected_countries = st.multiselect("Select Country", countries, label_visibility="collapsed")
     with f2:
         st.markdown('<div class="filter-label">📅 Historical Phase</div>', unsafe_allow_html=True)
-        selected_months = st.multiselect("", months, label_visibility="collapsed")
+        selected_months = st.multiselect("Select Month", months, label_visibility="collapsed")
     with f3:
         st.markdown('<div class="filter-label">👤 Demographic Segment</div>', unsafe_allow_html=True)
-        segment = st.selectbox("", ["Total", "Male", "Female"], label_visibility="collapsed")
+        segment = st.selectbox("Select Segment", ["Total", "Male", "Female"], label_visibility="collapsed")
     with f4:
         st.markdown('<div class="filter-label">🏢 Target Enterprise Brand</div>', unsafe_allow_html=True)
         filtered_brand_map = get_brands_by_country(selected_countries)
-        selected_brand = st.selectbox("", list(filtered_brand_map.keys()), label_visibility="collapsed")
+        selected_brand = st.selectbox("Select Brand", list(filtered_brand_map.keys()), label_visibility="collapsed")
 
     code = filtered_brand_map[selected_brand]
     where_clause = build_where(selected_months, selected_countries, segment)
@@ -293,24 +284,28 @@ with tab1:
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
+        st.metric(label="", value="") # Invisible layout alignment holder
         val1 = f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%"
         st.markdown(f'<div class="kpi-container"><div class="kpi-header">Total Awareness</div><div class="kpi-value" style="color: #00f2fe;">{val1}</div></div>', unsafe_allow_html=True)
         df_sp1 = get_sparkline_data(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)
         st.altair_chart(create_sparkline_chart(df_sp1, '#00f2fe'), use_container_width=True)
 
     with col2:
+        st.metric(label="", value="")
         val2 = f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%"
         st.markdown(f'<div class="kpi-container"><div class="kpi-header">Brand Favorability</div><div class="kpi-value" style="color: #38ef7d;">{val2}</div></div>', unsafe_allow_html=True)
         df_sp2 = get_sparkline_data(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)
         st.altair_chart(create_sparkline_chart(df_sp2, '#38ef7d'), use_container_width=True)
 
     with col3:
+        st.metric(label="", value="")
         val3 = f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%"
         st.markdown(f'<div class="kpi-container"><div class="kpi-header">Consideration Rate</div><div class="kpi-value" style="color: #ff007f;">{val3}</div></div>', unsafe_allow_html=True)
         df_sp3 = get_sparkline_data(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)
         st.altair_chart(create_sparkline_chart(df_sp3, '#ff007f'), use_container_width=True)
 
     with col4:
+        st.metric(label="", value="")
         val4 = f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%"
         st.markdown(f'<div class="kpi-container"><div class="kpi-header">Conversion Effect</div><div class="kpi-value" style="color: #ff9f43;">{val4}</div></div>', unsafe_allow_html=True)
         df_sp4 = get_sparkline_data(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)
@@ -318,21 +313,15 @@ with tab1:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # =========================================================
-    # 🕹️ DYNAMIC PILLAR CONTROLLER MATRIX (Removes scrolling)
-    # =========================================================
+    # 🕹️ UNLOCKED PILLAR CONTROLLER
     st.subheader("🎯 Brand Strategic Pillars Core Breakdown")
-    
-    # Horizontal inline button pill selection mechanism 
     selected_pillar = st.radio(
         label="Select Strategic Dimension Segment to Deep-Dive:",
         options=list(brand_pillars.keys()),
         horizontal=True
     )
     
-    # Filter the active dataset dynamically to prevent endless vertical layout scrolling
     active_indices = brand_pillars[selected_pillar]
-    
     attr_data = []
     for idx in active_indices:
         score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
@@ -340,11 +329,10 @@ with tab1:
     
     df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
     
-    # Tailored configuration targeting clean multi-metric representation without data clipping
     attr_chart = alt.Chart(df_matrix).mark_bar(
         cornerRadiusTopRight=6,
         cornerRadiusBottomRight=6,
-        size=26 # Premium spacing structure
+        size=26
     ).encode(
         x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100]), 
                 axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
@@ -352,7 +340,7 @@ with tab1:
                 axis=alt.Axis(labelColor="#ffffff", labelFontSize=12, tickSize=0, labelLimit=320)),
         color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="blues"), legend=None),
         tooltip=["Strategic Statement", "Agreement Score (%)"]
-    ).properties(height=240) # Perfectly compact, dynamic height
+    ).properties(height=240)
     
     attr_chart = attr_chart.configure(background='transparent').configure_view(strokeOpacity=0)
     st.altair_chart(attr_chart, use_container_width=True)
@@ -363,17 +351,17 @@ with tab2:
 
     with colg1:
         st.markdown('<div class="filter-label">🌍 Filter Country</div>', unsafe_allow_html=True)
-        g_country = st.multiselect("Country", countries, key="g_country", label_visibility="collapsed")
+        g_country = st.multiselect("Country Graph", countries, key="g_country", label_visibility="collapsed")
     with colg2:
         st.markdown('<div class="filter-label">📅 Filter Month</div>', unsafe_allow_html=True)
-        g_months = st.multiselect("Month", months, key="g_months", label_visibility="collapsed")
+        g_months = st.multiselect("Month Graph", months, key="g_months", label_visibility="collapsed")
     with colg3:
         st.markdown('<div class="filter-label">👤 Segment Select</div>', unsafe_allow_html=True)
-        g_segment = st.selectbox("Segment", ["Total", "Male", "Female"], key="g_segment", label_visibility="collapsed")
+        g_segment = st.selectbox("Segment Graph", ["Total", "Male", "Female"], key="g_segment", label_visibility="collapsed")
     with colg4:
         st.markdown('<div class="filter-label">🏢 Select Target Brand</div>', unsafe_allow_html=True)
         brand_map_local = get_brands_by_country(g_country)
-        g_brand_sel = st.selectbox("Target Brand", list(brand_map_local.keys()), key="g_brand_single", label_visibility="collapsed")
+        g_brand_sel = st.selectbox("Target Brand Graph", list(brand_map_local.keys()), key="g_brand_single", label_visibility="collapsed")
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📊 Brand Health Funnel Trends & Cross-Attribute Analytics")
