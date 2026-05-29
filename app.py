@@ -1,4 +1,7 @@
-# Enhanced Streamlit Brand Health Dashboard UI
+# =========================================================
+# MODERN STREAMLIT BRAND HEALTH DASHBOARD
+# =========================================================
+
 import streamlit as st
 import duckdb
 import pandas as pd
@@ -6,129 +9,130 @@ import re
 import plotly.express as px
 from streamlit_option_menu import option_menu
 
-# --------------------------------------------------
+# =========================================================
 # PAGE CONFIG
-# --------------------------------------------------
+# =========================================================
 st.set_page_config(
     page_title="Brand Health Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --------------------------------------------------
-# PREMIUM DARK UI
-# --------------------------------------------------
+# =========================================================
+# MODERN GLASSMORPHIC UI
+# =========================================================
 st.markdown("""
 <style>
 
-/* -----------------------------
+/* =====================================================
 MAIN APP
------------------------------ */
+===================================================== */
 .stApp {
-    background: #0f172a;
+    background:
+        radial-gradient(circle at top left, #172554 0%, #020617 45%),
+        #020617;
     color: white;
 }
 
-/* -----------------------------
+/* =====================================================
 MAIN CONTAINER
------------------------------ */
+===================================================== */
 .block-container {
     padding-top: 1.5rem;
     padding-left: 2rem;
     padding-right: 2rem;
 }
 
-/* -----------------------------
+/* =====================================================
 SIDEBAR
------------------------------ */
+===================================================== */
 section[data-testid="stSidebar"] {
-    background: #111827;
-    border-right: 1px solid #1e293b;
+    background: rgba(15,23,42,0.95);
+    border-right: 1px solid rgba(255,255,255,0.08);
 }
 
-/* -----------------------------
-HEADINGS
------------------------------ */
-h1, h2, h3, h4, h5, h6,
-label, p, span {
+/* =====================================================
+TEXT
+===================================================== */
+h1,h2,h3,h4,h5,h6,label,p,span {
     color: #f8fafc !important;
 }
 
-/* -----------------------------
-FILTER LABELS
------------------------------ */
-.stMultiSelect label,
-.stSelectbox label {
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    color: #e2e8f0 !important;
-}
-
-/* -----------------------------
-MULTISELECT BOX
------------------------------ */
-.stMultiSelect div[data-baseweb="select"] {
-    background-color: #1e293b !important;
-    border-radius: 12px !important;
-    border: 1px solid #334155 !important;
-    min-height: 55px;
-}
-
-/* -----------------------------
-SELECTBOX
------------------------------ */
+/* =====================================================
+FILTER BOXES
+===================================================== */
+.stMultiSelect div[data-baseweb="select"],
 .stSelectbox div[data-baseweb="select"] {
-    background-color: #1e293b !important;
-    border-radius: 12px !important;
-    border: 1px solid #334155 !important;
+    background: rgba(15,23,42,0.9) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 14px !important;
+    min-height: 52px;
 }
 
-/* -----------------------------
-REMOVE RED TAGS
------------------------------ */
+/* =====================================================
+REMOVE MULTISELECT CHIPS
+===================================================== */
 span[data-baseweb="tag"] {
-    background-color: #334155 !important;
-    border-radius: 20px !important;
-    padding: 4px 10px !important;
-    border: 1px solid #475569 !important;
+    display: none !important;
 }
 
-/* CHIP TEXT */
-span[data-baseweb="tag"] span {
+/* =====================================================
+INPUT TEXT
+===================================================== */
+.stMultiSelect input,
+.stSelectbox input {
     color: white !important;
-    font-weight: 500;
 }
 
-/* CHIP CLOSE BUTTON */
-span[data-baseweb="tag"] svg {
-    color: #cbd5e1 !important;
+/* =====================================================
+DROPDOWN MENU
+===================================================== */
+div[role="listbox"] {
+    background-color: #0f172a !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
-/* -----------------------------
+/* =====================================================
+OPTION MENU
+===================================================== */
+.nav-link {
+    font-size: 17px !important;
+    border-radius: 12px !important;
+    margin-bottom: 10px !important;
+    background: rgba(255,255,255,0.03);
+}
+
+.nav-link-selected {
+    background:
+        linear-gradient(135deg,#2563eb,#3b82f6) !important;
+}
+
+/* =====================================================
 METRIC CARDS
------------------------------ */
+===================================================== */
 .metric-card {
-    background: linear-gradient(
-        145deg,
-        #111827,
-        #1e293b
-    );
 
-    padding: 24px;
-    border-radius: 20px;
+    background: rgba(15,23,42,0.7);
 
-    border: 1px solid rgba(255,255,255,0.05);
+    backdrop-filter: blur(14px);
+
+    border:
+        1px solid rgba(255,255,255,0.08);
+
+    border-radius: 24px;
+
+    padding: 28px;
 
     box-shadow:
-        0 4px 10px rgba(0,0,0,0.2);
+        0 8px 30px rgba(0,0,0,0.35);
 
     transition: all 0.3s ease;
 }
 
 .metric-card:hover {
-    transform: translateY(-5px);
-    box-shadow:
-        0 10px 20px rgba(0,0,0,0.35);
+    transform: translateY(-6px);
+    border: 1px solid rgba(96,165,250,0.5);
 }
 
 /* KPI TITLE */
@@ -141,34 +145,35 @@ METRIC CARDS
 /* KPI VALUE */
 .metric-value {
     color: white;
-    font-size: 40px;
-    font-weight: bold;
-    margin-top: 10px;
+    font-size: 42px;
+    font-weight: 700;
+    margin-top: 12px;
 }
 
-/* -----------------------------
-OPTION MENU
------------------------------ */
-.nav-link {
-    font-size: 16px !important;
-    border-radius: 10px !important;
-    margin-bottom: 8px !important;
+/* =====================================================
+PLOTLY CHART CONTAINER
+===================================================== */
+[data-testid="stPlotlyChart"] {
+
+    background: rgba(15,23,42,0.6);
+
+    border-radius: 24px;
+
+    padding: 15px;
+
+    border: 1px solid rgba(255,255,255,0.05);
 }
 
-.nav-link-selected {
-    background-color: #2563eb !important;
-}
-
-/* -----------------------------
+/* =====================================================
 RADIO BUTTONS
------------------------------ */
+===================================================== */
 .stRadio label {
     color: white !important;
 }
 
-/* -----------------------------
+/* =====================================================
 SCROLLBAR
------------------------------ */
+===================================================== */
 ::-webkit-scrollbar {
     width: 8px;
 }
@@ -181,25 +186,29 @@ SCROLLBAR
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------------------------------------
+# =========================================================
 # TITLE
-# --------------------------------------------------
+# =========================================================
 st.markdown("""
-<h1 style='font-size:42px;'>📊 Brand Health Dashboard</h1>
-<p style='color:#94a3b8;'>
-Modern analytics dashboard for brand performance tracking
+<h1 style='font-size:52px;font-weight:800;'>
+📊 Brand Health Dashboard
+</h1>
+
+<p style='font-size:18px;color:#94a3b8;'>
+Modern analytics dashboard for brand tracking & insights
 </p>
 """, unsafe_allow_html=True)
 
-# --------------------------------------------------
+# =========================================================
 # FILES
-# --------------------------------------------------
+# =========================================================
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
+
 MAP_FILE = "Map.xlsx"
 
-# --------------------------------------------------
+# =========================================================
 # CONNECTION
-# --------------------------------------------------
+# =========================================================
 @st.cache_resource
 def get_connection():
 
@@ -214,22 +223,23 @@ def get_connection():
 
 con = get_connection()
 
-# --------------------------------------------------
+# =========================================================
 # LOAD MAP
-# --------------------------------------------------
+# =========================================================
 @st.cache_data
 def load_map():
 
     df = pd.read_excel(MAP_FILE, header=1)
+
     df.columns = df.columns.astype(str).str.strip()
 
     return df
 
 map_df = load_map()
 
-# --------------------------------------------------
+# =========================================================
 # ATTRIBUTE MAP
-# --------------------------------------------------
+# =========================================================
 attr_map = {
     1: "Helps me move forward professionally",
     2: "Helps me find the right job for me",
@@ -250,9 +260,9 @@ attr_map = {
     17: "Helps me move forward in my career/business"
 }
 
-# --------------------------------------------------
+# =========================================================
 # LOAD FILTERS
-# --------------------------------------------------
+# =========================================================
 @st.cache_data
 def load_filters():
 
@@ -278,9 +288,9 @@ def load_filters():
 
 months, countries = load_filters()
 
-# --------------------------------------------------
+# =========================================================
 # BRAND MAP
-# --------------------------------------------------
+# =========================================================
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains(
         "Aided_Awareness_",
@@ -289,14 +299,22 @@ brand_rows = map_df[
 ]
 
 brand_map = {
+
     str(r["Label"]).split(" - ")[-1].strip():
-    int(re.findall(r"\d+", str(r["Variable"]))[0])
+
+    int(
+        re.findall(
+            r"\d+",
+            str(r["Variable"])
+        )[0]
+    )
+
     for _, r in brand_rows.iterrows()
 }
 
-# --------------------------------------------------
+# =========================================================
 # FUNCTIONS
-# --------------------------------------------------
+# =========================================================
 def get_brands_by_country(selected_countries):
     return brand_map
 
@@ -328,9 +346,9 @@ def build_where(months_sel, countries_sel, segment):
     return "WHERE " + " AND ".join(filters) if filters else ""
 
 
-# --------------------------------------------------
+# =========================================================
 # METRIC FUNCTION
-# --------------------------------------------------
+# =========================================================
 def get_metric(
     col,
     metric_type="top2",
@@ -394,9 +412,9 @@ def get_metric(
     except:
         return 0
 
-# --------------------------------------------------
+# =========================================================
 # SIDEBAR
-# --------------------------------------------------
+# =========================================================
 with st.sidebar:
 
     st.markdown("## 📊 Navigation")
@@ -408,26 +426,30 @@ with st.sidebar:
         default_index=0,
     )
 
-# --------------------------------------------------
-# DASHBOARD PAGE
-# --------------------------------------------------
+# =========================================================
+# DASHBOARD
+# =========================================================
 if selected_page == "Dashboard":
 
-    # --------------------------------------------------
+    # =====================================================
     # FILTERS
-    # --------------------------------------------------
+    # =====================================================
+    st.markdown("### Filters")
+
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
         selected_countries = st.multiselect(
             "🌍 Country",
-            countries
+            countries,
+            placeholder="Select countries"
         )
 
     with f2:
         selected_months = st.multiselect(
             "📅 Month",
-            months
+            months,
+            placeholder="Select months"
         )
 
     with f3:
@@ -447,9 +469,9 @@ if selected_page == "Dashboard":
             list(filtered_brand_map.keys())
         )
 
-    # --------------------------------------------------
+    # =====================================================
     # FILTER LOGIC
-    # --------------------------------------------------
+    # =====================================================
     code = filtered_brand_map[selected_brand]
 
     where_clause = build_where(
@@ -464,9 +486,9 @@ if selected_page == "Dashboard":
         else "Global_weight_Stacked"
     )
 
-    # --------------------------------------------------
+    # =====================================================
     # KPI VALUES
-    # --------------------------------------------------
+    # =====================================================
     awareness = get_metric(
         f'Aided_Awareness_{code}_slice',
         'yesno',
@@ -495,9 +517,9 @@ if selected_page == "Dashboard":
         weight_col
     )
 
-    # --------------------------------------------------
+    # =====================================================
     # KPI CARDS
-    # --------------------------------------------------
+    # =====================================================
     st.markdown("<br>", unsafe_allow_html=True)
 
     c1, c2, c3, c4 = st.columns(4)
@@ -515,6 +537,7 @@ if selected_page == "Dashboard":
 
             st.markdown(f"""
             <div class="metric-card">
+
                 <div class="metric-title">
                     {title}
                 </div>
@@ -522,12 +545,13 @@ if selected_page == "Dashboard":
                 <div class="metric-value">
                     {value}%
                 </div>
+
             </div>
             """, unsafe_allow_html=True)
 
-    # --------------------------------------------------
+    # =====================================================
     # ATTRIBUTE CHART
-    # --------------------------------------------------
+    # =====================================================
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     st.subheader("📌 Brand Attributes")
@@ -561,15 +585,14 @@ if selected_page == "Dashboard":
         y="Attribute",
         orientation='h',
         text="Value",
-        template="plotly_dark",
         height=700,
         color="Value",
-        color_continuous_scale="Blues"
+        color_continuous_scale="blues"
     )
 
     fig_attr.update_layout(
-        paper_bgcolor="#0f172a",
-        plot_bgcolor="#0f172a",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
         font_color="white"
     )
 
@@ -578,9 +601,9 @@ if selected_page == "Dashboard":
         use_container_width=True
     )
 
-# --------------------------------------------------
+# =========================================================
 # GRAPHS PAGE
-# --------------------------------------------------
+# =========================================================
 elif selected_page == "Graphs":
 
     st.subheader("📈 Brand Trends")
@@ -590,13 +613,15 @@ elif selected_page == "Graphs":
     g_country = g1.multiselect(
         "Country",
         countries,
-        key="g_country"
+        key="g_country",
+        placeholder="Select countries"
     )
 
     g_months = g2.multiselect(
         "Month",
         months,
-        key="g_months"
+        key="g_months",
+        placeholder="Select months"
     )
 
     g_segment = g3.selectbox(
@@ -611,12 +636,6 @@ elif selected_page == "Graphs":
         "Brands",
         list(brand_map_local.keys()),
         default=list(brand_map_local.keys())[:3]
-    )
-
-    view_type = st.radio(
-        "View Type",
-        ["Trended View", "Brand Comparison"],
-        horizontal=True
     )
 
     graph_where = build_where(
@@ -664,33 +683,44 @@ elif selected_page == "Graphs":
             ordered=True
         )
 
-        if view_type == "Trended View":
+        # =================================================
+        # SMOOTH CURVE GRAPH
+        # =================================================
+        fig = px.line(
+            df_chart,
+            x="Month_order",
+            y="Value",
+            color="Brand",
+            markers=False,
+            line_shape="spline"
+        )
 
-            fig = px.line(
-                df_chart,
-                x="Month_order",
-                y="Value",
-                color="Brand",
-                markers=True,
-                template="plotly_dark"
-            )
-
-        else:
-
-            fig = px.line(
-                df_chart,
-                x="Brand",
-                y="Value",
-                color="Month",
-                markers=True,
-                template="plotly_dark"
-            )
+        fig.update_traces(
+            line=dict(width=4),
+            mode="lines"
+        )
 
         fig.update_layout(
-            paper_bgcolor="#0f172a",
-            plot_bgcolor="#0f172a",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
             font_color="white",
-            height=600
+            height=650,
+
+            xaxis=dict(
+                showgrid=False
+            ),
+
+            yaxis=dict(
+                gridcolor="rgba(255,255,255,0.08)"
+            ),
+
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
         )
 
         st.plotly_chart(
@@ -698,22 +728,22 @@ elif selected_page == "Graphs":
             use_container_width=True
         )
 
-# --------------------------------------------------
+# =========================================================
 # CHATBOT PAGE
-# --------------------------------------------------
+# =========================================================
 elif selected_page == "Chatbot":
 
     st.subheader("🤖 AI Insights Assistant")
 
     st.markdown("""
     <div style='
-        background:#111827;
-        padding:20px;
-        border-radius:15px;
+        background:rgba(15,23,42,0.7);
+        padding:25px;
+        border-radius:20px;
         border:1px solid rgba(255,255,255,0.05);
     '>
 
-    Ask questions about:
+    <h4>Ask questions about:</h4>
 
     <ul>
         <li>Awareness trends</li>
