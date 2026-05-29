@@ -85,175 +85,79 @@ FILTERS
 }
 
 /* =====================================================
-PREMIUM KPI CARDS
+METRIC CARDS
 ===================================================== */
 
 .metric-card {
-    position: relative;
-    overflow: hidden;
-
-    background: linear-gradient(
-        180deg,
-        #ffffff 0%,
-        #f8fbff 100%
-    );
-
-    border-radius: 28px;
-    padding: 30px;
-
-    border: 1px solid rgba(226,232,240,0.9);
-
-    box-shadow:
-        0 4px 14px rgba(15,23,42,0.04),
-        0 12px 30px rgba(15,23,42,0.06);
-
-    transition: all 0.3s ease;
-
-    min-height: 240px;
-}
-
-.metric-card::before {
-
-    content: "";
-
-    position: absolute;
-
-    top: 0;
-    left: 0;
-
-    width: 100%;
-    height: 6px;
-
-    background: linear-gradient(
-        90deg,
-        #2563eb,
-        #7c3aed
-    );
+    background: white;
+    border-radius: 24px;
+    padding: 28px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    transition: all 0.25s ease;
+    min-height: 230px;
 }
 
 .metric-card:hover {
-
-    transform: translateY(-6px);
-
-    box-shadow:
-        0 8px 24px rgba(37,99,235,0.08),
-        0 20px 40px rgba(15,23,42,0.10);
+    transform: translateY(-5px);
 }
 
 .metric-header {
-
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
 }
 
 .metric-left {
-
     display: flex;
     flex-direction: column;
 }
 
 .metric-title {
-
-    font-size: 13px;
-    font-weight: 800;
-
+    font-size: 14px;
+    font-weight: 700;
     color: #64748b !important;
-
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1px;
 }
 
 .metric-subtitle {
-
-    margin-top: 6px;
-
     font-size: 14px;
-    font-weight: 500;
-
     color: #94a3b8 !important;
+    margin-top: 6px;
 }
 
 .metric-badge {
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    min-width: 70px;
-    height: 46px;
-
-    padding: 0 18px;
-
-    border-radius: 16px;
-
-    background: linear-gradient(
-        135deg,
-        #2563eb,
-        #7c3aed
-    );
-
+    background: linear-gradient(135deg,#2563eb,#7c3aed);
     color: white !important;
-
+    padding: 10px 16px;
+    border-radius: 14px;
     font-size: 20px;
     font-weight: 800;
-
-    box-shadow:
-        0 8px 18px rgba(37,99,235,0.25);
+    box-shadow: 0 8px 18px rgba(37,99,235,0.25);
 }
 
 .metric-value {
-
     margin-top: 34px;
-
-    font-size: 56px;
-    font-weight: 900;
-
+    font-size: 52px;
+    font-weight: 800;
     color: #0f172a !important;
-
     line-height: 1;
 }
 
-.metric-footnote {
-
-    margin-top: 8px;
-
-    font-size: 14px;
-    color: #94a3b8 !important;
-}
-
 .metric-progress {
-
-    position: relative;
-
     width: 100%;
     height: 12px;
-
     background: #e2e8f0;
-
     border-radius: 999px;
-
     overflow: hidden;
-
-    margin-top: 26px;
+    margin-top: 28px;
 }
 
 .metric-fill {
-
     height: 100%;
-
     border-radius: 999px;
-
-    background: linear-gradient(
-        90deg,
-        #8b5cf6,
-        #3b82f6
-    );
-
-    box-shadow:
-        0 4px 10px rgba(59,130,246,0.35);
-
-    transition: width 0.6s ease;
+    background: linear-gradient(90deg,#8b5cf6,#3b82f6);
 }
 
 /* =====================================================
@@ -290,6 +194,20 @@ CHAT CARD
 }
 
 .insight-box * {
+    color: white !important;
+}
+
+/* =====================================================
+OPTION MENU
+===================================================== */
+
+.nav-link {
+    border-radius: 12px !important;
+    margin-bottom: 8px !important;
+}
+
+.nav-link-selected {
+    background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
     color: white !important;
 }
 
@@ -371,6 +289,17 @@ attr_map = {
     15: "Helps me reach goals",
     16: "Locally relevant network",
     17: "Helps career/business growth"
+}
+
+# =========================================================
+# KPI MAP
+# =========================================================
+
+kpi_map = {
+    "Awareness": ("Aided_Awareness", "yesno"),
+    "Favorability": ("Brand_Favorability", "top2"),
+    "Consideration": ("Consideration", "top2"),
+    "Effect": ("Consideration_Effect", "top2")
 }
 
 # =========================================================
@@ -470,23 +399,12 @@ def get_metric(
 
             q = f"""
             SELECT
-
             SUM(
-                CASE
-                    WHEN LOWER(TRIM({col}))='yes'
-                    THEN {weight_col}
-                    ELSE 0
+                CASE WHEN LOWER(TRIM({col}))='yes'
+                THEN {weight_col}
+                ELSE 0
                 END
-            ) * 100.0 /
-
-            SUM(
-                CASE
-                    WHEN {col} IS NOT NULL
-                    THEN {weight_col}
-                    ELSE 0
-                END
-            )
-
+            ) * 100.0 / SUM({weight_col})
             FROM df
             {where_clause}
             """
@@ -495,32 +413,23 @@ def get_metric(
 
             q = f"""
             SELECT
-
             SUM(
-                CASE
-                    WHEN TRY_CAST(
-                        REGEXP_EXTRACT(
-                            TRIM({col}),
-                            '\\d+'
-                        ) AS INTEGER
-                    ) IN (4,5)
-
-                    THEN {weight_col}
-                    ELSE 0
+                CASE WHEN TRY_CAST(
+                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
+                    AS INTEGER
+                ) IN (4,5)
+                THEN {weight_col}
+                ELSE 0
                 END
             ) * 100.0 /
 
             SUM(
-                CASE
-                    WHEN TRY_CAST(
-                        REGEXP_EXTRACT(
-                            TRIM({col}),
-                            '\\d+'
-                        ) AS INTEGER
-                    ) BETWEEN 1 AND 5
-
-                    THEN {weight_col}
-                    ELSE 0
+                CASE WHEN TRY_CAST(
+                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
+                    AS INTEGER
+                ) BETWEEN 1 AND 5
+                THEN {weight_col}
+                ELSE 0
                 END
             )
 
@@ -546,8 +455,8 @@ with st.sidebar:
 
     selected_page = option_menu(
         menu_title=None,
-        options=["Dashboard"],
-        icons=["speedometer2"],
+        options=["Dashboard", "Graphs", "Chatbot"],
+        icons=["speedometer2", "graph-up-arrow", "robot"],
         default_index=0,
     )
 
@@ -596,10 +505,6 @@ if selected_page == "Dashboard":
         else "Global_weight_Stacked"
     )
 
-    # =====================================================
-    # KPI VALUES
-    # =====================================================
-
     awareness = get_metric(
         f'Aided_Awareness_{code}_slice',
         'yesno',
@@ -639,10 +544,6 @@ if selected_page == "Dashboard":
         (c4, "Effect", effect)
     ]
 
-    # =====================================================
-    # KPI CARDS
-    # =====================================================
-
     for col, title, value in cards:
 
         with col:
@@ -659,7 +560,7 @@ if selected_page == "Dashboard":
                         </div>
 
                         <div class="metric-subtitle">
-                            Brand KPI Score
+                            KPI Score
                         </div>
 
                     </div>
@@ -674,16 +575,10 @@ if selected_page == "Dashboard":
                     {value}%
                 </div>
 
-                <div class="metric-footnote">
-                    Overall weighted score
-                </div>
-
                 <div class="metric-progress">
 
-                    <div
-                        class="metric-fill"
-                        style="width:{min(value,100)}%">
-                    </div>
+                    <div class="metric-fill"
+                    style="width:{value}%"></div>
 
                 </div>
 
@@ -736,22 +631,16 @@ if selected_page == "Dashboard":
         color_continuous_scale="Blues"
     )
 
-    fig_attr.update_traces(
-        texttemplate='%{text:.1f}%',
-        textposition='outside'
-    )
-
     fig_attr.update_layout(
         paper_bgcolor='white',
         plot_bgcolor='white',
         font_color='#111827',
-        xaxis_title='Percentage',
-        yaxis_title='',
-        xaxis=dict(range=[0, 100]),
-        showlegend=False
+        xaxis_title='',
+        yaxis_title=''
     )
 
     st.plotly_chart(
         fig_attr,
         use_container_width=True
     )
+ st.markdown("</div>", unsafe_allow_html=True)
