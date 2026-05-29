@@ -7,13 +7,13 @@ import altair as alt
 # 1. Initialize native wide parameters
 st.set_page_config(layout="wide")
 
-# 2. Premium Light SaaS Theme Custom CSS Injector (100% stable & safe)
+# 2. Premium Clean White Executive Theme Custom CSS Injector
 st.markdown(
     """
     <style>
-    /* Change the main app background to a clean executive light gray */
+    /* Change the main app background to a crisp premium white */
     .stApp {
-        background-color: #f8f9fa !important;
+        background-color: #ffffff !important;
     }
     
     /* Make custom KPI text display uniform inside containers */
@@ -37,7 +37,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Clean, corporate branding update
+# Clean, corporate title matching your specification
 st.title("Consumer Brand Tracker Dashboard")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
@@ -238,7 +238,7 @@ with tab1:
 
     st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
     
-    # Grid Layout with solid background modular containers
+    # Grid Layout with solid white background modular containers
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
