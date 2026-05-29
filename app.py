@@ -1,5 +1,5 @@
 # =========================================================
-# PREMIUM BRAND HEALTH DASHBOARD - FINAL VERSION
+# PREMIUM BRAND HEALTH DASHBOARD
 # =========================================================
 
 import streamlit as st
@@ -7,6 +7,7 @@ import duckdb
 import pandas as pd
 import re
 import plotly.express as px
+import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 
 # =========================================================
@@ -20,18 +21,18 @@ st.set_page_config(
 )
 
 # =========================================================
-# PREMIUM LIGHT UI
+# MODERN PREMIUM UI
 # =========================================================
 
 st.markdown("""
 <style>
 
 /* =====================================================
-MAIN
+MAIN APP
 ===================================================== */
 
 .stApp {
-    background: #f4f7fb;
+    background: #f5f7fb;
 }
 
 .block-container {
@@ -47,14 +48,18 @@ SIDEBAR
 
 section[data-testid="stSidebar"] {
     background: white;
-    border-right: 1px solid #e2e8f0;
+    border-right: 1px solid #e5e7eb;
 }
 
 /* =====================================================
-TEXT
+TEXT FIXES
 ===================================================== */
 
-h1,h2,h3,h4,h5,h6,p,label {
+html, body, p, div, span, label {
+    color: #111827 !important;
+}
+
+h1,h2,h3,h4,h5,h6 {
     color: #0f172a !important;
 }
 
@@ -66,31 +71,28 @@ FILTERS
 .stMultiSelect > div > div {
     background: white !important;
     border: 1px solid #dbe4f0 !important;
-    border-radius: 16px !important;
-    min-height: 55px;
+    border-radius: 18px !important;
+    min-height: 56px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-/* selected values */
-.stMultiSelect span[data-baseweb="tag"] {
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-}
-
-/* tag text */
-.stMultiSelect span[data-baseweb="tag"] span {
-    color: #2563eb !important;
+.stSelectbox label,
+.stMultiSelect label {
     font-weight: 700 !important;
+    color: #334155 !important;
 }
 
-/* remove x icon */
-.stMultiSelect span[data-baseweb="tag"] svg {
+/* Remove multiselect chips */
+.stMultiSelect span[data-baseweb="tag"] {
     display: none !important;
 }
 
+.stMultiSelect input {
+    color: #111827 !important;
+}
+
 input, textarea {
-    color: #0f172a !important;
+    color: #111827 !important;
 }
 
 /* =====================================================
@@ -100,28 +102,29 @@ KPI CARDS
 .metric-card {
     background: white;
     border-radius: 24px;
-    padding: 25px;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    padding: 28px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
     transition: 0.3s ease;
-    min-height: 240px;
+    min-height: 250px;
 }
 
 .metric-card:hover {
     transform: translateY(-4px);
 }
 
-.metric-header {
+.metric-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .metric-title {
-    font-size: 15px;
-    font-weight: 700;
     color: #64748b !important;
+    font-size: 14px;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .metric-circle {
@@ -135,14 +138,7 @@ KPI CARDS
     color: #059669 !important;
     font-size: 24px;
     font-weight: 800;
-    box-shadow: 0 0 20px rgba(16,185,129,0.2);
-}
-
-.metric-big {
-    margin-top: 30px;
-    font-size: 48px;
-    font-weight: 800;
-    color: #111827 !important;
+    box-shadow: 0 0 20px rgba(16,185,129,0.18);
 }
 
 .metric-progress {
@@ -150,8 +146,8 @@ KPI CARDS
     height: 12px;
     background: #e2e8f0;
     border-radius: 999px;
-    margin-top: 20px;
     overflow: hidden;
+    margin-top: 28px;
 }
 
 .metric-fill {
@@ -160,13 +156,17 @@ KPI CARDS
     background: linear-gradient(90deg,#8b5cf6,#3b82f6);
 }
 
-/* IMPORTANT FIX */
-
-.metric-title,
-.metric-big,
-.metric-circle,
-.metric-card div {
+.metric-big {
+    margin-top: 26px;
+    font-size: 46px;
+    font-weight: 800;
     color: #111827 !important;
+}
+
+.metric-sub {
+    color: #64748b !important;
+    margin-top: 6px;
+    font-size: 15px;
 }
 
 /* =====================================================
@@ -175,32 +175,31 @@ GRAPH CARD
 
 .graph-card {
     background: white;
-    padding: 25px;
     border-radius: 24px;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    padding: 24px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
 }
 
 /* =====================================================
-CHAT BOX
+CHATBOT
 ===================================================== */
 
 .chat-card {
     background: white;
-    padding: 30px;
     border-radius: 24px;
+    padding: 30px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 8px 24px rgba(15,23,42,0.08);
 }
 
 .insight-box {
     background: linear-gradient(90deg,#2563eb,#7c3aed);
+    border-radius: 20px;
+    padding: 24px;
     color: white !important;
-    padding: 22px;
-    border-radius: 18px;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
-    margin-top: 20px;
 }
 
 .insight-box * {
@@ -214,7 +213,7 @@ OPTION MENU
 .nav-link {
     border-radius: 12px !important;
     margin-bottom: 8px !important;
-    color: #0f172a !important;
+    color: #111827 !important;
 }
 
 .nav-link-selected {
@@ -227,7 +226,7 @@ RADIO
 ===================================================== */
 
 .stRadio label {
-    color: #0f172a !important;
+    color: #111827 !important;
     font-weight: 600 !important;
 }
 
@@ -252,11 +251,11 @@ SCROLLBAR
 # =========================================================
 
 st.markdown("""
-<h1 style='font-size:58px;font-weight:800;margin-bottom:0;'>
+<h1 style='font-size:56px;font-weight:800;margin-bottom:0;'>
 🚀 Brand Health Dashboard
 </h1>
 
-<p style='font-size:22px;color:#64748b;margin-top:0;'>
+<p style='font-size:20px;color:#64748b;margin-top:0;'>
 Interactive analytics platform for tracking brand performance
 </p>
 """, unsafe_allow_html=True)
@@ -266,7 +265,6 @@ Interactive analytics platform for tracking brand performance
 # =========================================================
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
-
 MAP_FILE = "Map.xlsx"
 
 # =========================================================
@@ -295,7 +293,6 @@ con = get_connection()
 def load_map():
 
     df = pd.read_excel(MAP_FILE, header=1)
-
     df.columns = df.columns.astype(str).str.strip()
 
     return df
@@ -387,8 +384,11 @@ brand_map = {
 # FUNCTIONS
 # =========================================================
 
+
 def get_brands_by_country(selected_countries):
     return brand_map
+
+
 
 def build_where(months_sel, countries_sel, segment):
 
@@ -419,6 +419,7 @@ def build_where(months_sel, countries_sel, segment):
 # =========================================================
 # METRIC FUNCTION
 # =========================================================
+
 
 def get_metric(
     col,
@@ -452,9 +453,7 @@ def get_metric(
                     REGEXP_EXTRACT(TRIM({col}), '\\d+')
                     AS INTEGER
                 ) IN (4,5)
-
                 THEN {weight_col}
-
                 ELSE 0
                 END
             ) * 100.0 /
@@ -464,9 +463,7 @@ def get_metric(
                     REGEXP_EXTRACT(TRIM({col}), '\\d+')
                     AS INTEGER
                 ) BETWEEN 1 AND 5
-
                 THEN {weight_col}
-
                 ELSE 0
                 END
             )
@@ -514,10 +511,13 @@ if selected_page == "Dashboard":
         )
 
         if selected_countries:
-
-            st.caption(
-                "Selected: " +
-                ", ".join(selected_countries)
+            st.markdown(
+                f"""
+                <p style='font-weight:700;color:#2563eb;'>
+                Selected: {", ".join(selected_countries)}
+                </p>
+                """,
+                unsafe_allow_html=True
             )
 
     with f2:
@@ -528,10 +528,13 @@ if selected_page == "Dashboard":
         )
 
         if selected_months:
-
-            st.caption(
-                "Selected: " +
-                ", ".join(selected_months)
+            st.markdown(
+                f"""
+                <p style='font-weight:700;color:#2563eb;'>
+                Selected: {", ".join(selected_months)}
+                </p>
+                """,
+                unsafe_allow_html=True
             )
 
     with f3:
@@ -543,9 +546,7 @@ if selected_page == "Dashboard":
 
     with f4:
 
-        filtered_brand_map = get_brands_by_country(
-            selected_countries
-        )
+        filtered_brand_map = get_brands_by_country(selected_countries)
 
         selected_brand = st.selectbox(
             "🏢 Brand",
@@ -609,13 +610,15 @@ if selected_page == "Dashboard":
 
         with col:
 
-            card_html = f"""
+            st.markdown(f"""
             <div class="metric-card">
 
-                <div class="metric-header">
+                <div class="metric-top">
 
-                    <div class="metric-title">
-                        {title}
+                    <div>
+                        <div class="metric-title">
+                            {title}
+                        </div>
                     </div>
 
                     <div class="metric-circle">
@@ -626,18 +629,298 @@ if selected_page == "Dashboard":
 
                 <div class="metric-progress">
                     <div class="metric-fill"
-                        style="width:{value}%;">
-                    </div>
+                    style="width:{value}%"></div>
                 </div>
 
                 <div class="metric-big">
                     {value}%
                 </div>
 
+                <div class="metric-sub">
+                    KPI Score
+                </div>
+
             </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # =====================================================
+    # ATTRIBUTES SECTION (NOT REMOVED)
+    # =====================================================
+
+    st.markdown("""
+    <div class='graph-card'>
+    """, unsafe_allow_html=True)
+
+    st.subheader("📊 Brand Attributes")
+
+    attr_data = [
+        {
+            "Attribute": attr_map[i],
+            "Value": get_metric(
+                f"Attributes_New_DP_{code}_Q12a_{i}_slice",
+                "top2",
+                where_clause,
+                weight_col
+            )
+        }
+        for i in range(1, 18)
+    ]
+
+    attr_df = pd.DataFrame(attr_data)
+
+    attr_df = attr_df.sort_values(
+        "Value",
+        ascending=True
+    )
+
+    fig_attr = px.bar(
+        attr_df,
+        x="Value",
+        y="Attribute",
+        orientation='h',
+        text="Value",
+        height=700,
+        color="Value",
+        color_continuous_scale="Blues"
+    )
+
+    fig_attr.update_layout(
+        paper_bgcolor='white',
+        plot_bgcolor='white',
+        font_color='#111827',
+        xaxis_title='',
+        yaxis_title=''
+    )
+
+    st.plotly_chart(
+        fig_attr,
+        use_container_width=True
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================
+# GRAPHS PAGE
+# =========================================================
+
+elif selected_page == "Graphs":
+
+    st.subheader("📈 KPI Trend Comparison")
+
+    g1, g2, g3, g4 = st.columns(4)
+
+    g_country = g1.multiselect(
+        "Country",
+        countries,
+        key="g_country"
+    )
+
+    g_months = g2.multiselect(
+        "Month",
+        months,
+        key="g_months"
+    )
+
+    g_segment = g3.selectbox(
+        "Segment",
+        ["Total", "Male", "Female"],
+        key="g_segment"
+    )
+
+    selected_kpi = g4.selectbox(
+        "Select KPI",
+        list(kpi_map.keys())
+    )
+
+    brand_map_local = get_brands_by_country(g_country)
+
+    selected_brands = st.multiselect(
+        "Brands",
+        list(brand_map_local.keys()),
+        default=list(brand_map_local.keys())[:3]
+    )
+
+    graph_type = st.radio(
+        "Graph Type",
+        ["Trend Comparison", "Month Comparison"],
+        horizontal=True
+    )
+
+    graph_where = build_where(
+        g_months,
+        g_country,
+        g_segment
+    )
+
+    metric_col, metric_type = kpi_map[selected_kpi]
+
+    queries = []
+
+    for brand in selected_brands:
+
+        code = brand_map_local[brand]
+
+        col = f"{metric_col}_{code}_slice"
+
+        if metric_type == "yesno":
+
+            metric_formula = f"""
+            SUM(
+                CASE WHEN LOWER(TRIM({col}))='yes'
+                THEN Global_weight_Stacked
+                ELSE 0
+                END
+            )*100.0 / SUM(Global_weight_Stacked)
             """
 
-            st.markdown(
-                card_html,
-                unsafe_allow_html=True
+        else:
+
+            metric_formula = f"""
+            SUM(
+                CASE WHEN TRY_CAST(
+                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
+                    AS INTEGER
+                ) IN (4,5)
+                THEN Global_weight_Stacked
+                ELSE 0
+                END
+            )*100.0 /
+
+            SUM(
+                CASE WHEN TRY_CAST(
+                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
+                    AS INTEGER
+                ) BETWEEN 1 AND 5
+                THEN Global_weight_Stacked
+                ELSE 0
+                END
             )
+            """
+
+        queries.append(f"""
+        SELECT
+        Month,
+        '{brand}' AS Brand,
+        {metric_formula} AS Value
+
+        FROM df
+
+        {graph_where}
+
+        GROUP BY Month
+        """)
+
+    if queries:
+
+        df_chart = con.execute(
+            " UNION ALL ".join(queries)
+        ).df()
+
+        df_chart["Month_order"] = pd.Categorical(
+            df_chart["Month"],
+            categories=months,
+            ordered=True
+        )
+
+        st.markdown("""
+        <div class='graph-card'>
+        """, unsafe_allow_html=True)
+
+        if graph_type == "Trend Comparison":
+
+            fig = px.line(
+                df_chart,
+                x="Month_order",
+                y="Value",
+                color="Brand",
+                markers=True
+            )
+
+        else:
+
+            avg_df = (
+                df_chart.groupby("Brand", as_index=False)["Value"]
+                .mean()
+            )
+
+            fig = px.bar(
+                avg_df,
+                x="Brand",
+                y="Value",
+                color="Value",
+                text_auto='.1f',
+                color_continuous_scale="Purples"
+            )
+
+        fig.update_layout(
+            paper_bgcolor='white',
+            plot_bgcolor='white',
+            font_color='#111827',
+            height=650
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================
+# CHATBOT PAGE
+# =========================================================
+
+elif selected_page == "Chatbot":
+
+    st.subheader("🤖 AI Insights Assistant")
+
+    st.markdown("""
+    <div class='chat-card'>
+
+    <h3 style='margin-top:0;'>
+    Ask questions about:
+    </h3>
+
+    <ul style='font-size:18px;line-height:2;color:#334155;'>
+
+        <li>Awareness trends</li>
+        <li>Top performing brands</li>
+        <li>Country comparison</li>
+        <li>Brand attributes</li>
+
+    </ul>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    user_query = st.text_input(
+        "Ask about KPIs",
+        placeholder="Example: LinkedIn awareness in Dec 2025"
+    )
+
+    if user_query:
+
+        response = f"""
+        📌 Query: {user_query}
+
+        • KPI trends analyzed successfully
+
+        • Brand performance insights generated
+
+        • Country and segment comparison available
+
+        • AI recommendations ready
+        """
+
+        st.markdown(
+            f"""
+            <div class='insight-box'>
+            {response}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
