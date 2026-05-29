@@ -47,34 +47,39 @@ st.markdown("""
         color: #9ca3af !important;
     }
     
-    /* Form controls (Selectboxes, Multiselects, Checkboxes) formatting */
+    /* Form controls (Selectboxes, Multiselects) formatting */
     .stSelectbox div, .stMultiSelect div {
         background-color: #2a243d !important;
         color: #ffffff !important;
     }
 
-    /* ⚡ FIX: Convert Red Selection Boxes to Clean, Flat Inline Text */
+    /* ⚡ FIX: Convert Selection Boxes to Flat Inline Text & Strip 'x' and stray commas */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
         background-color: transparent !important;
         border: none !important;
         padding: 0px !important;
-        margin: 0px 4px 0px 0px !important;
+        margin: 0px 0px 0px 0px !important;
         color: #ffffff !important;
         box-shadow: none !important;
     }
     
-    /* Append a comma after each selected text value item implicitly */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child)::after {
-        content: ", " !important;
-        color: #9ca3af !important;
+    /* Hide custom pseudo commas, trailing default delete indicators and inner close buttons completely */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] Vil,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]::after,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]::before {
+        display: none !important;
+        content: "" !important;
     }
     
-    /* Hide the built-in small 'x' (delete icon) inside the text labels */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] Vil {
-        display: none !important;
+    /* Inject clean comma spacing natively between sibling text tokens */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) {
+        margin-right: 6px !important;
     }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button {
-        display: none !important;
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) > div::after {
+        content: "," !important;
+        color: #9ca3af !important;
+        margin-left: 1px !important;
     }
 
     /* Force Multiselect Choices to Stay Compact on a Single Line */
@@ -255,21 +260,11 @@ with tab1:
 
     with f1:
         st.markdown("**🌍 Country**")
-        select_all_country = st.checkbox("All", key="country_all")
-        if select_all_country:
-            selected_countries = countries
-            st.caption(f"All selected ({len(countries)})")
-        else:
-            selected_countries = st.multiselect("", countries, label_visibility="collapsed")
+        selected_countries = st.multiselect("", countries, label_visibility="collapsed")
 
     with f2:
         st.markdown("**📅 Month**")
-        select_all_month = st.checkbox("All", key="month_all")
-        if select_all_month:
-            selected_months = months
-            st.caption(f"All selected ({len(months)})")
-        else:
-            selected_months = st.multiselect("", months, label_visibility="collapsed")
+        selected_months = st.multiselect("", months, label_visibility="collapsed")
 
     with f3:
         st.markdown("**👤 Segment**")
