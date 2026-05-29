@@ -4,7 +4,7 @@ import pandas as pd
 import re
 import altair as alt
 
-# 1. Native configuration with no layout overrides
+# 1. Native configuration with no experimental layout overrides
 st.set_page_config(layout="wide")
 
 st.title("Brand Health Intelligence Platform")
@@ -123,7 +123,8 @@ def get_metric(col, metric_type="top2", where_clause="", weight_col="Global_weig
             SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5 THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
-        return round(con.execute(q).fetchone()[0] or 0, 1)
+        res = con.execute(q).fetchone()
+        return round(res[0] or 0, 1) if res else 0
     except:
         return 0
 
@@ -154,7 +155,7 @@ def create_sparkline_chart(df, color_line):
     return chart.configure(background='transparent').configure_view(strokeOpacity=0)
 
 # -----------------------------
-# Standard, Ultra-Stable Native Tabs
+# Clean, Bulletproof Native Tabs
 tab1, tab2, tab3 = st.tabs(["📊 Executive View", "📈 Deep-Dive Graphs", "🤖 AI Analytics Chatbot"])
 
 # -----------------------------
@@ -169,71 +170,76 @@ with tab1:
         segment = st.selectbox("👤 Demographic Segment", ["Total", "Male", "Female"])
     with f4:
         filtered_brand_map = get_brands_by_country(selected_countries)
-        selected_brand = st.selectbox("🏢 Target Enterprise Brand", list(filtered_brand_map.keys()))
+        brand_options = list(filtered_brand_map.keys())
+        selected_brand = st.selectbox("🏢 Target Enterprise Brand", brand_options if brand_options else ["No Brands Available"])
 
-    code = filtered_brand_map[selected_brand]
-    where_clause = build_where(selected_months, selected_countries, segment)
-    weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+    # 🛑 CRUCIAL SECURITY GUARD: Prevents silent failures and execution freezes
+    if not brand_options or selected_brand == "No Brands Available" or not selected_brand:
+        st.info("💡 Please choose at least one Region / Country to populate operational tracking models.")
+    else:
+        code = filtered_brand_map[selected_brand]
+        where_clause = build_where(selected_months, selected_countries, segment)
+        weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
-    st.write("---")
-    
-    # Standard Native Metric Cards Grid
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        val1 = f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%"
-        st.metric(label="Total Awareness", value=val1)
-        df_sp1 = get_sparkline_data(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)
-        st.altair_chart(create_sparkline_chart(df_sp1, '#00f2fe'), use_container_width=True)
+        st.write("---")
+        
+        # Standard Native Metric Cards Grid
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            val1 = f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%"
+            st.metric(label="Total Awareness", value=val1)
+            df_sp1 = get_sparkline_data(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)
+            st.altair_chart(create_sparkline_chart(df_sp1, '#00f2fe'), use_container_width=True)
 
-    with col2:
-        val2 = f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.metric(label="Brand Favorability", value=val2)
-        df_sp2 = get_sparkline_data(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)
-        st.altair_chart(create_sparkline_chart(df_sp2, '#38ef7d'), use_container_width=True)
+        with col2:
+            val2 = f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%"
+            st.metric(label="Brand Favorability", value=val2)
+            df_sp2 = get_sparkline_data(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)
+            st.altair_chart(create_sparkline_chart(df_sp2, '#38ef7d'), use_container_width=True)
 
-    with col3:
-        val3 = f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.metric(label="Consideration Rate", value=val3)
-        df_sp3 = get_sparkline_data(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)
-        st.altair_chart(create_sparkline_chart(df_sp3, '#ff007f'), use_container_width=True)
+        with col3:
+            val3 = f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%"
+            st.metric(label="Consideration Rate", value=val3)
+            df_sp3 = get_sparkline_data(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)
+            st.altair_chart(create_sparkline_chart(df_sp3, '#ff007f'), use_container_width=True)
 
-    with col4:
-        val4 = f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.metric(label="Conversion Effect", value=val4)
-        df_sp4 = get_sparkline_data(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)
-        st.altair_chart(create_sparkline_chart(df_sp4, '#ff9f43'), use_container_width=True)
+        with col4:
+            val4 = f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%"
+            st.metric(label="Conversion Effect", value=val4)
+            df_sp4 = get_sparkline_data(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)
+            st.altair_chart(create_sparkline_chart(df_sp4, '#ff9f43'), use_container_width=True)
 
-    st.write("---")
-    
-    # Safe Interactive Pillar Selection via standard Radio Button
-    st.subheader("🎯 Brand Strategic Pillars Breakdown")
-    selected_pillar = st.radio(
-        label="Choose a Pillar to Inspect:",
-        options=list(brand_pillars.keys()),
-        horizontal=True
-    )
-    
-    active_indices = brand_pillars[selected_pillar]
-    attr_data = []
-    for idx in active_indices:
-        score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
-        attr_data.append({"Attribute Statement": attr_map[idx], "Agreement Score (%)": score})
-    
-    df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
-    
-    attr_chart = alt.Chart(df_matrix).mark_bar(
-        cornerRadiusTopRight=4,
-        cornerRadiusBottomRight=4,
-        size=22
-    ).encode(
-        x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
-        y=alt.Y("Attribute Statement:N", sort="-x", title=None),
-        color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="blues"), legend=None),
-        tooltip=["Attribute Statement", "Agreement Score (%)"]
-    ).properties(height=220)
-    
-    st.altair_chart(attr_chart, use_container_width=True)
+        st.write("---")
+        
+        # Safe Interactive Pillar Selection via standard Radio Button
+        st.subheader("🎯 Brand Strategic Pillars Breakdown")
+        selected_pillar = st.radio(
+            label="Choose a Pillar to Inspect:",
+            options=list(brand_pillars.keys()),
+            horizontal=True
+        )
+        
+        active_indices = brand_pillars[selected_pillar]
+        attr_data = []
+        for idx in active_indices:
+            score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
+            attr_data.append({"Attribute Statement": attr_map[idx], "Agreement Score (%)": score})
+        
+        df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
+        
+        attr_chart = alt.Chart(df_matrix).mark_bar(
+            cornerRadiusTopRight=4,
+            cornerRadiusBottomRight=4,
+            size=22
+        ).encode(
+            x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
+            y=alt.Y("Attribute Statement:N", sort="-x", title=None),
+            color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="blues"), legend=None),
+            tooltip=["Attribute Statement", "Agreement Score (%)"]
+        ).properties(height=220)
+        
+        st.altair_chart(attr_chart, use_container_width=True)
 
 # -----------------------------
 with tab2:
@@ -247,54 +253,58 @@ with tab2:
         g_segment = st.selectbox("Segment Select (Graph)", ["Total", "Male", "Female"], key="g_segment")
     with colg4:
         brand_map_local = get_brands_by_country(g_country)
-        g_brand_sel = st.selectbox("Select Target Brand (Graph)", list(brand_map_local.keys()), key="g_brand_single")
+        local_brand_options = list(brand_map_local.keys())
+        g_brand_sel = st.selectbox("Select Target Brand (Graph)", local_brand_options if local_brand_options else ["No Brands Available"], key="g_brand_single")
 
-    st.write("---")
-    st.subheader("📊 Brand Health Funnel Trends & Cross-Attribute Analytics")
-    
-    graph_where = build_where(g_months, g_country, g_segment)
-    g_code = brand_map_local[g_brand_sel]
-    
-    metrics_to_plot = [
-        {"label": "Total Awareness", "col": f"Aided_Awareness_{g_code}_slice", "type": "yesno"},
-        {"label": "Brand Favorability", "col": f"Brand_Favorability_{g_code}_slice", "type": "top2"},
-        {"label": "Consideration Rate", "col": f"Consideration_{g_code}_slice", "type": "top2"},
-        {"label": "Conversion Effect", "col": f"Consideration_Effect_{g_code}_slice", "type": "top2"},
-    ]
-    
-    trend_queries = []
-    for m_info in metrics_to_plot:
-        c_name = m_info["col"]
-        lbl = m_info["label"]
-        if m_info["type"] == "yesno":
-            trend_queries.append(f"""
-                SELECT Month, '{lbl}' AS Metric, 
-                SUM(CASE WHEN LOWER(TRIM({c_name}))='yes' THEN Global_weight_Stacked ELSE 0 END)*100.0/SUM(Global_weight_Stacked) AS Value 
-                FROM df {graph_where} GROUP BY Month
-            """)
-        else:
-            trend_queries.append(f"""
-                SELECT Month, '{lbl}' AS Metric, 
-                SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({c_name}), '\\d+') AS INTEGER) IN (4,5) THEN Global_weight_Stacked ELSE 0 END)*100.0 /
-                SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({c_name}), '\\d+') AS INTEGER) BETWEEN 1 AND 5 THEN Global_weight_Stacked ELSE 0 END) AS Value 
-                FROM df {graph_where} GROUP BY Month
-            """)
-            
-    df_trends = con.execute(" UNION ALL ".join(trend_queries)).df()
-    
-    if not df_trends.empty:
-        df_trends["Month_order"] = pd.Categorical(df_trends["Month"], categories=months, ordered=True)
-        
-        multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3).encode(
-            x=alt.X("Month_order:O", title="Timeline Phase"),
-            y=alt.Y("Value:Q", title="Percentage Share Score (%)", scale=alt.Scale(zero=False)),
-            color=alt.Color("Metric:N", legend=alt.Legend(title="Brand Funnel Layer")),
-            tooltip=["Month", "Metric", "Value"]
-        ).properties(height=400).interactive()
-        
-        st.altair_chart(multi_line_chart, use_container_width=True)
+    if not local_brand_options or g_brand_sel == "No Brands Available" or not g_brand_sel:
+        st.info("💡 Please select a filter setting to view trends data chart maps.")
     else:
-        st.warning("⚠️ No tracking information matches the selected filter configuration parameters.")
+        st.write("---")
+        st.subheader("📊 Brand Health Funnel Trends & Cross-Attribute Analytics")
+        
+        graph_where = build_where(g_months, g_country, g_segment)
+        g_code = brand_map_local[g_brand_sel]
+        
+        metrics_to_plot = [
+            {"label": "Total Awareness", "col": f"Aided_Awareness_{g_code}_slice", "type": "yesno"},
+            {"label": "Brand Favorability", "col": f"Brand_Favorability_{g_code}_slice", "type": "top2"},
+            {"label": "Consideration Rate", "col": f"Consideration_{g_code}_slice", "type": "top2"},
+            {"label": "Conversion Effect", "col": f"Consideration_Effect_{g_code}_slice", "type": "top2"},
+        ]
+        
+        trend_queries = []
+        for m_info in metrics_to_plot:
+            c_name = m_info["col"]
+            lbl = m_info["label"]
+            if m_info["type"] == "yesno":
+                trend_queries.append(f"""
+                    SELECT Month, '{lbl}' AS Metric, 
+                    SUM(CASE WHEN LOWER(TRIM({c_name}))='yes' THEN Global_weight_Stacked ELSE 0 END)*100.0/SUM(Global_weight_Stacked) AS Value 
+                    FROM df {graph_where} GROUP BY Month
+                """)
+            else:
+                trend_queries.append(f"""
+                    SELECT Month, '{lbl}' AS Metric, 
+                    SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({c_name}), '\\d+') AS INTEGER) IN (4,5) THEN Global_weight_Stacked ELSE 0 END)*100.0 /
+                    SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({c_name}), '\\d+') AS INTEGER) BETWEEN 1 AND 5 THEN Global_weight_Stacked ELSE 0 END) AS Value 
+                    FROM df {graph_where} GROUP BY Month
+                """)
+                
+        df_trends = con.execute(" UNION ALL ".join(trend_queries)).df()
+        
+        if not df_trends.empty:
+            df_trends["Month_order"] = pd.Categorical(df_trends["Month"], categories=months, ordered=True)
+            
+            multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3).encode(
+                x=alt.X("Month_order:O", title="Timeline Phase"),
+                y=alt.Y("Value:Q", title="Percentage Share Score (%)", scale=alt.Scale(zero=False)),
+                color=alt.Color("Metric:N", legend=alt.Legend(title="Brand Funnel Layer")),
+                tooltip=["Month", "Metric", "Value"]
+            ).properties(height=400).interactive()
+            
+            st.altair_chart(multi_line_chart, use_container_width=True)
+        else:
+            st.warning("⚠️ No tracking information matches the selected filter configuration parameters.")
 
 # -----------------------------
 with tab3:
