@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# MODERN PREMIUM UI
+# PREMIUM MODERN UI
 # =========================================================
 
 st.markdown("""
@@ -52,7 +52,7 @@ section[data-testid="stSidebar"] {
 }
 
 /* =====================================================
-TEXT FIXES
+TEXT COLORS
 ===================================================== */
 
 html, body, p, div, span, label {
@@ -82,17 +82,9 @@ FILTERS
     color: #334155 !important;
 }
 
-/* =====================================================
-REMOVE MULTISELECT CHIPS
-===================================================== */
-
 .stMultiSelect span[data-baseweb="tag"] {
     display: none !important;
 }
-
-/* =====================================================
-INPUTS
-===================================================== */
 
 .stMultiSelect input {
     color: #111827 !important;
