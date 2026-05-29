@@ -146,30 +146,42 @@ tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 # -----------------------------
 with tab1:
 
-    # ✅ CLEAN FILTER BAR
     f1, f2, f3, f4 = st.columns([2,2,1,2])
 
-    # ✅ COUNTRY FILTER
+    # ✅ COUNTRY FILTER (clean select all)
     with f1:
         st.markdown("**🌍 Country**")
-        select_all_country = st.checkbox("All", key="country_all")
 
-        if select_all_country:
+        country_options = ["Select All"] + countries
+        selected_country_ui = st.multiselect("", country_options, default=["Select All"])
+
+        if "Select All" in selected_country_ui:
             selected_countries = countries
-            st.caption(f"All selected ({len(countries)})")
         else:
-            selected_countries = st.multiselect("", countries)
+            selected_countries = selected_country_ui
 
-    # ✅ MONTH FILTER
+        # ✅ clean display
+        if len(selected_countries) == len(countries):
+            st.caption(f"All selected ({len(countries)})")
+        elif len(selected_countries) > 2:
+            st.caption(f"{len(selected_countries)} selected")
+
+    # ✅ MONTH FILTER (clean select all)
     with f2:
         st.markdown("**📅 Month**")
-        select_all_month = st.checkbox("All", key="month_all")
 
-        if select_all_month:
+        month_options = ["Select All"] + months
+        selected_month_ui = st.multiselect("", month_options, default=["Select All"])
+
+        if "Select All" in selected_month_ui:
             selected_months = months
-            st.caption(f"All selected ({len(months)})")
         else:
-            selected_months = st.multiselect("", months)
+            selected_months = selected_month_ui
+
+        if len(selected_months) == len(months):
+            st.caption(f"All selected ({len(months)})")
+        elif len(selected_months) > 2:
+            st.caption(f"{len(selected_months)} selected")
 
     # ✅ SEGMENT
     with f3:
@@ -207,8 +219,12 @@ with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
 
-    g_country = colg1.multiselect("Country", countries, key="g_country")
-    g_months = colg2.multiselect("Month", months, key="g_months")
+    g_country = colg1.multiselect("Country", ["Select All"] + countries, default=["Select All"], key="g_country")
+    g_country = countries if "Select All" in g_country else g_country
+
+    g_months = colg2.multiselect("Month", ["Select All"] + months, default=["Select All"], key="g_months")
+    g_months = months if "Select All" in g_months else g_months
+
     g_segment = colg3.selectbox("Segment", ["Total", "Male", "Female"], key="g_segment")
 
     brand_map_local = get_brands_by_country(g_country)
