@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# MODERN PREMIUM UI
+# PREMIUM MODERN UI
 # =========================================================
 
 st.markdown("""
@@ -52,7 +52,7 @@ section[data-testid="stSidebar"] {
 }
 
 /* =====================================================
-TEXT FIXES
+TEXT
 ===================================================== */
 
 html, body, p, div, span, label {
@@ -82,11 +82,6 @@ FILTERS
     color: #334155 !important;
 }
 
-/* Remove multiselect chips */
-.stMultiSelect span[data-baseweb="tag"] {
-    display: none !important;
-}
-
 .stMultiSelect input {
     color: #111827 !important;
 }
@@ -100,73 +95,109 @@ KPI CARDS
 ===================================================== */
 
 .metric-card {
-    background: white;
-    border-radius: 24px;
-    padding: 28px;
+    background: linear-gradient(145deg,#ffffff,#f8fafc);
+    border-radius: 28px;
+    padding: 30px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
-    transition: 0.3s ease;
-    min-height: 250px;
+    box-shadow:
+        0 10px 30px rgba(15,23,42,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.8);
+    transition: all 0.3s ease;
+    min-height: 260px;
+    position: relative;
+    overflow: hidden;
 }
 
 .metric-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-6px);
+    box-shadow:
+        0 18px 40px rgba(59,130,246,0.15),
+        0 8px 20px rgba(15,23,42,0.08);
+}
+
+.metric-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 5px;
+    width: 100%;
+    background: linear-gradient(
+        90deg,
+        #2563eb,
+        #7c3aed
+    );
 }
 
 .metric-top {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .metric-title {
     color: #64748b !important;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
+}
+
+.metric-sub {
+    color: #94a3b8 !important;
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 .metric-circle {
-    width: 70px;
-    height: 70px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background: #ecfdf5;
+    background:
+        linear-gradient(
+            135deg,
+            #ecfeff,
+            #dbeafe
+        );
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #059669 !important;
+    color: #2563eb !important;
     font-size: 24px;
     font-weight: 800;
-    box-shadow: 0 0 20px rgba(16,185,129,0.18);
+    box-shadow:
+        0 8px 20px rgba(37,99,235,0.18);
+    border: 4px solid white;
+}
+
+.metric-big {
+    margin-top: 34px;
+    font-size: 54px;
+    font-weight: 900;
+    color: #0f172a !important;
+    line-height: 1;
 }
 
 .metric-progress {
     width: 100%;
-    height: 12px;
+    height: 14px;
     background: #e2e8f0;
     border-radius: 999px;
     overflow: hidden;
-    margin-top: 28px;
+    margin-top: 30px;
 }
 
 .metric-fill {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg,#8b5cf6,#3b82f6);
-}
-
-.metric-big {
-    margin-top: 26px;
-    font-size: 46px;
-    font-weight: 800;
-    color: #111827 !important;
-}
-
-.metric-sub {
-    color: #64748b !important;
-    margin-top: 6px;
-    font-size: 15px;
+    background: linear-gradient(
+        90deg,
+        #2563eb,
+        #7c3aed
+    );
+    box-shadow:
+        0 0 12px rgba(124,58,237,0.35);
 }
 
 /* =====================================================
@@ -219,15 +250,6 @@ OPTION MENU
 .nav-link-selected {
     background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
     color: white !important;
-}
-
-/* =====================================================
-RADIO
-===================================================== */
-
-.stRadio label {
-    color: #111827 !important;
-    font-weight: 600 !important;
 }
 
 /* =====================================================
@@ -384,11 +406,8 @@ brand_map = {
 # FUNCTIONS
 # =========================================================
 
-
 def get_brands_by_country(selected_countries):
     return brand_map
-
-
 
 def build_where(months_sel, countries_sel, segment):
 
@@ -419,7 +438,6 @@ def build_where(months_sel, countries_sel, segment):
 # =========================================================
 # METRIC FUNCTION
 # =========================================================
-
 
 def get_metric(
     col,
@@ -504,48 +522,24 @@ if selected_page == "Dashboard":
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-
         selected_countries = st.multiselect(
             "🌍 Country",
             countries
         )
 
-        if selected_countries:
-            st.markdown(
-                f"""
-                <p style='font-weight:700;color:#2563eb;'>
-                Selected: {", ".join(selected_countries)}
-                </p>
-                """,
-                unsafe_allow_html=True
-            )
-
     with f2:
-
         selected_months = st.multiselect(
             "📅 Month",
             months
         )
 
-        if selected_months:
-            st.markdown(
-                f"""
-                <p style='font-weight:700;color:#2563eb;'>
-                Selected: {", ".join(selected_months)}
-                </p>
-                """,
-                unsafe_allow_html=True
-            )
-
     with f3:
-
         segment = st.selectbox(
             "👤 Segment",
             ["Total", "Male", "Female"]
         )
 
     with f4:
-
         filtered_brand_map = get_brands_by_country(selected_countries)
 
         selected_brand = st.selectbox(
@@ -616,9 +610,15 @@ if selected_page == "Dashboard":
                 <div class="metric-top">
 
                     <div>
+
                         <div class="metric-title">
                             {title}
                         </div>
+
+                        <div class="metric-sub">
+                            KPI Score
+                        </div>
+
                     </div>
 
                     <div class="metric-circle">
@@ -627,17 +627,13 @@ if selected_page == "Dashboard":
 
                 </div>
 
-                <div class="metric-progress">
-                    <div class="metric-fill"
-                    style="width:{value}%"></div>
-                </div>
-
                 <div class="metric-big">
                     {value}%
                 </div>
 
-                <div class="metric-sub">
-                    KPI Score
+                <div class="metric-progress">
+                    <div class="metric-fill"
+                    style="width:{value}%"></div>
                 </div>
 
             </div>
@@ -646,7 +642,7 @@ if selected_page == "Dashboard":
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # =====================================================
-    # ATTRIBUTES SECTION (NOT REMOVED)
+    # ATTRIBUTES SECTION
     # =====================================================
 
     st.markdown("""
@@ -698,229 +694,3 @@ if selected_page == "Dashboard":
         fig_attr,
         use_container_width=True
     )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================
-# GRAPHS PAGE
-# =========================================================
-
-elif selected_page == "Graphs":
-
-    st.subheader("📈 KPI Trend Comparison")
-
-    g1, g2, g3, g4 = st.columns(4)
-
-    g_country = g1.multiselect(
-        "Country",
-        countries,
-        key="g_country"
-    )
-
-    g_months = g2.multiselect(
-        "Month",
-        months,
-        key="g_months"
-    )
-
-    g_segment = g3.selectbox(
-        "Segment",
-        ["Total", "Male", "Female"],
-        key="g_segment"
-    )
-
-    selected_kpi = g4.selectbox(
-        "Select KPI",
-        list(kpi_map.keys())
-    )
-
-    brand_map_local = get_brands_by_country(g_country)
-
-    selected_brands = st.multiselect(
-        "Brands",
-        list(brand_map_local.keys()),
-        default=list(brand_map_local.keys())[:3]
-    )
-
-    graph_type = st.radio(
-        "Graph Type",
-        ["Trend Comparison", "Month Comparison"],
-        horizontal=True
-    )
-
-    graph_where = build_where(
-        g_months,
-        g_country,
-        g_segment
-    )
-
-    metric_col, metric_type = kpi_map[selected_kpi]
-
-    queries = []
-
-    for brand in selected_brands:
-
-        code = brand_map_local[brand]
-
-        col = f"{metric_col}_{code}_slice"
-
-        if metric_type == "yesno":
-
-            metric_formula = f"""
-            SUM(
-                CASE WHEN LOWER(TRIM({col}))='yes'
-                THEN Global_weight_Stacked
-                ELSE 0
-                END
-            )*100.0 / SUM(Global_weight_Stacked)
-            """
-
-        else:
-
-            metric_formula = f"""
-            SUM(
-                CASE WHEN TRY_CAST(
-                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
-                    AS INTEGER
-                ) IN (4,5)
-                THEN Global_weight_Stacked
-                ELSE 0
-                END
-            )*100.0 /
-
-            SUM(
-                CASE WHEN TRY_CAST(
-                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
-                    AS INTEGER
-                ) BETWEEN 1 AND 5
-                THEN Global_weight_Stacked
-                ELSE 0
-                END
-            )
-            """
-
-        queries.append(f"""
-        SELECT
-        Month,
-        '{brand}' AS Brand,
-        {metric_formula} AS Value
-
-        FROM df
-
-        {graph_where}
-
-        GROUP BY Month
-        """)
-
-    if queries:
-
-        df_chart = con.execute(
-            " UNION ALL ".join(queries)
-        ).df()
-
-        df_chart["Month_order"] = pd.Categorical(
-            df_chart["Month"],
-            categories=months,
-            ordered=True
-        )
-
-        st.markdown("""
-        <div class='graph-card'>
-        """, unsafe_allow_html=True)
-
-        if graph_type == "Trend Comparison":
-
-            fig = px.line(
-                df_chart,
-                x="Month_order",
-                y="Value",
-                color="Brand",
-                markers=True
-            )
-
-        else:
-
-            avg_df = (
-                df_chart.groupby("Brand", as_index=False)["Value"]
-                .mean()
-            )
-
-            fig = px.bar(
-                avg_df,
-                x="Brand",
-                y="Value",
-                color="Value",
-                text_auto='.1f',
-                color_continuous_scale="Purples"
-            )
-
-        fig.update_layout(
-            paper_bgcolor='white',
-            plot_bgcolor='white',
-            font_color='#111827',
-            height=650
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================
-# CHATBOT PAGE
-# =========================================================
-
-elif selected_page == "Chatbot":
-
-    st.subheader("🤖 AI Insights Assistant")
-
-    st.markdown("""
-    <div class='chat-card'>
-
-    <h3 style='margin-top:0;'>
-    Ask questions about:
-    </h3>
-
-    <ul style='font-size:18px;line-height:2;color:#334155;'>
-
-        <li>Awareness trends</li>
-        <li>Top performing brands</li>
-        <li>Country comparison</li>
-        <li>Brand attributes</li>
-
-    </ul>
-
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    user_query = st.text_input(
-        "Ask about KPIs",
-        placeholder="Example: LinkedIn awareness in Dec 2025"
-    )
-
-    if user_query:
-
-        response = f"""
-        📌 Query: {user_query}
-
-        • KPI trends analyzed successfully
-
-        • Brand performance insights generated
-
-        • Country and segment comparison available
-
-        • AI recommendations ready
-        """
-
-        st.markdown(
-            f"""
-            <div class='insight-box'>
-            {response}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
