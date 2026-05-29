@@ -99,22 +99,18 @@ st.markdown("""
         gap: 6px;
     }
     
-    /* Native Framework Control Adaptation */
+    /* Native Framework Controls */
     .stSelectbox div, .stMultiSelect div {
         background-color: #161326 !important;
         color: #ffffff !important;
         border-color: rgba(255, 255, 255, 0.1) !important;
     }
 
-    /* Multi-select filter tag customization preserving layout clarity */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
         background-color: #2e2a47 !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 6px !important;
         color: #ffffff !important;
-    }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button {
-        color: #94a3b8 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -146,6 +142,14 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
+# Category Pillars Mapping to resolve information density issues
+brand_pillars = {
+    "🎯 Professional Career Growth": [1, 2, 3, 15, 17],
+    "🛡️ Trust & Brand Affinity": [6, 7, 11, 16],
+    "🤝 Community & Engagement": [4, 5, 8, 10],
+    "⚡ Content Innovation & Utility": [9, 12, 13, 14]
+}
+
 attr_map = {
     1: "Helps me move forward professionally",
     2: "Helps me find the right job for me",
@@ -314,26 +318,41 @@ with tab1:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 📊 Brand Attribute Performance Leaderboard Chart
-    st.subheader("🔥 Brand Attribute Strength Leaderboard")
-
+    # =========================================================
+    # 🕹️ DYNAMIC PILLAR CONTROLLER MATRIX (Removes scrolling)
+    # =========================================================
+    st.subheader("🎯 Brand Strategic Pillars Core Breakdown")
+    
+    # Horizontal inline button pill selection mechanism 
+    selected_pillar = st.radio(
+        label="Select Strategic Dimension Segment to Deep-Dive:",
+        options=list(brand_pillars.keys()),
+        horizontal=True
+    )
+    
+    # Filter the active dataset dynamically to prevent endless vertical layout scrolling
+    active_indices = brand_pillars[selected_pillar]
+    
     attr_data = []
-    for i in range(1, 18):
-        score = get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice", "top2", where_clause, weight_col)
-        attr_data.append({"Attribute Statement": attr_map[i], "Score (%)": score})
+    for idx in active_indices:
+        score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
+        attr_data.append({"Strategic Statement": attr_map[idx], "Agreement Score (%)": score})
     
-    df_matrix = pd.DataFrame(attr_data).sort_values(by="Score (%)", ascending=False)
+    df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
     
-    # Render interactive horizontal bar tracking leaderboard
+    # Tailored configuration targeting clean multi-metric representation without data clipping
     attr_chart = alt.Chart(df_matrix).mark_bar(
         cornerRadiusTopRight=6,
-        cornerRadiusBottomRight=6
+        cornerRadiusBottomRight=6,
+        size=26 # Premium spacing structure
     ).encode(
-        x=alt.X("Score (%):Q", title="Top-2 Box Agreement Score (%)", axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
-        y=alt.Y("Attribute Statement:N", sort="-x", title=None, axis=alt.Axis(labelColor="#ffffff", labelFontSize=11, tickSize=0)),
-        color=alt.Color("Score (%):Q", scale=alt.Scale(scheme="purples"), legend=None),
-        tooltip=["Attribute Statement", "Score (%)"]
-    ).properties(height=500)
+        x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100]), 
+                axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
+        y=alt.Y("Strategic Statement:N", sort="-x", title=None, 
+                axis=alt.Axis(labelColor="#ffffff", labelFontSize=12, tickSize=0, labelLimit=320)),
+        color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="blues"), legend=None),
+        tooltip=["Strategic Statement", "Agreement Score (%)"]
+    ).properties(height=240) # Perfectly compact, dynamic height
     
     attr_chart = attr_chart.configure(background='transparent').configure_view(strokeOpacity=0)
     st.altair_chart(attr_chart, use_container_width=True)
