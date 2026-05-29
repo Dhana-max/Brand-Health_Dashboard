@@ -314,7 +314,7 @@ with tab1:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # ⚡ NEW ATTRACTIVE FEATURE: Brand Attribute Performance Chart
+    # 📊 Brand Attribute Performance Leaderboard Chart
     st.subheader("🔥 Brand Attribute Strength Leaderboard")
 
     attr_data = []
@@ -329,9 +329,9 @@ with tab1:
         cornerRadiusTopRight=6,
         cornerRadiusBottomRight=6
     ).encode(
-        x=alt.X("Score (%) :Q", title="Top-2 Box Agreement Score (%)", axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
+        x=alt.X("Score (%):Q", title="Top-2 Box Agreement Score (%)", axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
         y=alt.Y("Attribute Statement:N", sort="-x", title=None, axis=alt.Axis(labelColor="#ffffff", labelFontSize=11, tickSize=0)),
-        color=alt.Color("Score (%):Q", scale=alt.Scale(scheme="cyanpurple"), legend=None),
+        color=alt.Color("Score (%):Q", scale=alt.Scale(scheme="purples"), legend=None),
         tooltip=["Attribute Statement", "Score (%)"]
     ).properties(height=500)
     
