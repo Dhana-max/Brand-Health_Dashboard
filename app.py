@@ -53,18 +53,39 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* ⚡ FIX: Force Multiselect Choices to Stay Compact on a Single Line */
+    /* ⚡ FIX: Convert Red Selection Boxes to Clean, Flat Inline Text */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0px !important;
+        margin: 0px 4px 0px 0px !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+    }
+    
+    /* Append a comma after each selected text value item implicitly */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child)::after {
+        content: ", " !important;
+        color: #9ca3af !important;
+    }
+    
+    /* Hide the built-in small 'x' (delete icon) inside the text labels */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] Vil {
+        display: none !important;
+    }
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button {
+        display: none !important;
+    }
+
+    /* Force Multiselect Choices to Stay Compact on a Single Line */
     div[data-testid="stMultiSelect"] div[role="listbox"] {
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         white-space: nowrap !important;
-        gap: 4px !important;
-        padding-bottom: 2px !important;
-    }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
-        flex-shrink: 0 !important;
-        margin: 2px 0 !important;
+        gap: 0px !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
     }
     
     /* ⚡ FIX: Force Native Markdown/HTML Tables to be legible in Dark Theme */
