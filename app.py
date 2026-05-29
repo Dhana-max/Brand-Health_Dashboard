@@ -53,51 +53,67 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* ⚡ NEW CLEAN STYLE APPROACH: Prevent any text truncation/hiding inside selection bars */
+    /* ⚡ FIX: Complete unconstrained style overhaul to stop 3-letter cutting / hiding issues */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
         background-color: transparent !important;
         border: none !important;
-        box-shadow: none !important;
         padding: 0px !important;
-        margin: 0px 8px 0px 0px !important;
+        margin: 0px !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
         display: inline-flex !important;
         max-width: none !important;
         width: auto !important;
+        overflow: visible !important;
     }
     
-    /* Let the inner text block fill all its space naturally without truncation filters */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] > div:first-child {
+    /* Target the literal text child node directly to drop internal flex limits and clip margins */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] > div {
+        display: inline-block !important;
+        padding-left: 0px !important;
+        padding-right: 0px !important;
+        margin-left: 0px !important;
+        margin-right: 0px !important;
+        overflow: visible !important;
         max-width: none !important;
         width: auto !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
+        text-overflow: unset !important;
         white-space: nowrap !important;
-        padding: 0px !important;
-        margin: 0px !important;
     }
     
-    /* Completely hide the close button frame while maintaining normal alignment */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button {
+    /* Permanently purge default 'x' close buttons and built-in text alignment overrides */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] Vil,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] svg,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]::after,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]::before {
         display: none !important;
+        content: "" !important;
         width: 0px !important;
         height: 0px !important;
     }
     
-    /* Append a clean trailing comma for multi-selections */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) > div:first-child::after {
+    /* Render standard formatting commas natively between sequential items */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) {
+        margin-right: 4px !important;
+    }
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child)::after {
         content: "," !important;
         color: #ffffff !important;
-        margin-left: 2px !important;
+        display: inline-block !important;
     }
 
-    /* Keep all selected items perfectly inline on one row without dynamic inner paddings */
+    /* Ensure multiselect layout bar keeps full visibility with zero dynamic horizontal shift masks */
     div[data-testid="stMultiSelect"] div[role="listbox"] {
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         white-space: nowrap !important;
         gap: 0px !important;
-        padding: 4px 8px !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
     }
     
     /* ⚡ FIX: Force Native Markdown/HTML Tables to be legible in Dark Theme */
@@ -262,6 +278,7 @@ tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 
 # -----------------------------
 with tab1:
+    # 📐 Adjusted column ratios to give Country and Month more horizontal space
     f1, f2, f3, f4 = st.columns([3, 3, 2, 3])
 
     with f1:
