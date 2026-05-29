@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# MODERN PREMIUM UI
+# PREMIUM UI
 # =========================================================
 
 st.markdown("""
@@ -31,7 +31,7 @@ MAIN APP
 ===================================================== */
 
 .stApp {
-    background: #f5f7fb;
+    background: #f4f7fb;
 }
 
 .block-container {
@@ -47,7 +47,7 @@ SIDEBAR
 
 section[data-testid="stSidebar"] {
     background: white;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid #e2e8f0;
 }
 
 /* =====================================================
@@ -75,28 +75,27 @@ FILTERS
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-.stSelectbox label,
-.stMultiSelect label {
-    font-weight: 700 !important;
-    color: #334155 !important;
-}
-
 .stMultiSelect span[data-baseweb="tag"] {
     display: none !important;
 }
 
+.stSelectbox label,
+.stMultiSelect label {
+    font-weight: 700 !important;
+}
+
 /* =====================================================
-KPI CARDS
+METRIC CARDS
 ===================================================== */
 
 .metric-card {
     background: white;
-    border-radius: 22px;
-    padding: 24px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-    min-height: 220px;
-    transition: 0.3s ease;
+    border-radius: 24px;
+    padding: 28px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    transition: all 0.25s ease;
+    min-height: 230px;
 }
 
 .metric-card:hover {
@@ -123,38 +122,36 @@ KPI CARDS
 }
 
 .metric-subtitle {
-    font-size: 13px;
+    font-size: 14px;
     color: #94a3b8 !important;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
 .metric-badge {
     background: linear-gradient(135deg,#2563eb,#7c3aed);
     color: white !important;
-    width: 64px;
-    height: 64px;
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
+    padding: 10px 16px;
+    border-radius: 14px;
+    font-size: 20px;
     font-weight: 800;
+    box-shadow: 0 8px 18px rgba(37,99,235,0.25);
 }
 
 .metric-value {
+    margin-top: 34px;
     font-size: 52px;
     font-weight: 800;
     color: #0f172a !important;
-    margin-top: 25px;
+    line-height: 1;
 }
 
 .metric-progress {
     width: 100%;
-    height: 10px;
+    height: 12px;
     background: #e2e8f0;
     border-radius: 999px;
     overflow: hidden;
-    margin-top: 18px;
+    margin-top: 28px;
 }
 
 .metric-fill {
@@ -176,7 +173,7 @@ GRAPH CARD
 }
 
 /* =====================================================
-CHATBOT
+CHAT CARD
 ===================================================== */
 
 .chat-card {
@@ -207,7 +204,6 @@ OPTION MENU
 .nav-link {
     border-radius: 12px !important;
     margin-bottom: 8px !important;
-    color: #111827 !important;
 }
 
 .nav-link-selected {
@@ -359,6 +355,7 @@ brand_map = {
 def get_brands_by_country(selected_countries):
     return brand_map
 
+
 def build_where(months_sel, countries_sel, segment):
 
     filters = []
@@ -472,16 +469,10 @@ if selected_page == "Dashboard":
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        selected_countries = st.multiselect(
-            "🌍 Country",
-            countries
-        )
+        selected_countries = st.multiselect("🌍 Country", countries)
 
     with f2:
-        selected_months = st.multiselect(
-            "📅 Month",
-            months
-        )
+        selected_months = st.multiselect("📅 Month", months)
 
     with f3:
         segment = st.selectbox(
@@ -491,7 +482,9 @@ if selected_page == "Dashboard":
 
     with f4:
 
-        filtered_brand_map = get_brands_by_country(selected_countries)
+        filtered_brand_map = get_brands_by_country(
+            selected_countries
+        )
 
         selected_brand = st.selectbox(
             "🏢 Brand",
@@ -595,7 +588,7 @@ if selected_page == "Dashboard":
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # =====================================================
-    # ATTRIBUTES
+    # ATTRIBUTES SECTION
     # =====================================================
 
     st.markdown("""
@@ -605,8 +598,10 @@ if selected_page == "Dashboard":
     st.subheader("📊 Brand Attributes")
 
     attr_data = [
+
         {
             "Attribute": attr_map[i],
+
             "Value": get_metric(
                 f"Attributes_New_DP_{code}_Q12a_{i}_slice",
                 "top2",
@@ -614,6 +609,7 @@ if selected_page == "Dashboard":
                 weight_col
             )
         }
+
         for i in range(1, 18)
     ]
 
