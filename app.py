@@ -1,6 +1,4 @@
 # Enhanced Streamlit Brand Health Dashboard UI
-
-```python
 import streamlit as st
 import duckdb
 import pandas as pd
