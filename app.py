@@ -1,3 +1,4 @@
+```python
 # =========================================================
 # PREMIUM BRAND HEALTH DASHBOARD
 # =========================================================
@@ -26,6 +27,10 @@ st.set_page_config(
 st.markdown("""
 <style>
 
+/* =====================================================
+MAIN APP
+===================================================== */
+
 .stApp {
     background: #f4f7fb;
 }
@@ -37,10 +42,18 @@ st.markdown("""
     max-width: 100%;
 }
 
+/* =====================================================
+SIDEBAR
+===================================================== */
+
 section[data-testid="stSidebar"] {
     background: white;
     border-right: 1px solid #e2e8f0;
 }
+
+/* =====================================================
+TEXT
+===================================================== */
 
 html, body, p, div, span, label {
     color: #111827 !important;
@@ -50,7 +63,9 @@ h1,h2,h3,h4,h5,h6 {
     color: #0f172a !important;
 }
 
-/* FILTERS */
+/* =====================================================
+FILTERS
+===================================================== */
 
 .stSelectbox > div > div,
 .stMultiSelect > div > div {
@@ -65,76 +80,186 @@ h1,h2,h3,h4,h5,h6 {
     display: none !important;
 }
 
-/* KPI CARDS */
+.stSelectbox label,
+.stMultiSelect label {
+    font-weight: 700 !important;
+}
+
+/* =====================================================
+PREMIUM KPI CARDS
+===================================================== */
 
 .metric-card {
-    background: white;
-    border-radius: 24px;
-    padding: 28px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
-    transition: all 0.25s ease;
-    min-height: 230px;
+    position: relative;
+    overflow: hidden;
+
+    background: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #f8fbff 100%
+    );
+
+    border-radius: 28px;
+    padding: 30px;
+
+    border: 1px solid rgba(226,232,240,0.9);
+
+    box-shadow:
+        0 4px 14px rgba(15,23,42,0.04),
+        0 12px 30px rgba(15,23,42,0.06);
+
+    transition: all 0.3s ease;
+
+    min-height: 240px;
+}
+
+.metric-card::before {
+
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 6px;
+
+    background: linear-gradient(
+        90deg,
+        #2563eb,
+        #7c3aed
+    );
 }
 
 .metric-card:hover {
-    transform: translateY(-5px);
+
+    transform: translateY(-6px);
+
+    box-shadow:
+        0 8px 24px rgba(37,99,235,0.08),
+        0 20px 40px rgba(15,23,42,0.10);
 }
 
 .metric-header {
+
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
 }
 
+.metric-left {
+
+    display: flex;
+    flex-direction: column;
+}
+
 .metric-title {
-    font-size: 14px;
-    font-weight: 700;
+
+    font-size: 13px;
+    font-weight: 800;
+
     color: #64748b !important;
+
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.2px;
 }
 
 .metric-subtitle {
-    font-size: 14px;
-    color: #94a3b8 !important;
+
     margin-top: 6px;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    color: #94a3b8 !important;
 }
 
 .metric-badge {
-    background: linear-gradient(135deg,#2563eb,#7c3aed);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 70px;
+    height: 46px;
+
+    padding: 0 18px;
+
+    border-radius: 16px;
+
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #7c3aed
+    );
+
     color: white !important;
-    padding: 10px 16px;
-    border-radius: 14px;
+
     font-size: 20px;
     font-weight: 800;
-    box-shadow: 0 8px 18px rgba(37,99,235,0.25);
+
+    box-shadow:
+        0 8px 18px rgba(37,99,235,0.25);
 }
 
 .metric-value {
+
     margin-top: 34px;
-    font-size: 52px;
-    font-weight: 800;
+
+    font-size: 56px;
+    font-weight: 900;
+
     color: #0f172a !important;
+
     line-height: 1;
 }
 
+.metric-footnote {
+
+    margin-top: 8px;
+
+    font-size: 14px;
+    color: #94a3b8 !important;
+}
+
 .metric-progress {
+
+    position: relative;
+
     width: 100%;
     height: 12px;
+
     background: #e2e8f0;
+
     border-radius: 999px;
+
     overflow: hidden;
-    margin-top: 28px;
+
+    margin-top: 26px;
 }
 
 .metric-fill {
+
     height: 100%;
+
     border-radius: 999px;
-    background: linear-gradient(90deg,#8b5cf6,#3b82f6);
+
+    background: linear-gradient(
+        90deg,
+        #8b5cf6,
+        #3b82f6
+    );
+
+    box-shadow:
+        0 4px 10px rgba(59,130,246,0.35);
+
+    transition: width 0.6s ease;
 }
 
-/* GRAPH CARD */
+/* =====================================================
+GRAPH CARD
+===================================================== */
 
 .graph-card {
     background: white;
@@ -144,14 +269,29 @@ h1,h2,h3,h4,h5,h6 {
     box-shadow: 0 8px 24px rgba(15,23,42,0.08);
 }
 
-/* CHATBOT */
+/* =====================================================
+CHAT CARD
+===================================================== */
 
-.chat-box {
+.chat-card {
     background: white;
-    padding: 24px;
     border-radius: 24px;
+    padding: 30px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+}
+
+.insight-box {
+    background: linear-gradient(90deg,#2563eb,#7c3aed);
+    border-radius: 20px;
+    padding: 24px;
+    color: white !important;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.insight-box * {
+    color: white !important;
 }
 
 </style>
@@ -235,17 +375,23 @@ attr_map = {
 }
 
 # =========================================================
-# LOAD FILTERS
+# FILTERS
 # =========================================================
 
 @st.cache_data
 def load_filters():
 
-    months = con.execute("""
-        SELECT DISTINCT Month
+    df_temp = con.execute("""
+        SELECT Month, ROW_NUMBER() OVER() AS rn
         FROM df
         WHERE Month IS NOT NULL
-    """).df()["Month"].tolist()
+    """).df()
+
+    months = (
+        df_temp.drop_duplicates("Month")
+        .sort_values("rn")["Month"]
+        .tolist()
+    )
 
     countries = con.execute("""
         SELECT DISTINCT Country_New
@@ -277,6 +423,10 @@ brand_map = {
 # =========================================================
 # FUNCTIONS
 # =========================================================
+
+def get_brands_by_country(selected_countries):
+    return brand_map
+
 
 def build_where(months_sel, countries_sel, segment):
 
@@ -379,9 +529,10 @@ def get_metric(
             {where_clause}
             """
 
-        result = con.execute(q).fetchone()[0]
-
-        return round(result or 0, 1)
+        return round(
+            con.execute(q).fetchone()[0] or 0,
+            1
+        )
 
     except:
         return 0
@@ -396,8 +547,8 @@ with st.sidebar:
 
     selected_page = option_menu(
         menu_title=None,
-        options=["Dashboard", "Graphs", "Chatbot"],
-        icons=["speedometer2", "bar-chart", "robot"],
+        options=["Dashboard"],
+        icons=["speedometer2"],
         default_index=0,
     )
 
@@ -410,16 +561,10 @@ if selected_page == "Dashboard":
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        selected_countries = st.multiselect(
-            "🌍 Country",
-            countries
-        )
+        selected_countries = st.multiselect("🌍 Country", countries)
 
     with f2:
-        selected_months = st.multiselect(
-            "📅 Month",
-            months
-        )
+        selected_months = st.multiselect("📅 Month", months)
 
     with f3:
         segment = st.selectbox(
@@ -428,12 +573,17 @@ if selected_page == "Dashboard":
         )
 
     with f4:
-        selected_brand = st.selectbox(
-            "🏢 Brand",
-            list(brand_map.keys())
+
+        filtered_brand_map = get_brands_by_country(
+            selected_countries
         )
 
-    code = brand_map[selected_brand]
+        selected_brand = st.selectbox(
+            "🏢 Brand",
+            list(filtered_brand_map.keys())
+        )
+
+    code = filtered_brand_map[selected_brand]
 
     where_clause = build_where(
         selected_months,
@@ -447,7 +597,9 @@ if selected_page == "Dashboard":
         else "Global_weight_Stacked"
     )
 
+    # =====================================================
     # KPI VALUES
+    # =====================================================
 
     awareness = get_metric(
         f'Aided_Awareness_{code}_slice',
@@ -477,8 +629,6 @@ if selected_page == "Dashboard":
         weight_col
     )
 
-    # KPI DISPLAY
-
     st.markdown("<br>", unsafe_allow_html=True)
 
     c1, c2, c3, c4 = st.columns(4)
@@ -490,6 +640,10 @@ if selected_page == "Dashboard":
         (c4, "Effect", effect)
     ]
 
+    # =====================================================
+    # KPI CARDS
+    # =====================================================
+
     for col, title, value in cards:
 
         with col:
@@ -499,14 +653,14 @@ if selected_page == "Dashboard":
 
                 <div class="metric-header">
 
-                    <div>
+                    <div class="metric-left">
 
                         <div class="metric-title">
                             {title}
                         </div>
 
                         <div class="metric-subtitle">
-                            KPI Score
+                            Brand KPI Score
                         </div>
 
                     </div>
@@ -521,6 +675,10 @@ if selected_page == "Dashboard":
                     {value}%
                 </div>
 
+                <div class="metric-footnote">
+                    Overall weighted score
+                </div>
+
                 <div class="metric-progress">
 
                     <div
@@ -533,9 +691,11 @@ if selected_page == "Dashboard":
             </div>
             """, unsafe_allow_html=True)
 
-    # ATTRIBUTES
-
     st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # =====================================================
+    # ATTRIBUTES SECTION
+    # =====================================================
 
     st.markdown("""
     <div class='graph-card'>
@@ -543,21 +703,21 @@ if selected_page == "Dashboard":
 
     st.subheader("📊 Brand Attributes")
 
-    attr_data = []
+    attr_data = [
 
-    for i in range(1, 18):
-
-        val = get_metric(
-            f"Attributes_New_DP_{code}_Q12a_{i}_slice",
-            "top2",
-            where_clause,
-            weight_col
-        )
-
-        attr_data.append({
+        {
             "Attribute": attr_map[i],
-            "Value": val
-        })
+
+            "Value": get_metric(
+                f"Attributes_New_DP_{code}_Q12a_{i}_slice",
+                "top2",
+                where_clause,
+                weight_col
+            )
+        }
+
+        for i in range(1, 18)
+    ]
 
     attr_df = pd.DataFrame(attr_data)
 
@@ -577,139 +737,22 @@ if selected_page == "Dashboard":
         color_continuous_scale="Blues"
     )
 
+    fig_attr.update_traces(
+        texttemplate='%{text:.1f}%',
+        textposition='outside'
+    )
+
     fig_attr.update_layout(
         paper_bgcolor='white',
         plot_bgcolor='white',
         font_color='#111827',
-        xaxis_title='',
-        yaxis_title=''
+        xaxis_title='Percentage',
+        yaxis_title='',
+        xaxis=dict(range=[0, 100]),
+        showlegend=False
     )
 
     st.plotly_chart(
         fig_attr,
         use_container_width=True
     )
-
-# =========================================================
-# GRAPHS PAGE
-# =========================================================
-
-elif selected_page == "Graphs":
-
-    st.markdown("""
-    <div class='graph-card'>
-    """, unsafe_allow_html=True)
-
-    st.subheader("📈 KPI Comparison")
-
-    selected_brand = st.selectbox(
-        "Select Brand",
-        list(brand_map.keys()),
-        key="graph_brand"
-    )
-
-    code = brand_map[selected_brand]
-
-    graph_data = pd.DataFrame({
-        "KPI": [
-            "Awareness",
-            "Favorability",
-            "Consideration",
-            "Effect"
-        ],
-        "Value": [
-            get_metric(f'Aided_Awareness_{code}_slice', 'yesno'),
-            get_metric(f'Brand_Favorability_{code}_slice', 'top2'),
-            get_metric(f'Consideration_{code}_slice', 'top2'),
-            get_metric(f'Consideration_Effect_{code}_slice', 'top2')
-        ]
-    })
-
-    fig = px.bar(
-        graph_data,
-        x="KPI",
-        y="Value",
-        text="Value",
-        color="Value",
-        color_continuous_scale="Blues",
-        height=500
-    )
-
-    fig.update_layout(
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        font_color="#111827",
-        yaxis_title="%",
-        xaxis_title=""
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
-
-# =========================================================
-# CHATBOT PAGE
-# =========================================================
-
-elif selected_page == "Chatbot":
-
-    st.markdown("""
-    <div class='chat-box'>
-    """, unsafe_allow_html=True)
-
-    st.subheader("🤖 Brand Insights Chatbot")
-
-    user_question = st.text_input(
-        "Ask something about brand performance"
-    )
-
-    if user_question:
-
-        question = user_question.lower()
-
-        if "best brand" in question:
-
-            best_brand = None
-            best_score = 0
-
-            for brand, code in brand_map.items():
-
-                score = get_metric(
-                    f'Brand_Favorability_{code}_slice',
-                    'top2'
-                )
-
-                if score > best_score:
-                    best_score = score
-                    best_brand = brand
-
-            st.success(
-                f"🏆 Best Brand: {best_brand} ({best_score}%)"
-            )
-
-        elif "awareness" in question:
-
-            st.info(
-                "Awareness measures how many people recognize the brand."
-            )
-
-        elif "favorability" in question:
-
-            st.info(
-                "Favorability measures positive consumer perception."
-            )
-
-        elif "consideration" in question:
-
-            st.info(
-                "Consideration measures likelihood to choose the brand."
-            )
-
-        else:
-
-            st.warning(
-                "Try asking about awareness, favorability, consideration, or best brand."
-            )
-
-    st.markdown("</div>", unsafe_allow_html=True)
