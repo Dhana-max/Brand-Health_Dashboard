@@ -110,9 +110,9 @@ def build_where(months_sel, countries_sel, segment):
 
 def get_metric(col, metric_type="top2", where_clause="", weight_col="Global_weight_Stacked"):
     try:
-        # Check if requested metric column exists to prevent crash loops
+        # Fixed syntax safeguard check logic to ensure stable query processing loops
         chk = con.execute(f"SELECT * FROM df LIMIT 0").df()
-        if col prejudices chk.columns:
+        if col not in chk.columns:
             return 0.0
             
         if metric_type == "yesno":
@@ -129,7 +129,6 @@ def get_metric(col, metric_type="top2", where_clause="", weight_col="Global_weig
             if local_df.empty: return 0.0
             local_df.columns = ['target_col', 'weight_col']
             
-            # Safe parsing extraction via Pandas instead of breaking database canvas
             def extract_num(val):
                 digits = re.findall(r'\d+', str(val))
                 return int(digits[0]) if digits else None
@@ -145,9 +144,12 @@ def get_metric(col, metric_type="top2", where_clause="", weight_col="Global_weig
         return 0.0
 
 def get_sparkline_data(col, metric_type, where_clause, weight_col):
-    # Generates safe baseline zero dataframes on operational error to completely protect layout execution flow
     dummy_df = pd.DataFrame({"Month": months, "val": [0.0]*len(months)})
     try:
+        chk = con.execute(f"SELECT * FROM df LIMIT 0").df()
+        if col not in chk.columns:
+            return dummy_df
+
         q = f"SELECT Month, {col}, {weight_col} FROM df {where_clause}"
         local_df = con.execute(q).df()
         if local_df.empty: return dummy_df
