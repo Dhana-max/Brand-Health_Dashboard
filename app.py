@@ -4,8 +4,24 @@ import pandas as pd
 import re
 import altair as alt
 
-# 1. Initialize safe native layout parameters
+# 1. Hard reset browser layout settings to restore physical mouse pointer tracking
 st.set_page_config(layout="wide")
+
+# 🟢 FORCE UNBLOCK: This explicitly tears down any hidden transparent click-blocking layouts
+st.markdown(
+    """
+    <style>
+    /* Absolute reset to force all native containers to pass mouse events cleanly */
+    div.block-container, div[data-testid="stVerticalBlock"] {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+    }
+    /* Kill any rogue invisible floating overlay boxes */
+    iframe { pointer-events: auto !important; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 st.title("Brand Health Intelligence Platform")
 
@@ -67,7 +83,6 @@ attr_map = {
 
 @st.cache_data
 def load_filters():
-    # Force direct standard string conversions to completely bypass UI locks
     df_temp = con.execute("SELECT DISTINCT Month FROM df WHERE Month IS NOT NULL").df()
     months_list = [str(x) for x in df_temp["Month"].dropna().tolist()]
     
@@ -89,7 +104,6 @@ for _, r in brand_rows.iterrows():
     if match:
         brand_map[lbl] = int(match[0])
 
-# Fallback default configuration if map is unpopulated
 if not brand_map:
     brand_map = {"Default Brand": 1}
 
@@ -110,7 +124,6 @@ def build_where(months_sel, countries_sel, segment):
 
 def get_metric(col, metric_type="top2", where_clause="", weight_col="Global_weight_Stacked"):
     try:
-        # Fixed syntax safeguard check logic to ensure stable query processing loops
         chk = con.execute(f"SELECT * FROM df LIMIT 0").df()
         if col not in chk.columns:
             return 0.0
