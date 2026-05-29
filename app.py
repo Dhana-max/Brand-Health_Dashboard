@@ -53,7 +53,7 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* ⚡ FIX: Complete Reset of Selection Tags to Avoid Any Text Hiding or Truncation */
+    /* ⚡ FIX: Complete unconstrained style overhaul to stop 3-letter cutting / hiding issues */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
         background-color: transparent !important;
         border: none !important;
@@ -61,22 +61,27 @@ st.markdown("""
         margin: 0px !important;
         color: #ffffff !important;
         box-shadow: none !important;
-        display: inline !important; /* Force inline text behavior */
+        display: inline-flex !important;
         max-width: none !important;
+        width: auto !important;
         overflow: visible !important;
     }
     
-    /* Completely eliminate internal structures causing text shifts or truncation masking */
+    /* Target the literal text child node directly to drop internal flex limits and clip margins */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] > div {
-        display: inline !important;
-        padding: 0px !important;
-        margin: 0px !important;
+        display: inline-block !important;
+        padding-left: 0px !important;
+        padding-right: 0px !important;
+        margin-left: 0px !important;
+        margin-right: 0px !important;
         overflow: visible !important;
+        max-width: none !important;
+        width: auto !important;
         text-overflow: unset !important;
         white-space: nowrap !important;
     }
     
-    /* Completely eliminate default close buttons and structural padding elements */
+    /* Permanently purge default 'x' close buttons and built-in text alignment overrides */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button,
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] Vil,
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] svg,
@@ -88,17 +93,17 @@ st.markdown("""
         height: 0px !important;
     }
     
-    /* Inject clean comma spacing natively between sibling elements */
+    /* Render standard formatting commas natively between sequential items */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) {
         margin-right: 4px !important;
     }
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child)::after {
         content: "," !important;
         color: #ffffff !important;
-        display: inline !important;
+        display: inline-block !important;
     }
 
-    /* Ensure multiselect container context blocks any dynamic horizontal indentations or clips */
+    /* Ensure multiselect layout bar keeps full visibility with zero dynamic horizontal shift masks */
     div[data-testid="stMultiSelect"] div[role="listbox"] {
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
