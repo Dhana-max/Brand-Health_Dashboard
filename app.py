@@ -53,19 +53,30 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* ⚡ FIX: Prevent text-truncation/hiding and turn selection boxes into flat text with commas */
+    /* ⚡ FIX: Complete Reset of Selection Tags to Avoid Any Text Hiding or Truncation */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
         background-color: transparent !important;
         border: none !important;
         padding: 0px !important;
-        margin: 0px 0px 0px 0px !important;
+        margin: 0px !important;
         color: #ffffff !important;
         box-shadow: none !important;
-        display: inline-flex !important;
-        align-items: center !important;
+        display: inline !important; /* Force inline text behavior */
+        max-width: none !important;
+        overflow: visible !important;
     }
     
-    /* Completely eliminate default close button icons (X) and standard text-hiding layouts */
+    /* Completely eliminate internal structures causing text shifts or truncation masking */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] > div {
+        display: inline !important;
+        padding: 0px !important;
+        margin: 0px !important;
+        overflow: visible !important;
+        text-overflow: unset !important;
+        white-space: nowrap !important;
+    }
+    
+    /* Completely eliminate default close buttons and structural padding elements */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button,
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] Vil,
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] svg,
@@ -77,25 +88,25 @@ st.markdown("""
         height: 0px !important;
     }
     
-    /* Safely add spacing and trailing commas between successive text fields without truncating characters */
+    /* Inject clean comma spacing natively between sibling elements */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) {
-        margin-right: 5px !important;
+        margin-right: 4px !important;
     }
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) > div::after {
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child)::after {
         content: "," !important;
         color: #ffffff !important;
-        display: inline-block !important;
-        margin-left: 1px !important;
+        display: inline !important;
     }
 
-    /* Ensure multiselect container context prevents clipping, indentation shifts or wrapping */
+    /* Ensure multiselect container context blocks any dynamic horizontal indentations or clips */
     div[data-testid="stMultiSelect"] div[role="listbox"] {
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         white-space: nowrap !important;
         gap: 0px !important;
-        padding-left: 6px !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
         padding-top: 4px !important;
         padding-bottom: 4px !important;
     }
