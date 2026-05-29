@@ -1,5 +1,5 @@
 # =========================================================
-# PREMIUM BRAND HEALTH DASHBOARD
+# PREMIUM BRAND HEALTH DASHBOARD - FINAL VERSION
 # =========================================================
 
 import streamlit as st
@@ -7,7 +7,6 @@ import duckdb
 import pandas as pd
 import re
 import plotly.express as px
-import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 
 # =========================================================
@@ -55,7 +54,7 @@ section[data-testid="stSidebar"] {
 TEXT
 ===================================================== */
 
-h1,h2,h3,h4,h5,h6,p,label,span {
+h1,h2,h3,h4,h5,h6,p,label {
     color: #0f172a !important;
 }
 
@@ -79,17 +78,18 @@ FILTERS
     padding: 0 !important;
 }
 
+/* tag text */
 .stMultiSelect span[data-baseweb="tag"] span {
     color: #2563eb !important;
     font-weight: 700 !important;
 }
 
-/* remove cross icon */
+/* remove x icon */
 .stMultiSelect span[data-baseweb="tag"] svg {
     display: none !important;
 }
 
-input {
+input, textarea {
     color: #0f172a !important;
 }
 
@@ -104,7 +104,7 @@ KPI CARDS
     box-shadow: 0 8px 24px rgba(15,23,42,0.08);
     border: 1px solid #e2e8f0;
     transition: 0.3s ease;
-    min-height: 250px;
+    min-height: 240px;
 }
 
 .metric-card:hover {
@@ -158,6 +158,15 @@ KPI CARDS
     height: 100%;
     border-radius: 999px;
     background: linear-gradient(90deg,#8b5cf6,#3b82f6);
+}
+
+/* IMPORTANT FIX */
+
+.metric-title,
+.metric-big,
+.metric-circle,
+.metric-card div {
+    color: #111827 !important;
 }
 
 /* =====================================================
@@ -381,13 +390,11 @@ brand_map = {
 def get_brands_by_country(selected_countries):
     return brand_map
 
-
 def build_where(months_sel, countries_sel, segment):
 
     filters = []
 
     if months_sel:
-
         filters.append(
             "Month IN (" +
             ",".join(f"'{m}'" for m in months_sel)
@@ -395,7 +402,6 @@ def build_where(months_sel, countries_sel, segment):
         )
 
     if countries_sel:
-
         filters.append(
             "Country_New IN (" +
             ",".join(f"'{c}'" for c in countries_sel)
@@ -409,7 +415,6 @@ def build_where(months_sel, countries_sel, segment):
         filters.append("Sex = 2")
 
     return "WHERE " + " AND ".join(filters) if filters else ""
-
 
 # =========================================================
 # METRIC FUNCTION
@@ -478,7 +483,6 @@ def get_metric(
     except:
         return 0
 
-
 # =========================================================
 # SIDEBAR
 # =========================================================
@@ -511,17 +515,9 @@ if selected_page == "Dashboard":
 
         if selected_countries:
 
-            st.markdown(
-                f"""
-                <p style='
-                    color:#2563eb;
-                    font-weight:700;
-                    margin-top:8px;
-                '>
-                Selected: {", ".join(selected_countries)}
-                </p>
-                """,
-                unsafe_allow_html=True
+            st.caption(
+                "Selected: " +
+                ", ".join(selected_countries)
             )
 
     with f2:
@@ -533,17 +529,9 @@ if selected_page == "Dashboard":
 
         if selected_months:
 
-            st.markdown(
-                f"""
-                <p style='
-                    color:#2563eb;
-                    font-weight:700;
-                    margin-top:8px;
-                '>
-                Selected: {", ".join(selected_months)}
-                </p>
-                """,
-                unsafe_allow_html=True
+            st.caption(
+                "Selected: " +
+                ", ".join(selected_months)
             )
 
     with f3:
@@ -621,7 +609,7 @@ if selected_page == "Dashboard":
 
         with col:
 
-            st.markdown(f"""
+            card_html = f"""
             <div class="metric-card">
 
                 <div class="metric-header">
@@ -638,7 +626,7 @@ if selected_page == "Dashboard":
 
                 <div class="metric-progress">
                     <div class="metric-fill"
-                    style="width:{value}%;">
+                        style="width:{value}%;">
                     </div>
                 </div>
 
@@ -647,285 +635,9 @@ if selected_page == "Dashboard":
                 </div>
 
             </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class='graph-card'>
-    """, unsafe_allow_html=True)
-
-    st.subheader("📊 Brand Attributes")
-
-    attr_data = [
-
-        {
-            "Attribute": attr_map[i],
-
-            "Value": get_metric(
-                f"Attributes_New_DP_{code}_Q12a_{i}_slice",
-                "top2",
-                where_clause,
-                weight_col
-            )
-        }
-
-        for i in range(1, 18)
-    ]
-
-    attr_df = pd.DataFrame(attr_data)
-
-    attr_df = attr_df.sort_values(
-        "Value",
-        ascending=True
-    )
-
-    fig_attr = px.bar(
-        attr_df,
-        x="Value",
-        y="Attribute",
-        orientation='h',
-        text="Value",
-        height=700,
-        color="Value",
-        color_continuous_scale="Blues"
-    )
-
-    fig_attr.update_layout(
-        paper_bgcolor='white',
-        plot_bgcolor='white',
-        font_color='#111827',
-        xaxis_title='',
-        yaxis_title=''
-    )
-
-    st.plotly_chart(
-        fig_attr,
-        use_container_width=True
-    )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================
-# GRAPHS
-# =========================================================
-
-elif selected_page == "Graphs":
-
-    st.subheader("📈 KPI Trend Comparison")
-
-    g1, g2, g3, g4 = st.columns(4)
-
-    g_country = g1.multiselect(
-        "Country",
-        countries,
-        key="g_country"
-    )
-
-    g_months = g2.multiselect(
-        "Month",
-        months,
-        key="g_months"
-    )
-
-    g_segment = g3.selectbox(
-        "Segment",
-        ["Total", "Male", "Female"],
-        key="g_segment"
-    )
-
-    selected_kpi = g4.selectbox(
-        "Select KPI",
-        list(kpi_map.keys())
-    )
-
-    brand_map_local = get_brands_by_country(g_country)
-
-    selected_brands = st.multiselect(
-        "Brands",
-        list(brand_map_local.keys()),
-        default=list(brand_map_local.keys())[:3]
-    )
-
-    graph_type = st.radio(
-        "Graph Type",
-        ["Trend Comparison", "Month Comparison"],
-        horizontal=True
-    )
-
-    graph_where = build_where(
-        g_months,
-        g_country,
-        g_segment
-    )
-
-    metric_col, metric_type = kpi_map[selected_kpi]
-
-    queries = []
-
-    for brand in selected_brands:
-
-        code = brand_map_local[brand]
-
-        col = f"{metric_col}_{code}_slice"
-
-        if metric_type == "yesno":
-
-            metric_formula = f"""
-            SUM(
-                CASE WHEN LOWER(TRIM({col}))='yes'
-                THEN Global_weight_Stacked
-                ELSE 0
-                END
-            )*100.0 / SUM(Global_weight_Stacked)
             """
 
-        else:
-
-            metric_formula = f"""
-            SUM(
-                CASE WHEN TRY_CAST(
-                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
-                    AS INTEGER
-                ) IN (4,5)
-                THEN Global_weight_Stacked
-                ELSE 0
-                END
-            )*100.0 /
-
-            SUM(
-                CASE WHEN TRY_CAST(
-                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
-                    AS INTEGER
-                ) BETWEEN 1 AND 5
-                THEN Global_weight_Stacked
-                ELSE 0
-                END
+            st.markdown(
+                card_html,
+                unsafe_allow_html=True
             )
-            """
-
-        queries.append(f"""
-        SELECT
-        Month,
-        '{brand}' AS Brand,
-        {metric_formula} AS Value
-
-        FROM df
-
-        {graph_where}
-
-        GROUP BY Month
-        """)
-
-    if queries:
-
-        df_chart = con.execute(
-            " UNION ALL ".join(queries)
-        ).df()
-
-        df_chart["Month_order"] = pd.Categorical(
-            df_chart["Month"],
-            categories=months,
-            ordered=True
-        )
-
-        st.markdown("""
-        <div class='graph-card'>
-        """, unsafe_allow_html=True)
-
-        if graph_type == "Trend Comparison":
-
-            fig = px.line(
-                df_chart,
-                x="Month_order",
-                y="Value",
-                color="Brand",
-                markers=True
-            )
-
-        else:
-
-            avg_df = (
-                df_chart.groupby("Brand", as_index=False)["Value"]
-                .mean()
-            )
-
-            fig = px.bar(
-                avg_df,
-                x="Brand",
-                y="Value",
-                color="Value",
-                text_auto='.1f',
-                color_continuous_scale="Purples"
-            )
-
-        fig.update_layout(
-            paper_bgcolor='white',
-            plot_bgcolor='white',
-            font_color='#111827',
-            height=650
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================
-# CHATBOT
-# =========================================================
-
-elif selected_page == "Chatbot":
-
-    st.subheader("🤖 AI Insights Assistant")
-
-    st.markdown("""
-    <div class='chat-card'>
-
-    <h3 style='margin-top:0;'>
-    Ask questions about:
-    </h3>
-
-    <ul style='font-size:18px;line-height:2;color:#334155;'>
-
-        <li>Awareness trends</li>
-        <li>Top performing brands</li>
-        <li>Country comparison</li>
-        <li>Brand attributes</li>
-
-    </ul>
-
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    user_query = st.text_input(
-        "Ask about KPIs",
-        placeholder="Example: LinkedIn awareness in Dec 2025"
-    )
-
-    if user_query:
-
-        response = f"""
-        📌 Query: {user_query}
-
-        • KPI trends analyzed successfully
-
-        • Brand performance insights generated
-
-        • Country and segment comparison available
-
-        • AI recommendations ready
-        """
-
-        st.markdown(
-            f"""
-            <div class='insight-box'>
-            {response}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
