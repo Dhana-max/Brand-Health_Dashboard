@@ -278,8 +278,8 @@ tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 
 # -----------------------------
 with tab1:
-    # Filter Bar Container
-    f1, f2, f3, f4 = st.columns([2,2,1,2])
+    # 📐 Adjusted column ratios to give Country and Month more horizontal space
+    f1, f2, f3, f4 = st.columns([3, 3, 2, 3])
 
     with f1:
         st.markdown("**🌍 Country**")
