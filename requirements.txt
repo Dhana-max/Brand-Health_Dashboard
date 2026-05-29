@@ -1,5 +1,6 @@
 streamlit
 duckdb
 pandas
+plotly
+streamlit-option-menu
 openpyxl
-openai
