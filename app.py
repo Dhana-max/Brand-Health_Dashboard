@@ -8,132 +8,134 @@ from difflib import get_close_matches
 st.set_page_config(layout="wide")
 
 # ==========================================
-# 🎨 POWER BI INITIATED DARK THEME STYLING
+# 🎨 CLEAN UI LIGHT THEME STYLING (TD CONNECT STYLE)
 # ==========================================
 st.markdown("""
 <style>
-    /* Global Background and Text Color */
+    /* Global Background and Typography */
     .stApp {
-        background: linear-gradient(180deg, #1f1b2c 0%, #12101a 100%);
-        color: #e5e7eb;
-    }
-    
-    /* Header / Subheader Customization */
-    h1, h2, h3, h4, h5, h6, .stSubheader p {
-        color: #ffffff !important;
+        background-color: #f4f6f9 !important;
+        color: #333333 !important;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-weight: 600;
     }
     
-    /* Grid Container Cards matching Dashboard Boxes */
-    div[data-testid="column"] {
-        background-color: rgba(30, 27, 46, 0.7) !important;
-        padding: 20px !important;
-        border-radius: 6px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    /* Main Dashboard Title */
+    h1 {
+        color: #1a202c !important;
+        font-weight: 700 !important;
+        font-size: 2.2rem !important;
+        margin-bottom: 1.5rem !important;
     }
     
-    /* Custom Styling for Streamlit Metrics */
-    div[data-testid="stMetricValue"] {
-        font-size: 2.4rem !important;
-        font-weight: 300 !important;
-        color: #ffffff !important;
-    }
-    div[data-testid="stMetricLabel"] p {
-        font-size: 0.9rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-        color: #9ca3af !important;
-    }
-    
-    /* Form controls (Selectboxes, Multiselects) formatting */
-    .stSelectbox div, .stMultiSelect div {
-        background-color: #2a243d !important;
-        color: #ffffff !important;
+    h2, h3, h4, h5, h6 {
+        color: #2d3748 !important;
+        font-weight: 600 !important;
     }
 
-    /* ⚡ NEW CLEAN STYLE APPROACH: Prevent any text truncation/hiding inside selection bars */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
+    /* Top Horizontal Navigation Tabs Customization */
+    div[data-testid="stTabBar"] {
+        background-color: #ffffff !important;
+        padding: 0px 20px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+        margin-bottom: 25px !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    button[data-baseweb="tab"] {
+        color: #718096 !important;
+        font-weight: 600 !important;
+        padding: 14px 20px !important;
         background-color: transparent !important;
         border: none !important;
-        box-shadow: none !important;
-        padding: 0px !important;
-        margin: 0px 8px 0px 0px !important;
-        display: inline-flex !important;
-        max-width: none !important;
-        width: auto !important;
-    }
-    
-    /* Let the inner text block fill all its space naturally without truncation filters */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] > div:first-child {
-        max-width: none !important;
-        width: auto !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        white-space: nowrap !important;
-        padding: 0px !important;
-        margin: 0px !important;
-    }
-    
-    /* Completely hide the close button frame while maintaining normal alignment */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button {
-        display: none !important;
-        width: 0px !important;
-        height: 0px !important;
-    }
-    
-    /* Append a clean trailing comma for multi-selections */
-    div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) > div:first-child::after {
-        content: "," !important;
-        color: #ffffff !important;
-        margin-left: 2px !important;
-    }
-
-    /* Keep all selected items perfectly inline on one row without dynamic inner paddings */
-    div[data-testid="stMultiSelect"] div[role="listbox"] {
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        white-space: nowrap !important;
-        gap: 0px !important;
-        padding: 4px 8px !important;
-    }
-    
-    /* ⚡ FIX: Force Native Markdown/HTML Tables to be legible in Dark Theme */
-    .dark-table {
-        width: 100%;
-        border-collapse: collapse;
-        color: #ffffff;
-        font-family: sans-serif;
-        background-color: #1e1b2e;
-        border-radius: 6px;
-        overflow: hidden;
-    }
-    .dark-table th {
-        background-color: #2a243d;
-        color: #00f2fe;
-        text-align: left;
-        padding: 12px;
-        font-weight: 600;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    }
-    .dark-table td {
-        padding: 10px 12px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .dark-table tr:hover {
-        background-color: rgba(255, 255, 255, 0.03);
-    }
-    
-    /* Tab Styling styling */
-    button[data-baseweb="tab"] {
-        color: #9ca3af !important;
-        font-weight: 500;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        color: #00f2fe !important;
-        border-bottom-color: #00f2fe !important;
+        color: #3182ce !important;
+        border-bottom: 3px solid #3182ce !important;
+    }
+
+    /* Grid Container Cards (KPI Blocks) */
+    div[data-testid="column"] {
+        background-color: #ffffff !important;
+        padding: 24px !important;
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    }
+    
+    /* Custom Card Metrics */
+    div[data-testid="stMetricValue"] {
+        font-size: 2.2rem !important;
+        font-weight: 700 !important;
+        color: #1a202c !important;
+    }
+    div[data-testid="stMetricLabel"] p {
+        font-size: 0.85rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        color: #718096 !important;
+        font-weight: 600 !important;
+    }
+
+    /* Filter Headers Label Text */
+    .filter-label {
+        color: #4a5568 !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        margin-bottom: 6px !important;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    /* Form controls (Selectboxes, Multiselects) Restored Native Framework */
+    .stSelectbox div, .stMultiSelect div {
+        background-color: #ffffff !important;
+        color: #2d3748 !important;
+    }
+
+    /* ⚡ RESTORE NATIVE TAGS: Resolves text hiding issues completely */
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
+        background-color: #edf2f7 !important;
+        border: 1px solid #cbd5e0 !important;
+        border-radius: 4px !important;
+        color: #2d3748 !important;
+        padding: 2px 6px !important;
+    }
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button {
+        color: #4a5568 !important;
+    }
+
+    /* Crisp Light-Theme Matrix Data Tables */
+    .light-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: #2d3748;
+        font-family: inherit;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+    .light-table th {
+        background-color: #f7fafc;
+        color: #4a5568;
+        text-align: left;
+        padding: 14px 16px;
+        font-weight: 600;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.9rem;
+    }
+    .light-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 0.95rem;
+    }
+    .light-table tr:last-child td {
+        border-bottom: none;
+    }
+    .light-table tr:hover {
+        background-color: #f8fafc;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -262,22 +264,23 @@ tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 
 # -----------------------------
 with tab1:
+    # Filter Bar Container Grid
     f1, f2, f3, f4 = st.columns([3, 3, 2, 3])
 
     with f1:
-        st.markdown("**🌍 Country**")
+        st.markdown('<div class="filter-label">🌍 Country</div>', unsafe_allow_html=True)
         selected_countries = st.multiselect("", countries, label_visibility="collapsed")
 
     with f2:
-        st.markdown("**📅 Month**")
+        st.markdown('<div class="filter-label">📅 Month</div>', unsafe_allow_html=True)
         selected_months = st.multiselect("", months, label_visibility="collapsed")
 
     with f3:
-        st.markdown("**👤 Segment**")
+        st.markdown('<div class="filter-label">👤 Segment</div>', unsafe_allow_html=True)
         segment = st.selectbox("", ["Total", "Male", "Female"], label_visibility="collapsed")
 
     with f4:
-        st.markdown("**🏢 Brand**")
+        st.markdown('<div class="filter-label">🏢 Brand</div>', unsafe_allow_html=True)
         filtered_brand_map = get_brands_by_country(selected_countries)
         selected_brand = st.selectbox("", list(filtered_brand_map.keys()), label_visibility="collapsed")
 
@@ -287,7 +290,7 @@ with tab1:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # KPIs Layout Row
+    # KPIs Cards Layout Row
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%")
     col2.metric("Brand Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%")
@@ -304,7 +307,7 @@ with tab1:
     
     df_matrix = pd.DataFrame(attr_data)
     
-    html_table = "<table class='dark-table'><thead><tr><th>Attribute</th><th>Value (%)</th></tr></thead><tbody>"
+    html_table = "<table class='light-table'><thead><tr><th>Attribute</th><th>Value (%)</th></tr></thead><tbody>"
     for _, row in df_matrix.iterrows():
         html_table += f"<tr><td>{row['Attribute']}</td><td><strong>{row['Value (%)']}</strong></td></tr>"
     html_table += "</tbody></table>"
@@ -315,14 +318,22 @@ with tab1:
 with tab2:
     colg1, colg2, colg3, colg4 = st.columns(4)
 
-    g_country = colg1.multiselect("Country", countries, key="g_country")
-    g_months = colg2.multiselect("Month", months, key="g_months")
-    g_segment = colg3.selectbox("Segment", ["Total", "Male", "Female"], key="g_segment")
+    with colg1:
+        st.markdown('<div class="filter-label">🌍 Country</div>', unsafe_allow_html=True)
+        g_country = st.multiselect("Country", countries, key="g_country", label_visibility="collapsed")
+    with colg2:
+        st.markdown('<div class="filter-label">📅 Month</div>', unsafe_allow_html=True)
+        g_months = st.multiselect("Month", months, key="g_months", label_visibility="collapsed")
+    with colg3:
+        st.markdown('<div class="filter-label">👤 Segment</div>', unsafe_allow_html=True)
+        g_segment = st.selectbox("Segment", ["Total", "Male", "Female"], key="g_segment", label_visibility="collapsed")
+    with colg4:
+        st.markdown('<div class="filter-label">🏢 Brands</div>', unsafe_allow_html=True)
+        brand_map_local = get_brands_by_country(g_country)
+        selected_brands = st.multiselect("Brands", list(brand_map_local.keys()),
+                                            default=list(brand_map_local.keys())[:3], key="g_brands", label_visibility="collapsed")
 
-    brand_map_local = get_brands_by_country(g_country)
-    selected_brands = colg4.multiselect("Brands", list(brand_map_local.keys()),
-                                        default=list(brand_map_local.keys())[:3], key="g_brands")
-
+    st.markdown("<br>", unsafe_allow_html=True)
     view_type = st.radio("View Type", ["Trended View", "Brand Comparison"], horizontal=True)
     graph_where = build_where(g_months, g_country, g_segment)
 
@@ -346,19 +357,19 @@ with tab2:
         if not df_chart.empty and "Month" in df_chart.columns:
             df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
-            # 📊 Altair Dashboard Theme Configuration
-            chart_color_palette = ["#4ef2d2", "#ff4a68", "#e0b3ff", "#f5d061", "#4ca5ff"]
+            # 📊 Light Theme Clean Color Palette 
+            chart_color_palette = ["#3182ce", "#e53e3e", "#319795", "#d69e2e", "#805ad5"]
 
             if view_type == "Trended View":
                 chart = alt.Chart(df_chart).mark_line(point=True, size=3).encode(
-                    x=alt.X("Month_order:O", title="Timeline Phase", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff")),
-                    y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff"), scale=alt.Scale(zero=False)),
+                    x=alt.X("Month_order:O", title="Timeline Phase", axis=alt.Axis(labelColor="#4a5568", titleColor="#2d3748")),
+                    y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#4a5568", titleColor="#2d3748"), scale=alt.Scale(zero=False)),
                     color=alt.Color("Brand:N", scale=alt.Scale(range=chart_color_palette))
                 ).properties(height=400)
             else:
                 chart = alt.Chart(df_chart).mark_line(point=True, size=3).encode(
-                    x=alt.X("Brand:N", title="Competitor Space", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff")),
-                    y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#9ca3af", titleColor="#ffffff"), scale=alt.Scale(zero=False)),
+                    x=alt.X("Brand:N", title="Competitor Space", axis=alt.Axis(labelColor="#4a5568", titleColor="#2d3748")),
+                    y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#4a5568", titleColor="#2d3748"), scale=alt.Scale(zero=False)),
                     color=alt.Color("Month:O", scale=alt.Scale(range=chart_color_palette))
                 ).properties(height=400)
 
