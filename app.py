@@ -52,6 +52,20 @@ st.markdown("""
         background-color: #2a243d !important;
         color: #ffffff !important;
     }
+
+    /* ⚡ FIX: Force Multiselect Choices to Stay Compact on a Single Line */
+    div[data-testid="stMultiSelect"] div[role="listbox"] {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        white-space: nowrap !important;
+        gap: 4px !important;
+        padding-bottom: 2px !important;
+    }
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
+        flex-shrink: 0 !important;
+        margin: 2px 0 !important;
+    }
     
     /* ⚡ FIX: Force Native Markdown/HTML Tables to be legible in Dark Theme */
     .dark-table {
@@ -266,7 +280,6 @@ with tab1:
         for i in range(1, 18)
     ]
     
-    # ✅ FIXED: Render table using raw HTML with styles injected to resolve the blank dark-screen issue
     df_matrix = pd.DataFrame(attr_data)
     
     html_table = "<table class='dark-table'><thead><tr><th>Attribute</th><th>Value (%)</th></tr></thead><tbody>"
