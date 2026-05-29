@@ -126,15 +126,19 @@ with tab1:
 
     f1, f2, f3, f4 = st.columns([2,2,1,2])
 
-    # ✅ COUNTRY (multiselect)
+    # ✅ COUNTRY (clean dropdown)
     with f1:
         st.markdown("**🌍 Country**")
-        selected_countries = st.multiselect("", countries, default=countries)
+        country_selected = st.selectbox("", ["All"] + countries)
 
-    # ✅ MONTH (multiselect)
+        selected_countries = countries if country_selected == "All" else [country_selected]
+
+    # ✅ MONTH (clean dropdown)
     with f2:
         st.markdown("**📅 Month**")
-        selected_months = st.multiselect("", months, default=months)
+        month_selected = st.selectbox("", ["All"] + months)
+
+        selected_months = months if month_selected == "All" else [month_selected]
 
     # ✅ SEGMENT
     with f3:
@@ -164,11 +168,11 @@ with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
 
-    # ✅ COUNTRY multiselect
-    g_country = colg1.multiselect("Country", countries, default=countries)
+    g_country = colg1.selectbox("Country", ["All"] + countries)
+    g_country = countries if g_country == "All" else [g_country]
 
-    # ✅ MONTH multiselect
-    g_months = colg2.multiselect("Month", months, default=months)
+    g_months = colg2.selectbox("Month", ["All"] + months)
+    g_months = months if g_months == "All" else [g_months]
 
     g_segment = colg3.selectbox("Segment", ["Total", "Male", "Female"])
 
