@@ -1,44 +1,140 @@
+# Enhanced Streamlit Brand Health Dashboard UI
+
+```python
 import streamlit as st
 import duckdb
 import pandas as pd
 import re
-import altair as alt
-from difflib import get_close_matches
+import plotly.express as px
+from streamlit_option_menu import option_menu
 
-st.set_page_config(layout="wide")
+# --------------------------------------------------
+# PAGE CONFIG
+# --------------------------------------------------
+st.set_page_config(
+    page_title="Brand Health Dashboard",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# ✅ Light UI styling (no logic impact)
+# --------------------------------------------------
+# PREMIUM DARK UI
+# --------------------------------------------------
 st.markdown("""
 <style>
+
+/* Main App */
+.stApp {
+    background-color: #0f172a;
+    color: white;
+}
+
+/* Main container */
 .block-container {
     padding-top: 1.5rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
 }
-div[data-testid="column"] {
-    background-color: #f9fafb;
-    padding: 12px;
-    border-radius: 8px;
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #111827;
+    border-right: 1px solid #1f2937;
 }
+
+/* KPI cards */
+.metric-card {
+    background: linear-gradient(145deg, #111827, #1e293b);
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.35);
+}
+
+.metric-title {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.metric-value {
+    font-size: 38px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* Titles */
+h1, h2, h3 {
+    color: white !important;
+}
+
+/* Tabs */
+button[data-baseweb="tab"] {
+    background-color: #1e293b !important;
+    border-radius: 10px !important;
+    color: white !important;
+    margin-right: 5px;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    background-color: #2563eb !important;
+}
+
+/* Tables */
+[data-testid="stDataFrame"] {
+    background-color: #111827;
+    border-radius: 15px;
+    padding: 10px;
+}
+
+/* Inputs */
+.stSelectbox div[data-baseweb="select"],
+.stMultiSelect div[data-baseweb="select"] {
+    background-color: #1e293b;
+    border-radius: 10px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Brand Health Dashboard")
+# --------------------------------------------------
+# TITLE
+# --------------------------------------------------
+st.markdown("""
+<h1 style='font-size:42px;'>📊 Brand Health Dashboard</h1>
+<p style='color:#94a3b8;'>Modern analytics dashboard for brand performance tracking</p>
+""", unsafe_allow_html=True)
 
+# --------------------------------------------------
+# FILES
+# --------------------------------------------------
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
 MAP_FILE = "Map.xlsx"
 
-# -----------------------------
+# --------------------------------------------------
+# CONNECTION
+# --------------------------------------------------
 @st.cache_resource
 def get_connection():
     con = duckdb.connect()
     con.execute(f"""
-        CREATE VIEW df AS 
+        CREATE VIEW df AS
         SELECT * FROM read_parquet('{PARQUET_URL}')
     """)
     return con
 
 con = get_connection()
 
-# -----------------------------
+# --------------------------------------------------
+# LOAD MAP
+# --------------------------------------------------
 @st.cache_data
 def load_map():
     df = pd.read_excel(MAP_FILE, header=1)
@@ -47,7 +143,9 @@ def load_map():
 
 map_df = load_map()
 
-# -----------------------------
+# --------------------------------------------------
+# ATTRIBUTE MAP
+# --------------------------------------------------
 attr_map = {
     1: "Helps me move forward professionally",
     2: "Helps me find the right job for me",
@@ -68,9 +166,12 @@ attr_map = {
     17: "Helps me move forward in my career/business"
 }
 
-# -----------------------------
+# --------------------------------------------------
+# LOAD FILTERS
+# --------------------------------------------------
 @st.cache_data
 def load_filters():
+
     df_temp = con.execute("""
         SELECT Month, ROW_NUMBER() OVER() AS rn
         FROM df WHERE Month IS NOT NULL
@@ -83,14 +184,18 @@ def load_filters():
     )
 
     countries = con.execute("""
-        SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL
+        SELECT DISTINCT Country_New
+        FROM df
+        WHERE Country_New IS NOT NULL
     """).df()["Country_New"].tolist()
 
     return months, countries
 
 months, countries = load_filters()
 
-# -----------------------------
+# --------------------------------------------------
+# BRAND MAP
+# --------------------------------------------------
 brand_rows = map_df[
     map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)
 ]
@@ -101,161 +206,390 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# -----------------------------
+# --------------------------------------------------
+# FUNCTIONS
+# --------------------------------------------------
 def get_brands_by_country(selected_countries):
     return brand_map
 
-# -----------------------------
+
 def build_where(months_sel, countries_sel, segment):
     filters = []
+
     if months_sel:
-        filters.append("Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")")
+        filters.append(
+            "Month IN (" + ",".join(f"'{m}'" for m in months_sel) + ")"
+        )
+
     if countries_sel:
-        filters.append("Country_New IN (" + ",".join(f"'{c}'" for c in countries_sel) + ")")
+        filters.append(
+            "Country_New IN (" + ",".join(f"'{c}'" for c in countries_sel) + ")"
+        )
+
     if segment == "Male":
         filters.append("Sex = 1")
+
     elif segment == "Female":
         filters.append("Sex = 2")
 
     return "WHERE " + " AND ".join(filters) if filters else ""
 
-# -----------------------------
-def get_metric(col, metric_type="top2", where_clause="", weight_col="Global_weight_Stacked"):
+
+# --------------------------------------------------
+# METRIC FUNCTION
+# --------------------------------------------------
+def get_metric(col,
+               metric_type="top2",
+               where_clause="",
+               weight_col="Global_weight_Stacked"):
+
     try:
+
         if metric_type == "yesno":
+
             q = f"""
-            SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col})
-            FROM df {where_clause}
+            SELECT
+            SUM(
+                CASE WHEN LOWER(TRIM({col}))='yes'
+                THEN {weight_col}
+                ELSE 0
+                END
+            ) * 100.0 / SUM({weight_col})
+            FROM df
+            {where_clause}
             """
+
         else:
+
             q = f"""
-            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100.0 /
-            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-            THEN {weight_col} ELSE 0 END)
-            FROM df {where_clause}
+            SELECT
+            SUM(
+                CASE WHEN TRY_CAST(
+                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
+                    AS INTEGER
+                ) IN (4,5)
+                THEN {weight_col}
+                ELSE 0
+                END
+            ) * 100.0 /
+
+            SUM(
+                CASE WHEN TRY_CAST(
+                    REGEXP_EXTRACT(TRIM({col}), '\\d+')
+                    AS INTEGER
+                ) BETWEEN 1 AND 5
+                THEN {weight_col}
+                ELSE 0
+                END
+            )
+
+            FROM df
+            {where_clause}
             """
+
         return round(con.execute(q).fetchone()[0] or 0, 1)
+
     except:
         return 0
 
-# -----------------------------
-tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 
-# -----------------------------
-with tab1:
+# --------------------------------------------------
+# SIDEBAR
+# --------------------------------------------------
+with st.sidebar:
 
-    # ✅ CLEAN FILTER BAR
-    f1, f2, f3, f4 = st.columns([2,2,1,2])
+    st.markdown("## ⚙️ Dashboard Filters")
 
-    # ✅ COUNTRY FILTER
-    with f1:
-        st.markdown("**🌍 Country**")
-        select_all_country = st.checkbox("All", key="country_all")
+    selected_countries = st.multiselect(
+        "🌍 Country",
+        countries,
+        default=[]
+    )
 
-        if select_all_country:
-            selected_countries = countries
-            st.caption(f"All selected ({len(countries)})")
-        else:
-            selected_countries = st.multiselect("", countries)
+    selected_months = st.multiselect(
+        "📅 Month",
+        months,
+        default=[]
+    )
 
-    # ✅ MONTH FILTER
-    with f2:
-        st.markdown("**📅 Month**")
-        select_all_month = st.checkbox("All", key="month_all")
+    segment = st.selectbox(
+        "👤 Segment",
+        ["Total", "Male", "Female"]
+    )
 
-        if select_all_month:
-            selected_months = months
-            st.caption(f"All selected ({len(months)})")
-        else:
-            selected_months = st.multiselect("", months)
+    filtered_brand_map = get_brands_by_country(selected_countries)
 
-    # ✅ SEGMENT
-    with f3:
-        st.markdown("**👤 Segment**")
-        segment = st.selectbox("", ["Total", "Male", "Female"])
+    selected_brand = st.selectbox(
+        "🏢 Brand",
+        list(filtered_brand_map.keys())
+    )
 
-    # ✅ BRAND
-    with f4:
-        st.markdown("**🏢 Brand**")
-        filtered_brand_map = get_brands_by_country(selected_countries)
-        selected_brand = st.selectbox("", list(filtered_brand_map.keys()))
+    st.markdown("---")
 
-    code = filtered_brand_map[selected_brand]
+    selected_page = option_menu(
+        menu_title=None,
+        options=["Dashboard", "Graphs", "Chatbot"],
+        icons=["speedometer2", "graph-up", "robot"],
+        default_index=0,
+    )
 
-    where_clause = build_where(selected_months, selected_countries, segment)
-    weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+# --------------------------------------------------
+# FILTER LOGIC
+# --------------------------------------------------
+code = filtered_brand_map[selected_brand]
 
-    col1, col2, col3, col4 = st.columns(4)
+where_clause = build_where(
+    selected_months,
+    selected_countries,
+    segment
+)
 
-    col1.metric("Awareness", f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%")
-    col2.metric("Favorability", f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%")
-    col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%")
-    col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%")
+weight_col = (
+    "Weight_Post"
+    if len(selected_countries) == 1
+    else "Global_weight_Stacked"
+)
 
-    st.subheader("Brand Attributes")
+# --------------------------------------------------
+# KPI VALUES
+# --------------------------------------------------
+awareness = get_metric(
+    f'Aided_Awareness_{code}_slice',
+    'yesno',
+    where_clause,
+    weight_col
+)
+
+favorability = get_metric(
+    f'Brand_Favorability_{code}_slice',
+    'top2',
+    where_clause,
+    weight_col
+)
+
+consideration = get_metric(
+    f'Consideration_{code}_slice',
+    'top2',
+    where_clause,
+    weight_col
+)
+
+impact = get_metric(
+    f'Consideration_Effect_{code}_slice',
+    'top2',
+    where_clause,
+    weight_col
+)
+
+# --------------------------------------------------
+# PAGE 1 - DASHBOARD
+# --------------------------------------------------
+if selected_page == "Dashboard":
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    cards = [
+        (c1, "Awareness", awareness),
+        (c2, "Favorability", favorability),
+        (c3, "Consideration", consideration),
+        (c4, "Effect", impact)
+    ]
+
+    for col, title, value in cards:
+        with col:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-title">{title}</div>
+                <div class="metric-value">{value}%</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # --------------------------------------------------
+    # ATTRIBUTE CHART
+    # --------------------------------------------------
+    st.subheader("📌 Brand Attributes")
 
     attr_data = [
-        {"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice", "top2", where_clause, weight_col)}
+        {
+            "Attribute": attr_map[i],
+            "Value": get_metric(
+                f"Attributes_New_DP_{code}_Q12a_{i}_slice",
+                "top2",
+                where_clause,
+                weight_col
+            )
+        }
         for i in range(1, 18)
     ]
-    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
 
-# -----------------------------
-with tab2:
+    attr_df = pd.DataFrame(attr_data)
+    attr_df = attr_df.sort_values("Value", ascending=True)
 
-    colg1, colg2, colg3, colg4 = st.columns(4)
+    fig_attr = px.bar(
+        attr_df,
+        x="Value",
+        y="Attribute",
+        orientation='h',
+        text="Value",
+        template="plotly_dark",
+        height=700,
+        color="Value",
+        color_continuous_scale="Blues"
+    )
 
-    g_country = colg1.multiselect("Country", countries, key="g_country")
-    g_months = colg2.multiselect("Month", months, key="g_months")
-    g_segment = colg3.selectbox("Segment", ["Total", "Male", "Female"], key="g_segment")
+    fig_attr.update_layout(
+        paper_bgcolor="#0f172a",
+        plot_bgcolor="#0f172a",
+        font_color="white"
+    )
+
+    st.plotly_chart(fig_attr, use_container_width=True)
+
+# --------------------------------------------------
+# PAGE 2 - GRAPHS
+# --------------------------------------------------
+elif selected_page == "Graphs":
+
+    st.subheader("📈 Brand Trends")
+
+    g1, g2, g3 = st.columns(3)
+
+    g_country = g1.multiselect(
+        "Country",
+        countries,
+        key="g_country"
+    )
+
+    g_months = g2.multiselect(
+        "Month",
+        months,
+        key="g_months"
+    )
+
+    g_segment = g3.selectbox(
+        "Segment",
+        ["Total", "Male", "Female"],
+        key="g_segment"
+    )
 
     brand_map_local = get_brands_by_country(g_country)
 
-    selected_brands = colg4.multiselect("Brands", list(brand_map_local.keys()),
-                                        default=list(brand_map_local.keys())[:3], key="g_brands")
+    selected_brands = st.multiselect(
+        "Brands",
+        list(brand_map_local.keys()),
+        default=list(brand_map_local.keys())[:3]
+    )
 
-    view_type = st.radio("View Type", ["Trended View", "Brand Comparison"], horizontal=True)
+    view_type = st.radio(
+        "View Type",
+        ["Trended View", "Brand Comparison"],
+        horizontal=True
+    )
 
-    graph_where = build_where(g_months, g_country, g_segment)
+    graph_where = build_where(
+        g_months,
+        g_country,
+        g_segment
+    )
 
     queries = []
+
     for brand in selected_brands:
+
         code = brand_map_local[brand]
         col = f"Aided_Awareness_{code}_slice"
 
         queries.append(f"""
-        SELECT Month,'{brand}' AS Brand,
-        SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-        THEN Global_weight_Stacked ELSE 0 END)*100.0 /
-        SUM(Global_weight_Stacked) AS Value
-        FROM df {graph_where}
+        SELECT
+        Month,
+        '{brand}' AS Brand,
+
+        SUM(
+            CASE WHEN LOWER(TRIM({col}))='yes'
+            THEN Global_weight_Stacked
+            ELSE 0
+            END
+        )*100.0 / SUM(Global_weight_Stacked) AS Value
+
+        FROM df
+        {graph_where}
+
         GROUP BY Month
         """)
 
-    df_chart = con.execute(" UNION ALL ".join(queries)).df()
-    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
+    if queries:
 
-    if view_type == "Trended View":
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Month_order:O",
-            y="Value:Q",
-            color="Brand"
-        )
-    else:
-        chart = alt.Chart(df_chart).mark_line(point=True).encode(
-            x="Brand",
-            y="Value:Q",
-            color="Month"
+        df_chart = con.execute(
+            " UNION ALL ".join(queries)
+        ).df()
+
+        df_chart["Month_order"] = pd.Categorical(
+            df_chart["Month"],
+            categories=months,
+            ordered=True
         )
 
-    st.altair_chart(chart, use_container_width=True)
+        if view_type == "Trended View":
 
-# -----------------------------
-with tab3:
-    st.subheader("🤖 Chatbot (Insights Only)")
-    user_query = st.text_input("Ask about KPIs")
+            fig = px.line(
+                df_chart,
+                x="Month_order",
+                y="Value",
+                color="Brand",
+                markers=True,
+                template="plotly_dark"
+            )
+
+        else:
+
+            fig = px.line(
+                df_chart,
+                x="Brand",
+                y="Value",
+                color="Month",
+                markers=True,
+                template="plotly_dark"
+            )
+
+        fig.update_layout(
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#0f172a",
+            font_color="white",
+            height=600
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+# --------------------------------------------------
+# PAGE 3 - CHATBOT
+# --------------------------------------------------
+elif selected_page == "Chatbot":
+
+    st.subheader("🤖 AI Insights Assistant")
+
+    st.markdown("""
+    <div style='
+        background:#111827;
+        padding:20px;
+        border-radius:15px;
+        border:1px solid rgba(255,255,255,0.05);
+    '>
+    Ask questions about:
+    <ul>
+        <li>Awareness trends</li>
+        <li>Top performing brands</li>
+        <li>Country comparison</li>
+        <li>Brand attributes</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+    user_query = st.text_input(
+        "Ask about KPIs"
+    )
 
     if user_query:
-        st.markdown("✅ Insight response here (no chart)")
+
+        st.success("Insight response here (future AI integration)")
