@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# PREMIUM MODERN UI
+# MODERN PREMIUM UI
 # =========================================================
 
 st.markdown("""
@@ -52,7 +52,7 @@ section[data-testid="stSidebar"] {
 }
 
 /* =====================================================
-TEXT
+TEXT FIXES
 ===================================================== */
 
 html, body, p, div, span, label {
@@ -82,6 +82,10 @@ FILTERS
     color: #334155 !important;
 }
 
+.stMultiSelect span[data-baseweb="tag"] {
+    display: none !important;
+}
+
 .stMultiSelect input {
     color: #111827 !important;
 }
@@ -91,42 +95,22 @@ input, textarea {
 }
 
 /* =====================================================
-KPI CARDS
+KPI CARDS UPDATED
 ===================================================== */
 
 .metric-card {
-    background: linear-gradient(145deg,#ffffff,#f8fafc);
-    border-radius: 28px;
+    background: white;
+    border-radius: 26px;
     padding: 30px;
     border: 1px solid #e2e8f0;
-    box-shadow:
-        0 10px 30px rgba(15,23,42,0.08),
-        inset 0 1px 0 rgba(255,255,255,0.8);
-    transition: all 0.3s ease;
-    min-height: 260px;
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+    transition: all 0.25s ease;
+    min-height: 240px;
 }
 
 .metric-card:hover {
     transform: translateY(-6px);
-    box-shadow:
-        0 18px 40px rgba(59,130,246,0.15),
-        0 8px 20px rgba(15,23,42,0.08);
-}
-
-.metric-card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 5px;
-    width: 100%;
-    background: linear-gradient(
-        90deg,
-        #2563eb,
-        #7c3aed
-    );
+    box-shadow: 0 16px 40px rgba(15,23,42,0.12);
 }
 
 .metric-top {
@@ -140,12 +124,12 @@ KPI CARDS
     font-size: 13px;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
 }
 
 .metric-sub {
     color: #94a3b8 !important;
-    margin-top: 8px;
+    margin-top: 6px;
     font-size: 14px;
     font-weight: 600;
 }
@@ -154,50 +138,37 @@ KPI CARDS
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background:
-        linear-gradient(
-            135deg,
-            #ecfeff,
-            #dbeafe
-        );
+    background: linear-gradient(135deg,#ecfeff,#dbeafe);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #2563eb !important;
     font-size: 24px;
     font-weight: 800;
-    box-shadow:
-        0 8px 20px rgba(37,99,235,0.18);
-    border: 4px solid white;
+    box-shadow: 0 8px 20px rgba(59,130,246,0.18);
 }
 
 .metric-big {
-    margin-top: 34px;
-    font-size: 54px;
+    margin-top: 35px;
+    font-size: 52px;
     font-weight: 900;
-    color: #0f172a !important;
     line-height: 1;
+    color: #0f172a !important;
 }
 
 .metric-progress {
     width: 100%;
-    height: 14px;
+    height: 12px;
     background: #e2e8f0;
     border-radius: 999px;
     overflow: hidden;
-    margin-top: 30px;
+    margin-top: 28px;
 }
 
 .metric-fill {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(
-        90deg,
-        #2563eb,
-        #7c3aed
-    );
-    box-shadow:
-        0 0 12px rgba(124,58,237,0.35);
+    background: linear-gradient(90deg,#7c3aed,#2563eb);
 }
 
 /* =====================================================
@@ -250,6 +221,15 @@ OPTION MENU
 .nav-link-selected {
     background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
     color: white !important;
+}
+
+/* =====================================================
+RADIO
+===================================================== */
+
+.stRadio label {
+    color: #111827 !important;
+    font-weight: 600 !important;
 }
 
 /* =====================================================
@@ -522,16 +502,10 @@ if selected_page == "Dashboard":
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        selected_countries = st.multiselect(
-            "🌍 Country",
-            countries
-        )
+        selected_countries = st.multiselect("🌍 Country", countries)
 
     with f2:
-        selected_months = st.multiselect(
-            "📅 Month",
-            months
-        )
+        selected_months = st.multiselect("📅 Month", months)
 
     with f3:
         segment = st.selectbox(
@@ -540,7 +514,10 @@ if selected_page == "Dashboard":
         )
 
     with f4:
-        filtered_brand_map = get_brands_by_country(selected_countries)
+
+        filtered_brand_map = get_brands_by_country(
+            selected_countries
+        )
 
         selected_brand = st.selectbox(
             "🏢 Brand",
@@ -694,3 +671,5 @@ if selected_page == "Dashboard":
         fig_attr,
         use_container_width=True
     )
+
+    st.markdown("</div>", unsafe_allow_html=True)
