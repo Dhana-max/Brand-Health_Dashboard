@@ -3,10 +3,11 @@ import duckdb
 import pandas as pd
 import re
 import altair as alt
+from difflib import get_close_matches
 
 st.set_page_config(layout="wide")
 
-# ✅ Light UI styling
+# ✅ Light UI styling (no logic impact)
 st.markdown("""
 <style>
 .block-container {
@@ -47,6 +48,27 @@ def load_map():
 map_df = load_map()
 
 # -----------------------------
+attr_map = {
+    1: "Helps me move forward professionally",
+    2: "Helps me find the right job for me",
+    3: "Helps me navigate my professional life",
+    4: "Is a place I feel I belong",
+    5: "Cares about issues that matter to me",
+    6: "Is a brand I love",
+    7: "Is a brand I trust",
+    8: "Makes me feel like I'm part of a community",
+    9: "Helps me stay informed on professional topics that matter to me",
+    10: "Is a place where discussions related to my work life happen",
+    11: "Is useful for me to visit every day",
+    12: "Is a platform where I create/share content",
+    13: "I use this more frequently to create/share content than before",
+    14: "Is a platform I would use as part of my job",
+    15: "Helps me reach my goals",
+    16: "Is a locally relevant professional network",
+    17: "Helps me move forward in my career/business"
+}
+
+# -----------------------------
 @st.cache_data
 def load_filters():
     df_temp = con.execute("""
@@ -80,7 +102,7 @@ brand_map = {
 }
 
 # -----------------------------
-def get_brands_by_country(_):
+def get_brands_by_country(selected_countries):
     return brand_map
 
 # -----------------------------
@@ -124,21 +146,30 @@ tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 # -----------------------------
 with tab1:
 
+    # ✅ CLEAN FILTER BAR
     f1, f2, f3, f4 = st.columns([2,2,1,2])
 
-    # ✅ COUNTRY (clean dropdown)
+    # ✅ COUNTRY FILTER
     with f1:
         st.markdown("**🌍 Country**")
-        country_selected = st.selectbox("", ["All"] + countries)
+        select_all_country = st.checkbox("All", key="country_all")
 
-        selected_countries = countries if country_selected == "All" else [country_selected]
+        if select_all_country:
+            selected_countries = countries
+            st.caption(f"All selected ({len(countries)})")
+        else:
+            selected_countries = st.multiselect("", countries)
 
-    # ✅ MONTH (clean dropdown)
+    # ✅ MONTH FILTER
     with f2:
         st.markdown("**📅 Month**")
-        month_selected = st.selectbox("", ["All"] + months)
+        select_all_month = st.checkbox("All", key="month_all")
 
-        selected_months = months if month_selected == "All" else [month_selected]
+        if select_all_month:
+            selected_months = months
+            st.caption(f"All selected ({len(months)})")
+        else:
+            selected_months = st.multiselect("", months)
 
     # ✅ SEGMENT
     with f3:
@@ -163,23 +194,27 @@ with tab1:
     col3.metric("Consideration", f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%")
     col4.metric("Effect", f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%")
 
+    st.subheader("Brand Attributes")
+
+    attr_data = [
+        {"Attribute": attr_map[i], "Value (%)": get_metric(f"Attributes_New_DP_{code}_Q12a_{i}_slice", "top2", where_clause, weight_col)}
+        for i in range(1, 18)
+    ]
+    st.dataframe(pd.DataFrame(attr_data), use_container_width=True)
+
 # -----------------------------
 with tab2:
 
     colg1, colg2, colg3, colg4 = st.columns(4)
 
-    g_country = colg1.selectbox("Country", ["All"] + countries)
-    g_country = countries if g_country == "All" else [g_country]
-
-    g_months = colg2.selectbox("Month", ["All"] + months)
-    g_months = months if g_months == "All" else [g_months]
-
-    g_segment = colg3.selectbox("Segment", ["Total", "Male", "Female"])
+    g_country = colg1.multiselect("Country", countries, key="g_country")
+    g_months = colg2.multiselect("Month", months, key="g_months")
+    g_segment = colg3.selectbox("Segment", ["Total", "Male", "Female"], key="g_segment")
 
     brand_map_local = get_brands_by_country(g_country)
 
     selected_brands = colg4.multiselect("Brands", list(brand_map_local.keys()),
-                                        default=list(brand_map_local.keys())[:3])
+                                        default=list(brand_map_local.keys())[:3], key="g_brands")
 
     view_type = st.radio("View Type", ["Trended View", "Brand Comparison"], horizontal=True)
 
@@ -200,12 +235,20 @@ with tab2:
         """)
 
     df_chart = con.execute(" UNION ALL ".join(queries)).df()
+    df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
 
-    chart = alt.Chart(df_chart).mark_line(point=True).encode(
-        x="Month",
-        y="Value",
-        color="Brand"
-    )
+    if view_type == "Trended View":
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Month_order:O",
+            y="Value:Q",
+            color="Brand"
+        )
+    else:
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Brand",
+            y="Value:Q",
+            color="Month"
+        )
 
     st.altair_chart(chart, use_container_width=True)
 
@@ -215,4 +258,4 @@ with tab3:
     user_query = st.text_input("Ask about KPIs")
 
     if user_query:
-        st.markdown("✅ Insight response here")
+        st.markdown("✅ Insight response here (no chart)")
