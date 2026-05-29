@@ -7,7 +7,6 @@ import duckdb
 import pandas as pd
 import re
 import plotly.express as px
-import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 
 # =========================================================
@@ -21,7 +20,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# MODERN PREMIUM UI
+# PREMIUM MODERN UI
 # =========================================================
 
 st.markdown("""
@@ -52,7 +51,7 @@ section[data-testid="stSidebar"] {
 }
 
 /* =====================================================
-TEXT FIXES
+TEXT
 ===================================================== */
 
 html, body, p, div, span, label {
@@ -86,16 +85,12 @@ FILTERS
     display: none !important;
 }
 
-.stMultiSelect input {
-    color: #111827 !important;
-}
-
-input, textarea {
+input {
     color: #111827 !important;
 }
 
 /* =====================================================
-KPI CARDS UPDATED
+KPI CARDS
 ===================================================== */
 
 .metric-card {
@@ -221,15 +216,6 @@ OPTION MENU
 .nav-link-selected {
     background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
     color: white !important;
-}
-
-/* =====================================================
-RADIO
-===================================================== */
-
-.stRadio label {
-    color: #111827 !important;
-    font-weight: 600 !important;
 }
 
 /* =====================================================
@@ -615,61 +601,3 @@ if selected_page == "Dashboard":
 
             </div>
             """, unsafe_allow_html=True)
-
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    # =====================================================
-    # ATTRIBUTES SECTION
-    # =====================================================
-
-    st.markdown("""
-    <div class='graph-card'>
-    """, unsafe_allow_html=True)
-
-    st.subheader("📊 Brand Attributes")
-
-    attr_data = [
-        {
-            "Attribute": attr_map[i],
-            "Value": get_metric(
-                f"Attributes_New_DP_{code}_Q12a_{i}_slice",
-                "top2",
-                where_clause,
-                weight_col
-            )
-        }
-        for i in range(1, 18)
-    ]
-
-    attr_df = pd.DataFrame(attr_data)
-
-    attr_df = attr_df.sort_values(
-        "Value",
-        ascending=True
-    )
-
-    fig_attr = px.bar(
-        attr_df,
-        x="Value",
-        y="Attribute",
-        orientation='h',
-        text="Value",
-        height=700,
-        color="Value",
-        color_continuous_scale="Blues"
-    )
-
-    fig_attr.update_layout(
-        paper_bgcolor='white',
-        plot_bgcolor='white',
-        font_color='#111827',
-        xaxis_title='',
-        yaxis_title=''
-    )
-
-    st.plotly_chart(
-        fig_attr,
-        use_container_width=True
-    )
-
-    st.markdown("</div>", unsafe_allow_html=True)
