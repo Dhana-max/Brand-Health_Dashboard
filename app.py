@@ -1,4 +1,3 @@
-```python
 # Enhanced Streamlit Brand Health Dashboard UI
 import streamlit as st
 import duckdb
