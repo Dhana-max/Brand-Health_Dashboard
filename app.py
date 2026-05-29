@@ -53,7 +53,7 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* ⚡ FIX: Convert Selection Boxes to Flat Inline Text & Strip 'x' and stray commas */
+    /* ⚡ FIX: Prevent text-truncation/hiding and turn selection boxes into flat text with commas */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
         background-color: transparent !important;
         border: none !important;
@@ -61,34 +61,41 @@ st.markdown("""
         margin: 0px 0px 0px 0px !important;
         color: #ffffff !important;
         box-shadow: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
     }
     
-    /* Hide custom pseudo commas, trailing default delete indicators and inner close buttons completely */
+    /* Completely eliminate default close button icons (X) and standard text-hiding layouts */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button,
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] Vil,
+    div[data-testid="stMultiSelect"] span[data-baseweb="tag"] svg,
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"]::after,
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"]::before {
         display: none !important;
         content: "" !important;
+        width: 0px !important;
+        height: 0px !important;
     }
     
-    /* Inject clean comma spacing natively between sibling text tokens */
+    /* Safely add spacing and trailing commas between successive text fields without truncating characters */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) {
-        margin-right: 6px !important;
+        margin-right: 5px !important;
     }
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"]:not(:last-child) > div::after {
         content: "," !important;
-        color: #9ca3af !important;
+        color: #ffffff !important;
+        display: inline-block !important;
         margin-left: 1px !important;
     }
 
-    /* Force Multiselect Choices to Stay Compact on a Single Line */
+    /* Ensure multiselect container context prevents clipping, indentation shifts or wrapping */
     div[data-testid="stMultiSelect"] div[role="listbox"] {
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         white-space: nowrap !important;
         gap: 0px !important;
+        padding-left: 6px !important;
         padding-top: 4px !important;
         padding-bottom: 4px !important;
     }
