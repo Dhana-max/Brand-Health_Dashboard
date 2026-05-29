@@ -8,154 +8,153 @@ from difflib import get_close_matches
 st.set_page_config(layout="wide")
 
 # ==========================================
-# 🎨 CLEAN UI LIGHT THEME STYLING (TD CONNECT STYLE)
+# 🌌 PREMIUM CINEMATIC DARK UI OVERHAUL
 # ==========================================
 st.markdown("""
 <style>
-    /* Global Background and Typography */
+    /* Global Application Canvas */
     .stApp {
-        background-color: #f4f6f9 !important;
-        color: #333333 !important;
+        background: linear-gradient(180deg, #0f0c1b 0%, #05030a 100%) !important;
+        color: #e2e8f0 !important;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    /* Main Dashboard Title */
+    /* Main Glowing Dashboard Header */
     h1 {
-        color: #1a202c !important;
-        font-weight: 700 !important;
-        font-size: 2.2rem !important;
+        color: #ffffff !important;
+        font-weight: 800 !important;
+        font-size: 2.4rem !important;
+        letter-spacing: -0.02em !important;
         margin-bottom: 1.5rem !important;
+        text-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
     }
     
     h2, h3, h4, h5, h6 {
-        color: #2d3748 !important;
+        color: #ffffff !important;
         font-weight: 600 !important;
     }
 
-    /* Top Horizontal Navigation Tabs Customization */
+    /* Top Navigation Tab System Customization */
     div[data-testid="stTabBar"] {
-        background-color: #ffffff !important;
+        background-color: rgba(22, 19, 38, 0.8) !important;
         padding: 0px 20px !important;
-        border-radius: 8px !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
         margin-bottom: 25px !important;
-        border: 1px solid #e2e8f0 !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
     button[data-baseweb="tab"] {
-        color: #718096 !important;
+        color: #94a3b8 !important;
         font-weight: 600 !important;
         padding: 14px 20px !important;
         background-color: transparent !important;
         border: none !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        color: #3182ce !important;
-        border-bottom: 3px solid #3182ce !important;
+        color: #00f2fe !important;
+        border-bottom: 3px solid #00f2fe !important;
     }
 
-    /* Grid Container Cards */
+    /* Structured Grid Container Cards (KPI Blocks) */
     div[data-testid="column"] {
-        background-color: #ffffff !important;
-        padding: 24px !important;
-        border-radius: 10px !important;
-        border: 1px solid #e2e8f0 !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        background: rgba(20, 17, 34, 0.75) !important;
+        padding: 22px !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+        backdrop-filter: blur(10px);
     }
 
-    /* Custom Sparkline KPI Layout Blocks */
+    /* Embedded Sparkline Metric Visual Structuring */
     .kpi-container {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        height: 100%;
         width: 100%;
     }
     .kpi-header {
         font-size: 0.85rem !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-        color: #718096 !important;
+        letter-spacing: 0.08em !important;
+        color: #94a3b8 !important;
         font-weight: 600 !important;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
     }
     .kpi-value {
-        font-size: 2.2rem !important;
+        font-size: 2.3rem !important;
         font-weight: 700 !important;
-        color: #1a202c !important;
-        margin-bottom: 12px;
+        color: #ffffff !important;
+        margin-bottom: 10px;
         line-height: 1;
     }
-    .sparkline-wrapper {
-        width: 100%;
-        height: 35px;
-        margin-top: auto;
-    }
 
-    /* Filter Headers Label Text */
+    /* Dropdown Component Labels */
     .filter-label {
-        color: #4a5568 !important;
+        color: #cbd5e1 !important;
         font-weight: 600 !important;
         font-size: 0.95rem !important;
-        margin-bottom: 6px !important;
+        margin-bottom: 8px !important;
         display: flex;
         align-items: center;
         gap: 6px;
     }
     
-    /* Form controls (Selectboxes, Multiselects) Restored Native Framework */
+    /* Native Framework Control Adaptation */
     .stSelectbox div, .stMultiSelect div {
-        background-color: #ffffff !important;
-        color: #2d3748 !important;
+        background-color: #161326 !important;
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
     }
 
-    /* Native Multi-select tag styles to keep text from being cut off */
+    /* Multi-select filter tag customization preserving layout clarity */
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] {
-        background-color: #edf2f7 !important;
-        border: 1px solid #cbd5e0 !important;
-        border-radius: 4px !important;
-        color: #2d3748 !important;
-        padding: 2px 6px !important;
+        background-color: #2e2a47 !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 6px !important;
+        color: #ffffff !important;
     }
     div[data-testid="stMultiSelect"] span[data-baseweb="tag"] button {
-        color: #4a5568 !important;
+        color: #94a3b8 !important;
     }
 
-    /* Crisp Light-Theme Matrix Data Tables */
-    .light-table {
+    /* High-Contrast Cyberpunk Matrix Tables */
+    .dark-matrix-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        color: #2d3748;
+        color: #e2e8f0;
         font-family: inherit;
-        background-color: #ffffff;
-        border-radius: 8px;
+        background-color: rgba(16, 13, 28, 0.6);
+        border-radius: 12px;
         overflow: hidden;
-        border: 1px solid #e2e8f0;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .light-table th {
-        background-color: #f7fafc;
-        color: #4a5568;
+    .dark-matrix-table th {
+        background-color: #161326;
+        color: #00f2fe;
         text-align: left;
-        padding: 14px 16px;
+        padding: 14px 18px;
         font-weight: 600;
-        border-bottom: 2px solid #e2e8f0;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
         font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
-    .light-table td {
-        padding: 12px 16px;
-        border-bottom: 1px solid #edf2f7;
+    .dark-matrix-table td {
+        padding: 14px 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         font-size: 0.95rem;
     }
-    .light-table tr:last-child td {
+    .dark-matrix-table tr:last-child td {
         border-bottom: none;
     }
-    .light-table tr:hover {
-        background-color: #f8fafc;
+    .dark-matrix-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.03);
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Brand Health Dashboard")
+st.title("Brand Health Intelligence Platform")
 
 PARQUET_URL = "https://github.com/Dhana-max/Brand-Health_Dashboard/releases/download/v1/data.parquet"
 MAP_FILE = "Map.xlsx"
@@ -235,11 +234,9 @@ brand_map = {
     for _, r in brand_rows.iterrows()
 }
 
-# -----------------------------
 def get_brands_by_country(selected_countries):
     return brand_map
 
-# -----------------------------
 def build_where(months_sel, countries_sel, segment):
     filters = []
     if months_sel:
@@ -253,44 +250,32 @@ def build_where(months_sel, countries_sel, segment):
 
     return "WHERE " + " AND ".join(filters) if filters else ""
 
-# -----------------------------
 def get_metric(col, metric_type="top2", where_clause="", weight_col="Global_weight_Stacked"):
     try:
         if metric_type == "yesno":
             q = f"""
-            SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col})
+            SELECT SUM(CASE WHEN LOWER(TRIM({col}))='yes' THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col})
             FROM df {where_clause}
             """
         else:
             q = f"""
-            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5)
-            THEN {weight_col} ELSE 0 END)*100.0 /
-            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5
-            THEN {weight_col} ELSE 0 END)
+            SELECT SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5) THEN {weight_col} ELSE 0 END)*100.0 /
+            SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5 THEN {weight_col} ELSE 0 END)
             FROM df {where_clause}
             """
         return round(con.execute(q).fetchone()[0] or 0, 1)
     except:
         return 0
 
-# -----------------------------
-# 📈 Helper function to generate inline trend sparklines for each KPI card
-# -----------------------------
 def get_sparkline_data(col, metric_type, where_clause, weight_col):
     try:
-        # Reconstruct timeline trend data bypassing main selections to show the line curve
-        # But respect other filters like Segment/Country if populated
-        base_where = where_clause
         q = f"""
-        SELECT Month, 
-               SUM(CASE WHEN LOWER(TRIM({col}))='yes' THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col}) as val
-        FROM df {base_where} GROUP BY Month
+        SELECT Month, SUM(CASE WHEN LOWER(TRIM({col}))='yes' THEN {weight_col} ELSE 0 END)*100.0/SUM({weight_col}) as val
+        FROM df {where_clause} GROUP BY Month
         """ if metric_type == "yesno" else f"""
-        SELECT Month,
-               SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5) THEN {weight_col} ELSE 0 END)*100.0 /
-               SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5 THEN {weight_col} ELSE 0 END) as val
-        FROM df {base_where} GROUP BY Month
+        SELECT Month, SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) IN (4,5) THEN {weight_col} ELSE 0 END)*100.0 /
+        SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({col}), '\\d+') AS INTEGER) BETWEEN 1 AND 5 THEN {weight_col} ELSE 0 END) as val
+        FROM df {where_clause} GROUP BY Month
         """
         spark_df = con.execute(q).df()
         if not spark_df.empty:
@@ -309,27 +294,23 @@ def create_sparkline_chart(df, color_line):
     return chart.configure(background='transparent').configure_view(strokeOpacity=0)
 
 # -----------------------------
-tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
+tab1, tab2, tab3 = st.tabs(["📊 Executive View", "📈 Deep-Dive Graphs", "🤖 AI Analytics Chatbot"])
 
 # -----------------------------
 with tab1:
-    # Filter Bar Container Grid
     f1, f2, f3, f4 = st.columns([3, 3, 2, 3])
 
     with f1:
-        st.markdown('<div class="filter-label">🌍 Country</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-label">🌍 Region / Country</div>', unsafe_allow_html=True)
         selected_countries = st.multiselect("", countries, label_visibility="collapsed")
-
     with f2:
-        st.markdown('<div class="filter-label">📅 Month</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-label">📅 Historical Phase</div>', unsafe_allow_html=True)
         selected_months = st.multiselect("", months, label_visibility="collapsed")
-
     with f3:
-        st.markdown('<div class="filter-label">👤 Segment</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-label">👤 Demographic Segment</div>', unsafe_allow_html=True)
         segment = st.selectbox("", ["Total", "Male", "Female"], label_visibility="collapsed")
-
     with f4:
-        st.markdown('<div class="filter-label">🏢 Brand</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-label">🏢 Target Enterprise Brand</div>', unsafe_allow_html=True)
         filtered_brand_map = get_brands_by_country(selected_countries)
         selected_brand = st.selectbox("", list(filtered_brand_map.keys()), label_visibility="collapsed")
 
@@ -339,39 +320,35 @@ with tab1:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # KPIs Cards Layout Row with Embedded Sparkline Line Graphs
+    # 📈 KPI Cards Grid featuring Glowing Sparklines
     col1, col2, col3, col4 = st.columns(4)
     
-    # KPI 1: Total Awareness
     with col1:
         val1 = f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%"
-        st.markdown(f'<div class="kpi-container"><div class="kpi-header">Total Awareness</div><div class="kpi-value">{val1}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-container"><div class="kpi-header">Total Awareness</div><div class="kpi-value" style="color: #00f2fe;">{val1}</div></div>', unsafe_allow_html=True)
         df_sp1 = get_sparkline_data(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)
-        st.altair_chart(create_sparkline_chart(df_sp1, '#48bb78'), use_container_width=True)
+        st.altair_chart(create_sparkline_chart(df_sp1, '#00f2fe'), use_container_width=True)
 
-    # KPI 2: Brand Favorability
     with col2:
         val2 = f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.markdown(f'<div class="kpi-container"><div class="kpi-header">Brand Favorability</div><div class="kpi-value">{val2}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-container"><div class="kpi-header">Brand Favorability</div><div class="kpi-value" style="color: #38ef7d;">{val2}</div></div>', unsafe_allow_html=True)
         df_sp2 = get_sparkline_data(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)
-        st.altair_chart(create_sparkline_chart(df_sp2, '#3182ce'), use_container_width=True)
+        st.altair_chart(create_sparkline_chart(df_sp2, '#38ef7d'), use_container_width=True)
 
-    # KPI 3: Consideration Rate
     with col3:
         val3 = f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.markdown(f'<div class="kpi-container"><div class="kpi-header">Consideration Rate</div><div class="kpi-value">{val3}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-container"><div class="kpi-header">Consideration Rate</div><div class="kpi-value" style="color: #ff007f;">{val3}</div></div>', unsafe_allow_html=True)
         df_sp3 = get_sparkline_data(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)
-        st.altair_chart(create_sparkline_chart(df_sp3, '#805ad5'), use_container_width=True)
+        st.altair_chart(create_sparkline_chart(df_sp3, '#ff007f'), use_container_width=True)
 
-    # KPI 4: Conversion Effect
     with col4:
         val4 = f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%"
-        st.markdown(f'<div class="kpi-container"><div class="kpi-header">Conversion Effect</div><div class="kpi-value">{val4}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-container"><div class="kpi-header">Conversion Effect</div><div class="kpi-value" style="color: #ff9f43;">{val4}</div></div>', unsafe_allow_html=True)
         df_sp4 = get_sparkline_data(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)
-        st.altair_chart(create_sparkline_chart(df_sp4, '#e53e3e'), use_container_width=True)
+        st.altair_chart(create_sparkline_chart(df_sp4, '#ff9f43'), use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("Brand Attribute Matrix Breakdown")
+    st.subheader("Brand Attribute Matrix Performance")
 
     attr_data = [
         {"Attribute": attr_map[i], "Value (%)": f"{get_metric(f'Attributes_New_DP_{code}_Q12a_{i}_slice', 'top2', where_clause, weight_col)}%"}
@@ -380,9 +357,9 @@ with tab1:
     
     df_matrix = pd.DataFrame(attr_data)
     
-    html_table = "<table class='light-table'><thead><tr><th>Attribute</th><th>Value (%)</th></tr></thead><tbody>"
+    html_table = "<table class='dark-matrix-table'><thead><tr><th>Attribute Statement</th><th>Performance Level</th></tr></thead><tbody>"
     for _, row in df_matrix.iterrows():
-        html_table += f"<tr><td>{row['Attribute']}</td><td><strong>{row['Value (%)']}</strong></td></tr>"
+        html_table += f"<tr><td>{row['Attribute']}</td><td><strong style='color: #00f2fe;'>{row['Value (%)']}</strong></td></tr>"
     html_table += "</tbody></table>"
     
     st.markdown(html_table, unsafe_allow_html=True)
@@ -392,71 +369,77 @@ with tab2:
     colg1, colg2, colg3, colg4 = st.columns(4)
 
     with colg1:
-        st.markdown('<div class="filter-label">🌍 Country</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-label">🌍 Filter Country</div>', unsafe_allow_html=True)
         g_country = st.multiselect("Country", countries, key="g_country", label_visibility="collapsed")
     with colg2:
-        st.markdown('<div class="filter-label">📅 Month</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-label">📅 Filter Month</div>', unsafe_allow_html=True)
         g_months = st.multiselect("Month", months, key="g_months", label_visibility="collapsed")
     with colg3:
-        st.markdown('<div class="filter-label">👤 Segment</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-label">👤 Segment Select</div>', unsafe_allow_html=True)
         g_segment = st.selectbox("Segment", ["Total", "Male", "Female"], key="g_segment", label_visibility="collapsed")
     with colg4:
-        st.markdown('<div class="filter-label">🏢 Brands</div>', unsafe_allow_html=True)
+        st.markdown('<div class="filter-label">🏢 Select Target Brand</div>', unsafe_allow_html=True)
         brand_map_local = get_brands_by_country(g_country)
-        selected_brands = st.multiselect("Brands", list(brand_map_local.keys()),
-                                            default=list(brand_map_local.keys())[:3], key="g_brands", label_visibility="collapsed")
+        g_brand_sel = st.selectbox("Target Brand", list(brand_map_local.keys()), key="g_brand_single", label_visibility="collapsed")
 
     st.markdown("<br>", unsafe_allow_html=True)
-    view_type = st.radio("View Type", ["Trended View", "Brand Comparison"], horizontal=True)
+    
+    # Attractive Features Addition: Multi-metric Cross Analysis Line Visualization
+    st.subheader("📊 Brand Health Funnel Trends & Cross-Attribute Analytics")
+    
     graph_where = build_where(g_months, g_country, g_segment)
-
-    if selected_brands:
-        queries = []
-        for brand in selected_brands:
-            code = brand_map_local[brand]
-            col = f"Aided_Awareness_{code}_slice"
-
-            queries.append(f"""
-            SELECT Month, '{brand}' AS Brand,
-            SUM(CASE WHEN LOWER(TRIM({col}))='yes'
-            THEN Global_weight_Stacked ELSE 0 END)*100.0 /
-            SUM(Global_weight_Stacked) AS Value
-            FROM df {graph_where}
-            GROUP BY Month
+    g_code = brand_map_local[g_brand_sel]
+    
+    # Multi-Query Compilation to draw full structural trend lines inside a single view
+    metrics_to_plot = [
+        {"label": "Total Awareness", "col": f"Aided_Awareness_{g_code}_slice", "type": "yesno"},
+        {"label": "Brand Favorability", "col": f"Brand_Favorability_{g_code}_slice", "type": "top2"},
+        {"label": "Consideration Rate", "col": f"Consideration_{g_code}_slice", "type": "top2"},
+        {"label": "Conversion Effect", "col": f"Consideration_Effect_{g_code}_slice", "type": "top2"},
+    ]
+    
+    trend_queries = []
+    for m_info in metrics_to_plot:
+        c_name = m_info["col"]
+        lbl = m_info["label"]
+        if m_info["type"] == "yesno":
+            trend_queries.append(f"""
+                SELECT Month, '{lbl}' AS Metric, 
+                SUM(CASE WHEN LOWER(TRIM({c_name}))='yes' THEN Global_weight_Stacked ELSE 0 END)*100.0/SUM(Global_weight_Stacked) AS Value 
+                FROM df {graph_where} GROUP BY Month
             """)
-
-        df_chart = con.execute(" UNION ALL ".join(queries)).df()
-
-        if not df_chart.empty and "Month" in df_chart.columns:
-            df_chart["Month_order"] = pd.Categorical(df_chart["Month"], categories=months, ordered=True)
-
-            # 📊 Light Theme Clean Color Palette 
-            chart_color_palette = ["#3182ce", "#e53e3e", "#319795", "#d69e2e", "#805ad5"]
-
-            if view_type == "Trended View":
-                chart = alt.Chart(df_chart).mark_line(point=True, size=3).encode(
-                    x=alt.X("Month_order:O", title="Timeline Phase", axis=alt.Axis(labelColor="#4a5568", titleColor="#2d3748")),
-                    y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#4a5568", titleColor="#2d3748"), scale=alt.Scale(zero=False)),
-                    color=alt.Color("Brand:N", scale=alt.Scale(range=chart_color_palette))
-                ).properties(height=400)
-            else:
-                chart = alt.Chart(df_chart).mark_line(point=True, size=3).encode(
-                    x=alt.X("Brand:N", title="Competitor Space", axis=alt.Axis(labelColor="#4a5568", titleColor="#2d3748")),
-                    y=alt.Y("Value:Q", title="Percentage Share (%)", axis=alt.Axis(labelColor="#4a5568", titleColor="#2d3748"), scale=alt.Scale(zero=False)),
-                    color=alt.Color("Month:O", scale=alt.Scale(range=chart_color_palette))
-                ).properties(height=400)
-
-            chart = chart.configure(background='transparent').configure_view(strokeOpacity=0)
-            st.altair_chart(chart, use_container_width=True)
         else:
-            st.warning("⚠️ No data available matching the selected filter variations.")
+            trend_queries.append(f"""
+                SELECT Month, '{lbl}' AS Metric, 
+                SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({c_name}), '\\d+') AS INTEGER) IN (4,5) THEN Global_weight_Stacked ELSE 0 END)*100.0 /
+                SUM(CASE WHEN TRY_CAST(REGEXP_EXTRACT(TRIM({c_name}), '\\d+') AS INTEGER) BETWEEN 1 AND 5 THEN Global_weight_Stacked ELSE 0 END) AS Value 
+                FROM df {graph_where} GROUP BY Month
+            """)
+            
+    df_trends = con.execute(" UNION ALL ".join(trend_queries)).df()
+    
+    if not df_trends.empty:
+        df_trends["Month_order"] = pd.Categorical(df_trends["Month"], categories=months, ordered=True)
+        
+        # Cyberpunk Neon Visual Palette Configuration
+        neon_colors = ["#00f2fe", "#38ef7d", "#ff007f", "#ff9f43"]
+        
+        multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3.5).encode(
+            x=alt.X("Month_order:O", title="Timeline Phase", axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1)),
+            y=alt.Y("Value:Q", title="Percentage Share Score (%)", axis=alt.Axis(labelColor="#cbd5e1", titleColor="#ffffff", gridOpacity=0.1), scale=alt.Scale(zero=False)),
+            color=alt.Color("Metric:N", scale=alt.Scale(range=neon_colors), legend=alt.Legend(title="Brand Funnel Layer", labelColor="#ffffff", titleColor="#00f2fe")),
+            tooltip=["Month", "Metric", "Value"]
+        ).properties(height=450).interactive()
+        
+        multi_line_chart = multi_line_chart.configure(background='transparent').configure_view(strokeOpacity=0)
+        st.altair_chart(multi_line_chart, use_container_width=True)
     else:
-        st.info("Please pick at least one brand configuration view.")
+        st.warning("⚠️ No tracking information matches the selected filter configuration parameters.")
 
 # -----------------------------
 with tab3:
-    st.subheader("🤖 Chatbot (Insights Only)")
-    user_query = st.text_input("Ask about KPIs")
+    st.subheader("🤖 AI Analytics Chatbot (Insights Only)")
+    user_query = st.text_input("Interrogate your analytical KPIs:")
 
     if user_query:
-        st.markdown("✅ Insight response here (no chart)")
+        st.markdown("✅ Insight response compiled (no chart visualization needed)")
