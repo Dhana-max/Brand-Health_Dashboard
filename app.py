@@ -1,5 +1,7 @@
 # =========================================================
 # PREMIUM BRAND HEALTH DASHBOARD
+# SAME UI STYLE AS REFERENCE IMAGE
+# LOGIC NOT CHANGED
 # =========================================================
 
 import streamlit as st
@@ -7,7 +9,6 @@ import duckdb
 import pandas as pd
 import re
 import plotly.express as px
-import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 
 # =========================================================
@@ -21,19 +22,23 @@ st.set_page_config(
 )
 
 # =========================================================
-# MODERN PREMIUM UI
+# SOFT MODERN UI
 # =========================================================
 
 st.markdown("""
 <style>
 
 /* =====================================================
-MAIN APP
+APP BACKGROUND
 ===================================================== */
 
 .stApp {
-    background: #f5f7fb;
+    background: linear-gradient(135deg,#f8efef,#f5f7fb);
 }
+
+/* =====================================================
+MAIN LAYOUT
+===================================================== */
 
 .block-container {
     padding-top: 1rem;
@@ -47,24 +52,41 @@ SIDEBAR
 ===================================================== */
 
 section[data-testid="stSidebar"] {
-    background: #373b68;
+    background: #4b4d77;
     border-right: none;
+    width: 280px !important;
 }
 
 section[data-testid="stSidebar"] * {
     color: white !important;
 }
 
-/* =====================================================
-TEXT FIXES
-===================================================== */
-
-html, body, p, div, span, label {
-    color: #111827 !important;
+section[data-testid="stSidebar"] .nav-link {
+    border-radius: 12px !important;
+    margin-bottom: 8px !important;
+    font-size: 18px !important;
+    padding: 12px !important;
 }
 
-h1,h2,h3,h4,h5,h6 {
-    color: #0f172a !important;
+section[data-testid="stSidebar"] .nav-link-selected {
+    background: rgba(255,255,255,0.15) !important;
+}
+
+/* =====================================================
+TITLE
+===================================================== */
+
+.main-title {
+    font-size: 48px;
+    font-weight: 800;
+    color: #1f2937;
+    margin-bottom: 0;
+}
+
+.main-subtitle {
+    color: #64748b;
+    font-size: 18px;
+    margin-top: 0;
 }
 
 /* =====================================================
@@ -74,97 +96,88 @@ FILTERS
 .stSelectbox > div > div,
 .stMultiSelect > div > div {
     background: white !important;
-    border: 1px solid #dbe4f0 !important;
-    border-radius: 18px !important;
-    min-height: 56px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid #ececec !important;
+    border-radius: 14px !important;
+    min-height: 52px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.04);
 }
 
-.stSelectbox label,
-.stMultiSelect label {
-    font-weight: 700 !important;
-    color: #334155 !important;
-}
-
-.stMultiSelect input {
-    color: #111827 !important;
-}
-
-input, textarea {
-    color: #111827 !important;
+.stMultiSelect span[data-baseweb="tag"] {
+    display: none !important;
 }
 
 /* =====================================================
-NEW KPI CARDS
+MAIN CARDS
 ===================================================== */
 
-.metric-card-new {
+.metric-card {
     background: white;
-    border-radius: 26px;
-    padding: 26px;
-    border: 1px solid #e5e7eb;
+    border-radius: 22px;
+    padding: 24px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-    transition: 0.3s ease;
     min-height: 220px;
-    position: relative;
-    overflow: hidden;
+    border: 1px solid #f1f1f1;
+    transition: 0.3s;
 }
 
-.metric-card-new:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(37,99,235,0.12);
+.metric-card:hover {
+    transform: translateY(-4px);
 }
 
-.metric-row {
+.metric-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
 }
 
-.metric-label {
-    font-size: 15px;
-    font-weight: 800;
-    color: #0f172a !important;
-    letter-spacing: 0.3px;
+.metric-left {
+    display: flex;
+    flex-direction: column;
 }
 
-.metric-desc {
-    margin-top: 6px;
-    color: #64748b !important;
+.metric-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #7c8196 !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.metric-subtitle {
     font-size: 13px;
+    color: #a1a1aa !important;
+    margin-top: 4px;
 }
 
-.metric-pill {
-    background: linear-gradient(135deg,#2563eb,#7c3aed);
+.metric-badge {
+    background: linear-gradient(135deg,#7c3aed,#2563eb);
     color: white !important;
-    padding: 10px 16px;
-    border-radius: 14px;
-    font-size: 16px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    font-size: 20px;
     font-weight: 800;
-    box-shadow: 0 6px 16px rgba(37,99,235,0.25);
 }
 
-.metric-number {
-    font-size: 58px;
-    font-weight: 900;
-    margin-top: 28px;
-    line-height: 1;
-    color: #111827 !important;
-}
-
-.metric-bar-bg {
-    width: 100%;
-    height: 14px;
-    background: #e2e8f0;
-    border-radius: 999px;
-    overflow: hidden;
+.metric-value {
+    font-size: 52px;
+    font-weight: 800;
     margin-top: 30px;
+    color: #1f2937 !important;
 }
 
-.metric-bar-fill {
+.metric-progress {
+    width: 100%;
+    height: 10px;
+    background: #ececec;
+    border-radius: 999px;
+    margin-top: 24px;
+    overflow: hidden;
+}
+
+.metric-fill {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg,#2563eb,#7c3aed);
+    background: linear-gradient(90deg,#7c3aed,#2563eb);
 }
 
 /* =====================================================
@@ -174,27 +187,26 @@ GRAPH CARD
 .graph-card {
     background: white;
     border-radius: 24px;
-    padding: 24px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    padding: 26px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    border: 1px solid #f1f1f1;
 }
 
 /* =====================================================
-CHATBOT
+CHAT CARD
 ===================================================== */
 
 .chat-card {
     background: white;
     border-radius: 24px;
-    padding: 30px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    padding: 28px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
 
 .insight-box {
-    background: linear-gradient(90deg,#2563eb,#7c3aed);
-    border-radius: 20px;
-    padding: 24px;
+    background: linear-gradient(135deg,#7c3aed,#2563eb);
+    border-radius: 18px;
+    padding: 22px;
     color: white !important;
     font-size: 17px;
     font-weight: 600;
@@ -202,30 +214,6 @@ CHATBOT
 
 .insight-box * {
     color: white !important;
-}
-
-/* =====================================================
-OPTION MENU
-===================================================== */
-
-.nav-link {
-    border-radius: 12px !important;
-    margin-bottom: 8px !important;
-    color: white !important;
-}
-
-.nav-link-selected {
-    background: linear-gradient(90deg,#2563eb,#7c3aed) !important;
-    color: white !important;
-}
-
-/* =====================================================
-RADIO
-===================================================== */
-
-.stRadio label {
-    color: #111827 !important;
-    font-weight: 600 !important;
 }
 
 /* =====================================================
@@ -238,7 +226,7 @@ SCROLLBAR
 
 ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
-    border-radius: 20px;
+    border-radius: 999px;
 }
 
 </style>
@@ -249,13 +237,13 @@ SCROLLBAR
 # =========================================================
 
 st.markdown("""
-<h1 style='font-size:56px;font-weight:800;margin-bottom:0;'>
+<div class="main-title">
 🚀 Brand Health Dashboard
-</h1>
+</div>
 
-<p style='font-size:20px;color:#64748b;margin-top:0;'>
+<div class="main-subtitle">
 Interactive analytics platform for tracking brand performance
-</p>
+</div>
 """, unsafe_allow_html=True)
 
 # =========================================================
@@ -385,6 +373,7 @@ brand_map = {
 def get_brands_by_country(selected_countries):
     return brand_map
 
+
 def build_where(months_sel, countries_sel, segment):
 
     filters = []
@@ -410,6 +399,7 @@ def build_where(months_sel, countries_sel, segment):
         filters.append("Sex = 2")
 
     return "WHERE " + " AND ".join(filters) if filters else ""
+
 
 # =========================================================
 # METRIC FUNCTION
@@ -480,7 +470,7 @@ def get_metric(
 
 with st.sidebar:
 
-    st.markdown("## 📌 Navigation")
+    st.markdown("## 📊 Navigation")
 
     selected_page = option_menu(
         menu_title=None,
@@ -498,10 +488,16 @@ if selected_page == "Dashboard":
     f1, f2, f3, f4 = st.columns(4)
 
     with f1:
-        selected_countries = st.multiselect("🌍 Country", countries)
+        selected_countries = st.multiselect(
+            "🌍 Country",
+            countries
+        )
 
     with f2:
-        selected_months = st.multiselect("📅 Month", months)
+        selected_months = st.multiselect(
+            "📅 Month",
+            months
+        )
 
     with f3:
         segment = st.selectbox(
@@ -511,7 +507,9 @@ if selected_page == "Dashboard":
 
     with f4:
 
-        filtered_brand_map = get_brands_by_country(selected_countries)
+        filtered_brand_map = get_brands_by_country(
+            selected_countries
+        )
 
         selected_brand = st.selectbox(
             "🏢 Brand",
@@ -576,37 +574,36 @@ if selected_page == "Dashboard":
         with col:
 
             st.markdown(f"""
-            <div class="metric-card-new">
+            <div class="metric-card">
 
-                <div class="metric-row">
+                <div class="metric-header">
 
-                    <div>
+                    <div class="metric-left">
 
-                        <div class="metric-label">
+                        <div class="metric-title">
                             {title}
                         </div>
 
-                        <div class="metric-desc">
-                            Brand KPI Performance
+                        <div class="metric-subtitle">
+                            KPI Score
                         </div>
 
                     </div>
 
-                    <div class="metric-pill">
-                        {value}%
+                    <div class="metric-badge">
+                        {value}
                     </div>
 
                 </div>
 
-                <div class="metric-number">
-                    {value}
+                <div class="metric-value">
+                    {value}%
                 </div>
 
-                <div class="metric-bar-bg">
+                <div class="metric-progress">
 
-                    <div class="metric-bar-fill"
-                    style="width:{value}%;">
-                    </div>
+                    <div class="metric-fill"
+                    style="width:{value}%"></div>
 
                 </div>
 
@@ -616,7 +613,7 @@ if selected_page == "Dashboard":
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # =====================================================
-    # ATTRIBUTES SECTION
+    # ATTRIBUTES
     # =====================================================
 
     st.markdown("""
@@ -626,8 +623,10 @@ if selected_page == "Dashboard":
     st.subheader("📊 Brand Attributes")
 
     attr_data = [
+
         {
             "Attribute": attr_map[i],
+
             "Value": get_metric(
                 f"Attributes_New_DP_{code}_Q12a_{i}_slice",
                 "top2",
@@ -635,6 +634,7 @@ if selected_page == "Dashboard":
                 weight_col
             )
         }
+
         for i in range(1, 18)
     ]
 
@@ -653,7 +653,7 @@ if selected_page == "Dashboard":
         text="Value",
         height=700,
         color="Value",
-        color_continuous_scale="Blues"
+        color_continuous_scale="Purples"
     )
 
     fig_attr.update_layout(
@@ -668,3 +668,5 @@ if selected_page == "Dashboard":
         fig_attr,
         use_container_width=True
     )
+
+    st.markdown("</div>", unsafe_allow_html=True)
