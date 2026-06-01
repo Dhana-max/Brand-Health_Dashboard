@@ -47,8 +47,15 @@ div[data-testid="stContainer"] {
     text-transform: uppercase;
 }
 .kpi-value {
-    font-size: 34px;
-    font-weight: 800;
+    font-size: 38px;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    transition: 0.3s ease;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
 }
 
 /* Headers */
