@@ -103,7 +103,13 @@ def load_filters():
         FROM df 
         WHERE Month IS NOT NULL 
         ORDER BY MONTH""").df()
-    months_list = [str(x) for x in df_temp["Month"].dropna().tolist()]
+    months_raw = [str(x) for x in df_temp["Month"].dropna().tolist()]
+    
+    months_list = sorted(
+    months_raw,
+    key=lambda x: month_order_map.get(x[:3], 999)
+    )
+
     
     df_country = con.execute("SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL").df()
     countries_list = [str(x) for x in df_country["Country_New"].dropna().tolist()]
