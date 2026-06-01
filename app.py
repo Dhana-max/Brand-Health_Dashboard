@@ -361,14 +361,15 @@ with tab1:
     # ✅ SPACE
     st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
-    # ✅ ATTRIBUTES PREMIUM SECTION
+   # ✅ ATTRIBUTES PREMIUM (FINAL VERSION)
+
 st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
 with st.container(border=True):
 
     st.markdown("""
-    <h3 style='color:#f8fafc; margin-bottom:5px;'>🎯 Strategic Pillars</h3>
-    <span style='color:#9ca3af;'>Key drivers of brand perception</span>
+    <h3 style='color:#f8fafc; margin-bottom:4px;'>🎯 Strategic Pillars</h3>
+    <div style='color:#9ca3af; font-size:13px;'>Key drivers of brand perception</div>
     """, unsafe_allow_html=True)
 
     selected_pillar = st.radio(
@@ -395,20 +396,20 @@ with st.container(border=True):
 
     df_matrix = pd.DataFrame(attr_data).sort_values("Score", ascending=True)
 
-    # ✅ PREMIUM BAR CHART
-    attr_chart = alt.Chart(df_matrix).mark_bar(
-        cornerRadiusEnd=8,
-        size=28
+    # ✅ CLEAN DARK BAR CHART
+    bars = alt.Chart(df_matrix).mark_bar(
+        cornerRadiusEnd=10,
+        size=30
     ).encode(
-        x=alt.X(
-            "Score:Q",
-            title=None,
-            scale=alt.Scale(domain=[0, 100])
+        x=alt.X("Score:Q",
+                title=None,
+                scale=alt.Scale(domain=[0, 100]),
+                axis=alt.Axis(labels=False, ticks=False, grid=False)
         ),
-        y=alt.Y(
-            "Attribute:N",
-            sort=None,
-            title=None
+        y=alt.Y("Attribute:N",
+                sort=None,
+                title=None,
+                axis=alt.Axis(labelColor="#e5e7eb", labelFontSize=12)
         ),
         color=alt.Color(
             "Score:Q",
@@ -417,28 +418,26 @@ with st.container(border=True):
                 range=["#1e3a8a", "#2563eb", "#7c3aed", "#ff4d79"]
             ),
             legend=None
-        ),
-        tooltip=["Attribute", "Score"]
-    ).properties(height=280)
-
-    # ✅ ADD TEXT LABELS ON BARS
-    text = attr_chart.mark_text(
-        align='left',
-        baseline='middle',
-        dx=5,
-        color='#e5e7eb'
-    ).encode(
-        text=alt.Text('Score:Q', format=".1f")
+        )
     )
 
-    final_chart = (attr_chart + text)
+    # ✅ VALUE LABELS
+    text = bars.mark_text(
+        align="left",
+        baseline="middle",
+        dx=6,
+        fontSize=13,
+        color="#f8fafc"
+    ).encode(
+        text=alt.Text("Score:Q", format=".1f")
+    )
+
+    final_chart = (bars + text).properties(height=280)
 
     st.altair_chart(
         final_chart
-        .configure_view(strokeOpacity=0)
-        .configure_axis(
-            labelColor="#e5e7eb",
-            titleColor="#e5e7eb"
+        .configure_view(
+            strokeOpacity=0  # remove box border
         ),
         use_container_width=True
     )
