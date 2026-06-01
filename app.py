@@ -111,6 +111,57 @@ h1, h2, h3 {
 small, span {
     color: #9ca3af !important;
 }
+/* ===== PILL SELECTOR (RADIO TRANSFORM) ===== */
+
+div[role="radiogroup"] {
+    display: flex;
+    gap: 10px;
+    background: rgba(255,255,255,0.04);
+    padding: 6px;
+    border-radius: 12px;
+}
+
+/* Each option */
+div[role="radiogroup"] label {
+    background: transparent;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #9ca3af !important;
+    cursor: pointer;
+    transition: 0.25s ease;
+}
+
+/* Hover effect */
+div[role="radiogroup"] label:hover {
+    background: rgba(124, 58, 237, 0.2);
+    color: #f8fafc !important;
+}
+
+/* Selected pill */
+div[role="radiogroup"] input:checked + div {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border: none;
+    color: white !important;
+    box-shadow: 0 0 10px rgba(124,58,237,0.6);
+}
+
+/* Hide default radio circle */
+div[role="radiogroup"] input {
+    display: none;
+}
+
+/* Label text spacing fix */
+div[role="radiogroup"] div {
+    padding: 4px 10px;
+}
+
+/* Section label */
+.pillar-label {
+    color: #9ca3af;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
 </style>
 """, unsafe_allow_html=True)
 # Clean, corporate title matching your specification
@@ -401,11 +452,13 @@ with tab1:
         <div style='color:#9ca3af;'>Key drivers of brand perception</div>
         """, unsafe_allow_html=True)
 
+        st.markdown("<div class='pillar-label'>Select Strategic Pillar</div>", unsafe_allow_html=True)
+
         selected_pillar = st.radio(
-            "Select Pillar",
-            list(brand_pillars.keys()),
-            horizontal=True
-        )
+        "",
+        list(brand_pillars.keys()),
+        horizontal=True
+    )
 
         active_indices = brand_pillars[selected_pillar]
 
