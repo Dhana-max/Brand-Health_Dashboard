@@ -383,6 +383,110 @@ with tab2:
 with tab3:
     with st.container(border=True):
         st.subheader("🤖 AI Analytics Chatbot")
-        user_query = st.text_input("Interrogate your analytical metrics profile:", key="chatbot_query_input", placeholder="e.g., Show trends analysis summaries...")
+
+        user_query = st.text_input(
+            "Interrogate your analytical metrics profile:",
+            key="chatbot_query_input",
+            placeholder="e.g., linkedin awareness in dec 2025"
+        )
+
         if user_query:
-            st.info("✅ High-level summary metrics compiled (no chart generation models required).")
+
+            query = user_query.lower()
+
+            # ✅ Extract month (basic)
+            month_match = re.search(r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s?\d{4}", query)
+            month_selected = month_match.group(0).title() if month_match else None
+
+            # ✅ Extract brands present in query
+            mentioned_brands = [b.lower() for b in brand_map.keys() if b.lower() in query]
+
+            # ✅ Base filters
+            temp_month = [month_selected] if month_selected else []
+            where_clause = build_where(temp_month, selected_countries, segment)
+            weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+
+            # --------------------------------------
+            # ✅ CASE 1: Single Brand Awareness
+            # --------------------------------------
+            if "awareness" in query and len(mentioned_brands) == 1:
+
+                brand = mentioned_brands[0]
+                code = brand_map.get(next(b for b in brand_map if b.lower() == brand))
+
+                val = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
+
+                st.success(f"📊 {brand.title()} Awareness in {month_selected}: **{val}%**")
+
+            # --------------------------------------
+            # ✅ CASE 2: Brand Comparison
+            # --------------------------------------
+            elif "compare" in query and len(mentioned_brands) == 2:
+
+                b1, b2 = mentioned_brands
+
+                code1 = brand_map.get(next(b for b in brand_map if b.lower() == b1))
+                code2 = brand_map.get(next(b for b in brand_map if b.lower() == b2))
+
+                val1 = get_metric(f"Aided_Awareness_{code1}_slice", "yesno", where_clause, weight_col)
+                val2 = get_metric(f"Aided_Awareness_{code2}_slice", "yesno", where_clause, weight_col)
+
+                diff = round(val1 - val2, 1)
+
+                st.success(
+                    f"📊 In {month_selected}:  \n"
+                    f"• {b1.title()}: **{val1}%**  \n"
+                    f"• {b2.title()}: **{val2}%**  \n"
+                    f"👉 Difference: **{diff}%**"
+                )
+
+            # --------------------------------------
+            # ✅ CASE 3: Trend (MoM + YoY)
+            # --------------------------------------
+            elif "trend" in query or "trended" in query:
+
+                if month_selected and len(mentioned_brands) == 1:
+
+                    brand = mentioned_brands[0]
+                    code = brand_map.get(next(b for b in brand_map if b.lower() == brand))
+
+                    # current
+                    val_curr = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
+
+                    # previous month
+                    idx = months.index(month_selected) if month_selected in months else None
+
+                    if idx and idx > 0:
+                        prev_month = months[idx - 1]
+                        prev_where = build_where([prev_month], selected_countries, segment)
+                        val_prev = get_metric(f"Aided_Awareness_{code}_slice", "yesno", prev_where, weight_col)
+                        mom = round(val_curr - val_prev, 1)
+                    else:
+                        mom = None
+
+                    # YoY (same month last year)
+                    try:
+                        year = int(month_selected.split()[-1])
+                        month_name = month_selected.split()[0]
+                        prev_year_month = f"{month_name} {year-1}"
+
+                        if prev_year_month in months:
+                            yoy_where = build_where([prev_year_month], selected_countries, segment)
+                            val_yoy = get_metric(f"Aided_Awareness_{code}_slice", "yesno", yoy_where, weight_col)
+                            yoy = round(val_curr - val_yoy, 1)
+                        else:
+                            yoy = None
+                    except:
+                        yoy = None
+
+                    st.success(
+                        f"📈 {brand.title()} Awareness in {month_selected}: **{val_curr}%**\n\n"
+                        f"• MoM Change: **{mom if mom is not None else 'N/A'}%**  \n"
+                        f"• YoY Change: **{yoy if yoy is not None else 'N/A'}%**"
+                    )
+
+            # --------------------------------------
+            # ✅ FALLBACK
+            # --------------------------------------
+            else:
+                st.warning("⚠️ Try queries like:\n- linkedin awareness in dec 2025\n- compare indeed vs linkedin\n- linkedin awareness trend dec 2025")
