@@ -406,22 +406,11 @@ with tab3:
             where_clause = build_where(temp_month, selected_countries, segment)
             weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
-            # --------------------------------------
-            # ✅ CASE 1: Single Brand Awareness
-            # --------------------------------------
-            if "awareness" in query and len(mentioned_brands) == 1:
-
-                brand = mentioned_brands[0]
-                code = brand_map.get(next(b for b in brand_map if b.lower() == brand))
-
-                val = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
-
-                st.success(f"📊 {brand.title()} Awareness in {month_selected}: **{val}%**")
-
+            
             # --------------------------------------
             # ✅ CASE 2: Brand Comparison
             # --------------------------------------
-            elif "compare" in query and len(mentioned_brands) == 2:
+            if "compare" in query and len(mentioned_brands) == 2:
 
                 b1, b2 = mentioned_brands
 
@@ -441,7 +430,7 @@ with tab3:
                 )
 
             # --------------------------------------
-            # ✅ CASE 3: Trend (MoM + YoY)
+            # ✅ CASE 2: Trend (MoM + YoY)
             # --------------------------------------
             elif "trend" in query or "trended" in query:
 
@@ -484,6 +473,17 @@ with tab3:
                         f"• MoM Change: **{mom if mom is not None else 'N/A'}%**  \n"
                         f"• YoY Change: **{yoy if yoy is not None else 'N/A'}%**"
                     )
+            # --------------------------------------
+            # ✅ CASE 3: Single Brand Awareness
+            # --------------------------------------
+            elif "awareness" in query and len(mentioned_brands) == 1:
+
+                brand = mentioned_brands[0]
+                code = brand_map.get(next(b for b in brand_map if b.lower() == brand))
+
+                val = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
+
+                st.success(f"📊 {brand.title()} Awareness in {month_selected}: **{val}%**")
 
             # --------------------------------------
             # ✅ FALLBACK
