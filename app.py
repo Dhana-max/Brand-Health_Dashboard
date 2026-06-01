@@ -3,7 +3,6 @@ import duckdb
 import pandas as pd
 import re
 import altair as alt
-from datetime import datetime
 
 # 1. Initialize native wide parameters
 st.set_page_config(layout="wide")
@@ -97,28 +96,11 @@ attr_map = {
     17: "Helps me move forward in my career/business"
 }
 
-def sort_month_key(month_str):
-    """Sort months chronologically by trying multiple date formats"""
-    formats = ["%b %Y", "%B %Y", "%Y-%m", "%m/%Y", "%b-%Y", "%B-%Y"]
-    for fmt in formats:
-        try:
-            return datetime.strptime(month_str, fmt)
-        except ValueError:
-            continue
-    # If no format matches, return the string as-is for fallback sorting
-    return month_str
-
 @st.cache_data
 def load_filters():
-    df_temp = con.execute("SELECT DISTINCT Month FROM df WHERE Month IS NOT NULL").df()
+    # Get months and maintain order from database
+    df_temp = con.execute("SELECT DISTINCT Month FROM df WHERE Month IS NOT NULL ORDER BY Month").df()
     months_list = [str(x) for x in df_temp["Month"].dropna().tolist()]
-    
-    # Sort months chronologically
-    try:
-        months_list = sorted(months_list, key=sort_month_key)
-    except Exception:
-        # Fallback to original order if sorting fails
-        pass
     
     df_country = con.execute("SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL").df()
     countries_list = [str(x) for x in df_country["Country_New"].dropna().tolist()]
@@ -126,6 +108,10 @@ def load_filters():
     return months_list, countries_list
 
 months, countries = load_filters()
+
+# Debug: Show months to verify order
+with st.sidebar:
+    st.write("Months in order:", months)
 
 # -----------------------------
 # Secure Extraction of Brands Map
