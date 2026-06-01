@@ -98,7 +98,7 @@ attr_map = {
 
 @st.cache_data
 def load_filters():
-    df_temp = con.execute("SELECT DISTINCT Month FROM df WHERE Month IS NOT NULL").df()
+    df_temp = con.execute(""SELECT DISTINCT Month FROM df WHERE Month IS NOT NULL ORDER BY MONTH"").df()
     months_list = [str(x) for x in df_temp["Month"].dropna().tolist()]
     
     df_country = con.execute("SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL").df()
@@ -205,7 +205,7 @@ def get_sparkline_data(col, metric_type, where_clause, weight_col):
 
 def create_sparkline_chart(df, color_line):
     chart = alt.Chart(df).mark_line(interpolate='monotone', strokeWidth=3, color=color_line).encode(
-        x=alt.X('Month:O', title=None, axis=None),
+        x=alt.X('Month:O', title=None, axis=None, sort=months),
         y=alt.Y('val:Q', title=None, axis=None, scale=alt.Scale(zero=False))
     ).properties(height=50)
     return chart.configure(background='transparent').configure_view(strokeOpacity=0)
