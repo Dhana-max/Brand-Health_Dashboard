@@ -335,79 +335,79 @@ with tab1:
     # ✅ Spacing before donut
 st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
-# ✅ DONUT SECTION
-with st.container(border=True):
-    st.subheader("🧩 Funnel Composition")
+    # ✅ DONUT SECTION
+    with st.container(border=True):
+        st.subheader("🧩 Funnel Composition")
 
     # Fetch KPI values
-    awareness = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
-    favorability = get_metric(f"Brand_Favorability_{code}_slice", "top2", where_clause, weight_col)
-    consideration = get_metric(f"Consideration_{code}_slice", "top2", where_clause, weight_col)
-    conversion = get_metric(f"Consideration_Effect_{code}_slice", "top2", where_clause, weight_col)
+        awareness = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
+        favorability = get_metric(f"Brand_Favorability_{code}_slice", "top2", where_clause, weight_col)
+        consideration = get_metric(f"Consideration_{code}_slice", "top2", where_clause, weight_col)
+        conversion = get_metric(f"Consideration_Effect_{code}_slice", "top2", where_clause, weight_col)
 
     # Prepare data
-    donut_df = pd.DataFrame({
-        "metric": ["Awareness", "Favorability", "Consideration", "Conversion"],
-        "value": [awareness, favorability, consideration, conversion]
-    })
+        donut_df = pd.DataFrame({
+            "metric": ["Awareness", "Favorability", "Consideration", "Conversion"],
+            "value": [awareness, favorability, consideration, conversion]
+        })
 
     # Donut chart
-    donut_chart = alt.Chart(donut_df).mark_arc(innerRadius=75).encode(
-        theta=alt.Theta(field="value", type="quantitative"),
-        color=alt.Color(
-            field="metric",
-            type="nominal",
-            scale=alt.Scale(range=[
-                "#ff4d79",  # pink
-                "#6a5acd",  # purple
-                "#3498db",  # blue
-                "#f39c12"   # orange
-            ]),
-            legend=alt.Legend(title="Funnel Metrics", orient="bottom")
-        ),
-        tooltip=[
-            alt.Tooltip("metric:N", title="Metric"),
-            alt.Tooltip("value:Q", title="Score (%)")
-        ]
-    ).properties(height=340)
+        donut_chart = alt.Chart(donut_df).mark_arc(innerRadius=75).encode(
+            theta=alt.Theta(field="value", type="quantitative"),
+            color=alt.Color(
+                field="metric",
+                type="nominal",
+                scale=alt.Scale(range=[
+                    "#ff4d79",  # pink
+                    "#6a5acd",  # purple
+                    "#3498db",  # blue
+                    "#f39c12"   # orange
+                ]),
+                legend=alt.Legend(title="Funnel Metrics", orient="bottom")
+            ),
+            tooltip=[
+                alt.Tooltip("metric:N", title="Metric"),
+                alt.Tooltip("value:Q", title="Score (%)")
+            ]
+        ).properties(height=340)
 
     # Display chart
-    st.altair_chart(
-        donut_chart
-        .configure_view(strokeOpacity=0)
-        .configure(background='transparent'),
-        use_container_width=True
-    )
-    # Strategic Pillars Component Wrapper
-    with st.container(border=True):
-        st.subheader("🎯 Strategic Pillars Core Breakdown")
-        selected_pillar = st.radio(
-            label="Select Operational Strategic Pillar To Deep-Dive:",
-            options=list(brand_pillars.keys()),
-            horizontal=True,
-            key="strategic_pillar_selector"
+        st.altair_chart(
+            donut_chart
+            .configure_view(strokeOpacity=0)
+            .configure(background='transparent'),
+            use_container_width=True
         )
+    # Strategic Pillars Component Wrapper
+        with st.container(border=True):
+            st.subheader("🎯 Strategic Pillars Core Breakdown")
+            selected_pillar = st.radio(
+                label="Select Operational Strategic Pillar To Deep-Dive:",
+                options=list(brand_pillars.keys()),
+                horizontal=True,
+                key="strategic_pillar_selector"
+            )
         
-        active_indices = brand_pillars[selected_pillar]
-        attr_data = []
-        for idx in active_indices:
-            score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
-            attr_data.append({"Strategic Statement Pillar": attr_map[idx], "Agreement Score (%)": score})
+            active_indices = brand_pillars[selected_pillar]
+            attr_data = []
+            for idx in active_indices:
+                score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
+                attr_data.append({"Strategic Statement Pillar": attr_map[idx], "Agreement Score (%)": score})
         
-        df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
+            df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
         
-        attr_chart = alt.Chart(df_matrix).mark_bar(
-            cornerRadiusTopRight=4,
-            cornerRadiusBottomRight=4,
-            size=22
-        ).encode(
-            x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
-            y=alt.Y("Strategic Statement Pillar:N", sort="-x", title=None),
-            color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="purples"), legend=None),
-            tooltip=["Strategic Statement Pillar", "Agreement Score (%)"]
-        ).properties(height=220).configure_view(strokeOpacity=0)
+            attr_chart = alt.Chart(df_matrix).mark_bar(
+                cornerRadiusTopRight=4,
+                cornerRadiusBottomRight=4,
+                size=22
+            ).encode(
+                x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
+                y=alt.Y("Strategic Statement Pillar:N", sort="-x", title=None),
+                color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="purples"), legend=None),
+                tooltip=["Strategic Statement Pillar", "Agreement Score (%)"]
+            ).properties(height=220).configure_view(strokeOpacity=0)
         
-        st.altair_chart(attr_chart, use_container_width=True)
+            st.altair_chart(attr_chart, use_container_width=True)
 
 # -----------------------------
 # TAB 2: GRAPHS VIEW
