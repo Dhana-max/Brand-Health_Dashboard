@@ -8,75 +8,57 @@ import altair as alt
 st.set_page_config(layout="wide")
 
 # 2. Premium Clean White Executive Theme Custom CSS Injector
-st.markdown(
-    """
-    <style>
+st.markdown("""
+<style>
 
-    /* ===== Premium App Background ===== */
-    .stApp {
-        background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 40%, #e9f0ff 100%);
-    }
+/* ===== PAGE BACKGROUND ===== */
+.stApp {
+    background: linear-gradient(135deg, #f5f7fb, #e6ecff);
+}
 
-    /* ===== Main Container Padding ===== */
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
+/* ===== GLASS EFFECT CONTAINERS ===== */
+div[data-testid="stContainer"] {
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 18px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    padding: 16px;
+}
 
-    /* ===== Card Styling (applies to st.container(border=True)) ===== */
-    div[data-testid="stContainer"] {
-        background: #ffffff;
-        border-radius: 18px;
-        border: 1px solid #e6e9ef;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
-        padding: 18px;
-    }
+/* ===== KPI CARDS ===== */
+.kpi-card {
+    padding: 20px;
+    border-radius: 16px;
+    color: white;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
 
-    /* ===== KPI Label ===== */
-    .client-kpi-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #6b7280;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin-bottom: 4px;
-    }
+/* KPI COLORS */
+.kpi-pink { background: linear-gradient(135deg, #ff4d79, #c94b96); }
+.kpi-purple { background: linear-gradient(135deg, #6a5acd, #9b59b6); }
+.kpi-blue { background: linear-gradient(135deg, #3498db, #4facfe); }
+.kpi-orange { background: linear-gradient(135deg, #f39c12, #ff7e5f); }
 
-    /* ===== KPI Value ===== */
-    .client-kpi-value {
-        font-size: 36px;
-        font-weight: 800;
-        color: #111827;
-        margin-bottom: 8px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
+/* KPI TEXT */
+.kpi-title {
+    font-size: 13px;
+    opacity: 0.85;
+    text-transform: uppercase;
+}
+.kpi-value {
+    font-size: 34px;
+    font-weight: 800;
+}
 
-    /* ===== Section headers ===== */
-    h2, h3 {
-        color: #1f2937;
-        font-weight: 700;
-    }
+/* Headers */
+h1, h2, h3 {
+    color: #1f2937;
+    font-weight: 700;
+}
 
-    /* ===== Tabs styling ===== */
-    button[data-baseweb="tab"] {
-        font-weight: 600;
-        color: #6b7280;
-    }
-
-    button[data-baseweb="tab"][aria-selected="true"] {
-        color: #4f46e5;
-        border-bottom: 3px solid #4f46e5;
-    }
-
-    /* ===== Inputs (clean modern look) ===== */
-    .stSelectbox, .stMultiSelect, .stTextInput {
-        border-radius: 10px;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+</style>
+""", unsafe_allow_html=True)
 # Clean, corporate title matching your specification
 st.title("Consumer Brand Tracker Dashboard")
 
@@ -304,35 +286,43 @@ with tab1:
     
     with col1:
         val1 = f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%"
-        df_sp1 = get_sparkline_data(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)
-        
-        with st.container(border=True):
-            st.markdown(f"<div class='client-kpi-label'>Total Awareness</div><div class='client-kpi-value'>{val1}</div>", unsafe_allow_html=True)
-            st.altair_chart(create_sparkline_chart(df_sp1, '#2bcbba'), use_container_width=True)
+        st.markdown(f"""
+        <div class="kpi-card kpi-pink">
+            <div class="kpi-title">Total Awareness</div>
+            <div class="kpi-value">{val1}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col2:
         val2 = f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%"
-        df_sp2 = get_sparkline_data(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)
         
-        with st.container(border=True):
-            st.markdown(f"<div class='client-kpi-label'>Brand Favorability</div><div class='client-kpi-value'>{val2}</div>", unsafe_allow_html=True)
-            st.altair_chart(create_sparkline_chart(df_sp2, '#20bf6b'), use_container_width=True)
+        st.markdown(f"""
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-title">Brand Favorability</div>
+            <div class="kpi-value">{val2}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col3:
         val3 = f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%"
-        df_sp3 = get_sparkline_data(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)
-        
-        with st.container(border=True):
-            st.markdown(f"<div class='client-kpi-label'>Consideration Rate</div><div class='client-kpi-value'>{val3}</div>", unsafe_allow_html=True)
-            st.altair_chart(create_sparkline_chart(df_sp3, '#a55eea'), use_container_width=True)
+
+        st.markdown(f"""
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-title">Consideration Rate</div>
+            <div class="kpi-value">{val3}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
 
     with col4:
         val4 = f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%"
-        df_sp4 = get_sparkline_data(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)
         
-        with st.container(border=True):
-            st.markdown(f"<div class='client-kpi-label'>Conversion Effect</div><div class='client-kpi-value'>{val4}</div>", unsafe_allow_html=True)
-            st.altair_chart(create_sparkline_chart(df_sp4, '#ff7675'), use_container_width=True)
+        st.markdown(f"""
+        <div class="kpi-card kpi-orange">
+            <div class="kpi-title">Conversion Effect</div>
+            <div class="kpi-value">{val4}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("<div style='margin-top: 25px; margin-bottom: 20px;'></div>", unsafe_allow_html=True)
     
