@@ -98,8 +98,7 @@ attr_map = {
 
 @st.cache_data
 def load_filters():
-    # Get months and maintain order from database
-    df_temp = con.execute("SELECT DISTINCT Month FROM df WHERE Month IS NOT NULL ORDER BY Month").df()
+    df_temp = con.execute("SELECT DISTINCT Month FROM df WHERE Month IS NOT NULL").df()
     months_list = [str(x) for x in df_temp["Month"].dropna().tolist()]
     
     df_country = con.execute("SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL").df()
@@ -108,10 +107,6 @@ def load_filters():
     return months_list, countries_list
 
 months, countries = load_filters()
-
-# Debug: Show months to verify order
-with st.sidebar:
-    st.write("Months in order:", months)
 
 # -----------------------------
 # Secure Extraction of Brands Map
