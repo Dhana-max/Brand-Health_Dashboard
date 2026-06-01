@@ -361,41 +361,87 @@ with tab1:
     # ✅ SPACE
     st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
-    # ✅ ATTRIBUTES FULL WIDTH
-    with st.container(border=True):
-        st.subheader("🎯 Strategic Pillars")
+    # ✅ ATTRIBUTES PREMIUM SECTION
+st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
-        selected_pillar = st.radio(
-            "Select Pillar",
-            list(brand_pillars.keys()),
-            horizontal=True
+with st.container(border=True):
+
+    st.markdown("""
+    <h3 style='color:#f8fafc; margin-bottom:5px;'>🎯 Strategic Pillars</h3>
+    <span style='color:#9ca3af;'>Key drivers of brand perception</span>
+    """, unsafe_allow_html=True)
+
+    selected_pillar = st.radio(
+        "Select Pillar",
+        list(brand_pillars.keys()),
+        horizontal=True,
+        key="strategic_pillar_selector"
+    )
+
+    active_indices = brand_pillars[selected_pillar]
+
+    attr_data = []
+    for idx in active_indices:
+        score = get_metric(
+            f"Attributes_New_DP_{code}_Q12a_{idx}_slice",
+            "top2",
+            where_clause,
+            weight_col
         )
+        attr_data.append({
+            "Attribute": attr_map[idx],
+            "Score": score
+        })
 
-        active_indices = brand_pillars[selected_pillar]
+    df_matrix = pd.DataFrame(attr_data).sort_values("Score", ascending=True)
 
-        attr_data = []
-        for idx in active_indices:
-            score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice","top2",where_clause,weight_col)
-            attr_data.append({
-                "Attribute": attr_map[idx],
-                "Score": score
-            })
+    # ✅ PREMIUM BAR CHART
+    attr_chart = alt.Chart(df_matrix).mark_bar(
+        cornerRadiusEnd=8,
+        size=28
+    ).encode(
+        x=alt.X(
+            "Score:Q",
+            title=None,
+            scale=alt.Scale(domain=[0, 100])
+        ),
+        y=alt.Y(
+            "Attribute:N",
+            sort=None,
+            title=None
+        ),
+        color=alt.Color(
+            "Score:Q",
+            scale=alt.Scale(
+                domain=[0, 100],
+                range=["#1e3a8a", "#2563eb", "#7c3aed", "#ff4d79"]
+            ),
+            legend=None
+        ),
+        tooltip=["Attribute", "Score"]
+    ).properties(height=280)
 
-        df_matrix = pd.DataFrame(attr_data).sort_values("Score", ascending=False)
+    # ✅ ADD TEXT LABELS ON BARS
+    text = attr_chart.mark_text(
+        align='left',
+        baseline='middle',
+        dx=5,
+        color='#e5e7eb'
+    ).encode(
+        text=alt.Text('Score:Q', format=".1f")
+    )
 
-        attr_chart = alt.Chart(df_matrix).mark_bar(size=22).encode(
-            x="Score:Q",
-            y=alt.Y("Attribute:N", sort='-x'),
-            color=alt.Color("Score:Q", scale=alt.Scale(scheme="purpleblue")),
-            tooltip=["Attribute","Score"]
-        ).properties(height=250)
+    final_chart = (attr_chart + text)
 
-        st.altair_chart(
-            attr_chart
-            .configure_axis(labelColor="#e5e7eb")
-            .configure_view(strokeOpacity=0),
-            use_container_width=True
-        )
+    st.altair_chart(
+        final_chart
+        .configure_view(strokeOpacity=0)
+        .configure_axis(
+            labelColor="#e5e7eb",
+            titleColor="#e5e7eb"
+        ),
+        use_container_width=True
+    )
 # -----------------------------
 # TAB 2: GRAPHS VIEW
 # -----------------------------
