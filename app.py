@@ -336,8 +336,8 @@ with tab1:
 st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
     # ✅ DONUT SECTION
-    with st.container(border=True):
-        st.subheader("🧩 Funnel Composition")
+        with st.container(border=True):
+            st.subheader("🧩 Funnel Composition")
 
     # Fetch KPI values
         awareness = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
