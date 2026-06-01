@@ -369,6 +369,71 @@ with tab1:
         st.markdown("""
         <h3 style='color:#f8fafc;'>🎯 Strategic Pillars</h3>
         <div style='color:#9ca3af;'>Key drivers of brand perception</div>
+        """, unsafe_allow_html=True)
+
+        selected_pillar = st.radio(
+            "Select Pillar",
+            list(brand_pillars.keys()),
+            horizontal=True
+        )
+
+        active_indices = brand_pillars[selected_pillar]
+
+        attr_data = []
+        for idx in active_indices:
+            score = get_metric(
+                f"Attributes_New_DP_{code}_Q12a_{idx}_slice",
+                "top2",
+                where_clause,
+                weight_col
+            )
+            if score > 0:
+                attr_data.append({
+                    "Attribute": attr_map[idx],
+                    "Score": score
+                })
+
+        df_matrix = pd.DataFrame(attr_data).sort_values("Score", ascending=True)
+
+        max_score = df_matrix["Score"].max()
+        df_matrix["Highlight"] = df_matrix["Score"].apply(
+            lambda x: "Top" if x == max_score else "Others"
+        )
+
+        bars = alt.Chart(df_matrix).mark_bar(
+            size=28,
+            cornerRadiusEnd=12
+        ).encode(
+            x=alt.X("Score:Q", axis=None, scale=alt.Scale(domain=[0,100])),
+            y=alt.Y("Attribute:N", sort=None,
+                    axis=alt.Axis(labelColor="#e5e7eb")),
+            color=alt.Color("Highlight:N",
+                scale=alt.Scale(
+                    domain=["Top","Others"],
+                    range=["#ff4d79","#5b5bd6"]
+                ),
+                legend=None
+            )
+        )
+
+        text = bars.mark_text(
+            align="left",
+            baseline="middle",
+            dx=6,
+            color="#f8fafc"
+        ).encode(
+            text=alt.Text("Score:Q", format=".1f")
+        )
+
+        final_chart = (bars + text).properties(height=280)
+
+        st.altair_chart(
+            final_chart
+            .configure_view(strokeOpacity=0, fill="transparent")
+            .configure(background='transparent')
+            .configure_axis(labelColor="#e5e7eb", grid=False),
+            use_container_width=True
+        )
 # -----------------------------
 # TAB 2: GRAPHS VIEW
 # -----------------------------
