@@ -11,57 +11,74 @@ st.set_page_config(layout="wide")
 st.markdown("""
 <style>
 
-/* ===== PAGE BACKGROUND ===== */
+/* ===== FULL DARK BACKGROUND ===== */
 .stApp {
-    background: linear-gradient(135deg, #f5f7fb, #e6ecff);
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: #e5e7eb;
 }
 
-/* ===== GLASS EFFECT CONTAINERS ===== */
+/* ===== GLASS CONTAINER ===== */
 div[data-testid="stContainer"] {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(14px);
     border-radius: 18px;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.3);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
     padding: 16px;
+}
+
+/* ===== TITLE ===== */
+h1 {
+    color: #f8fafc;
+    font-weight: 800;
 }
 
 /* ===== KPI CARDS ===== */
 .kpi-card {
-    padding: 20px;
+    padding: 18px;
     border-radius: 16px;
     color: white;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
 }
 
-/* KPI COLORS */
-.kpi-pink { background: linear-gradient(135deg, #ff4d79, #c94b96); }
-.kpi-purple { background: linear-gradient(135deg, #6a5acd, #9b59b6); }
-.kpi-blue { background: linear-gradient(135deg, #3498db, #4facfe); }
-.kpi-orange { background: linear-gradient(135deg, #f39c12, #ff7e5f); }
+/* ===== NEON KPI COLORS ===== */
+.kpi-pink {
+    background: linear-gradient(135deg, #ff4d79, #ff2a6d);
+}
+.kpi-purple {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+}
+.kpi-blue {
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+}
+.kpi-orange {
+    background: linear-gradient(135deg, #f59e0b, #fb923c);
+}
 
 /* KPI TEXT */
 .kpi-title {
-    font-size: 13px;
-    opacity: 0.85;
+    font-size: 12px;
     text-transform: uppercase;
+    opacity: 0.75;
 }
 .kpi-value {
-    font-size: 38px;
+    font-size: 36px;
     font-weight: 900;
-    color: #ffffff;
 }
 
+/* Hover glow */
 .kpi-card:hover {
     transform: translateY(-4px);
     transition: 0.3s ease;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    box-shadow: 0 15px 50px rgba(0,0,0,0.6);
 }
 
-/* Headers */
-h1, h2, h3 {
-    color: #1f2937;
-    font-weight: 700;
+/* Inputs (dark) */
+.stSelectbox, .stMultiSelect, .stTextInput {
+    background: #1e293b !important;
+    color: white !important;
+    border-radius: 10px;
 }
 
 </style>
@@ -331,83 +348,92 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("<div style='margin-top: 25px; margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-        # ✅ Spacing before donut
-        st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 25px; margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    # ✅ Spacing before donut
+    st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
     # ✅ DONUT SECTION
-        with st.container(border=True):
-            st.subheader("🧩 Funnel Composition")
+    with st.container(border=True):
+        st.subheader("🧩 Funnel Composition")
 
     # Fetch KPI values
-        awareness = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
-        favorability = get_metric(f"Brand_Favorability_{code}_slice", "top2", where_clause, weight_col)
-        consideration = get_metric(f"Consideration_{code}_slice", "top2", where_clause, weight_col)
-        conversion = get_metric(f"Consideration_Effect_{code}_slice", "top2", where_clause, weight_col)
+    awareness = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
+    favorability = get_metric(f"Brand_Favorability_{code}_slice", "top2", where_clause, weight_col)
+    consideration = get_metric(f"Consideration_{code}_slice", "top2", where_clause, weight_col)
+    conversion = get_metric(f"Consideration_Effect_{code}_slice", "top2", where_clause, weight_col)
 
     # Prepare data
-        donut_df = pd.DataFrame({
-            "metric": ["Awareness", "Favorability", "Consideration", "Conversion"],
-            "value": [awareness, favorability, consideration, conversion]
-        })
+    donut_df = pd.DataFrame({
+        "metric": ["Awareness", "Favorability", "Consideration", "Conversion"],
+        "value": [awareness, favorability, consideration, conversion]
+    })
 
     # Donut chart
-        donut_chart = alt.Chart(donut_df).mark_arc(innerRadius=75).encode(
-            theta=alt.Theta(field="value", type="quantitative"),
-            color=alt.Color(
-                field="metric",
-                type="nominal",
-                scale=alt.Scale(range=[
-                    "#ff4d79",  # pink
-                    "#6a5acd",  # purple
-                    "#3498db",  # blue
-                    "#f39c12"   # orange
-                ]),
-                legend=alt.Legend(title="Funnel Metrics", orient="bottom")
-            ),
-            tooltip=[
-                alt.Tooltip("metric:N", title="Metric"),
-                alt.Tooltip("value:Q", title="Score (%)")
-            ]
-        ).properties(height=340)
+    donut_chart = alt.Chart(donut_df).mark_arc(innerRadius=75).encode(
+        theta=alt.Theta(field="value", type="quantitative"),
+        color=alt.Color(
+            field="metric",
+            type="nominal",
+            scale=alt.Scale(range=[
+                "#ff4d79",  # pink
+                "#7c3aed",  # purple
+                "#0ea5e9",  # blue
+                "#f59e0b"   # orange
+            ]),
+            legend=alt.Legend(title="Funnel Metrics", orient="bottom")
+        ),
+        tooltip=[
+            alt.Tooltip("metric:N", title="Metric"),
+            alt.Tooltip("value:Q", title="Score (%)")
+        ]
+    ).properties(height=340)
 
     # Display chart
-        st.altair_chart(
-            donut_chart
-            .configure_view(strokeOpacity=0)
-            .configure(background='transparent'),
-            use_container_width=True
-        )
+    st.altair_chart(
+        donut_chart
+        .configure_view(strokeOpacity=0)
+        .configure(background='transparent'),
+        .configure_axis(
+    labelColor="#e5e7eb",
+    titleColor="#e5e7eb"
+)
+.configure_legend(
+    labelColor="#e5e7eb",
+    titleColor="#e5e7eb"
+),
+
+        use_container_width=True
+    )
     # Strategic Pillars Component Wrapper
-        with st.container(border=True):
-            st.subheader("🎯 Strategic Pillars Core Breakdown")
-            selected_pillar = st.radio(
-                label="Select Operational Strategic Pillar To Deep-Dive:",
-                options=list(brand_pillars.keys()),
-                horizontal=True,
-                key="strategic_pillar_selector"
-            )
+    with st.container(border=True):
+        st.subheader("🎯 Strategic Pillars Core Breakdown")
+        selected_pillar = st.radio(
+            label="Select Operational Strategic Pillar To Deep-Dive:",
+            options=list(brand_pillars.keys()),
+            horizontal=True,
+            key="strategic_pillar_selector"
+        )
         
-            active_indices = brand_pillars[selected_pillar]
-            attr_data = []
-            for idx in active_indices:
-                score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
-                attr_data.append({"Strategic Statement Pillar": attr_map[idx], "Agreement Score (%)": score})
+        active_indices = brand_pillars[selected_pillar]
+        attr_data = []
+        for idx in active_indices:
+            score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
+            attr_data.append({"Strategic Statement Pillar": attr_map[idx], "Agreement Score (%)": score})
         
-            df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
+        df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
         
-            attr_chart = alt.Chart(df_matrix).mark_bar(
-                cornerRadiusTopRight=4,
-                cornerRadiusBottomRight=4,
-                size=22
-            ).encode(
-                x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
-                y=alt.Y("Strategic Statement Pillar:N", sort="-x", title=None),
-                color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="purples"), legend=None),
-                tooltip=["Strategic Statement Pillar", "Agreement Score (%)"]
-            ).properties(height=220).configure_view(strokeOpacity=0)
+        attr_chart = alt.Chart(df_matrix).mark_bar(
+            cornerRadiusTopRight=4,
+            cornerRadiusBottomRight=4,
+            size=22
+        ).encode(
+            x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
+            y=alt.Y("Strategic Statement Pillar:N", sort="-x", title=None),
+            color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="purples"), legend=None),
+            tooltip=["Strategic Statement Pillar", "Agreement Score (%)"]
+        ).properties(height=220).configure_view(strokeOpacity=0)
         
-            st.altair_chart(attr_chart, use_container_width=True)
+        st.altair_chart(attr_chart, use_container_width=True)
 
 # -----------------------------
 # TAB 2: GRAPHS VIEW
