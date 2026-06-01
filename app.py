@@ -361,7 +361,7 @@ with tab1:
     # ✅ SPACE
     st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
-   # ✅ ATTRIBUTES PREMIUM (FINAL VERSION)
+   # ✅ ATTRIBUTES CLEAN PREMIUM VERSION
 
 st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
@@ -389,39 +389,44 @@ with st.container(border=True):
             where_clause,
             weight_col
         )
-        attr_data.append({
-            "Attribute": attr_map[idx],
-            "Score": score
-        })
+        if score > 0:  # ✅ REMOVE zero values
+            attr_data.append({
+                "Attribute": attr_map[idx],
+                "Score": score
+            })
 
     df_matrix = pd.DataFrame(attr_data).sort_values("Score", ascending=True)
 
-    # ✅ CLEAN DARK BAR CHART
+    # ✅ Highlight best attribute
+    max_score = df_matrix["Score"].max()
+
+    df_matrix["Highlight"] = df_matrix["Score"].apply(
+        lambda x: "Top" if x == max_score else "Others"
+    )
+
     bars = alt.Chart(df_matrix).mark_bar(
-        cornerRadiusEnd=10,
+        cornerRadiusEnd=12,
         size=30
     ).encode(
         x=alt.X("Score:Q",
-                title=None,
                 scale=alt.Scale(domain=[0, 100]),
-                axis=alt.Axis(labels=False, ticks=False, grid=False)
+                axis=None
         ),
         y=alt.Y("Attribute:N",
                 sort=None,
-                title=None,
-                axis=alt.Axis(labelColor="#e5e7eb", labelFontSize=12)
+                axis=alt.Axis(labelColor="#e5e7eb", labelFontSize=13)
         ),
         color=alt.Color(
-            "Score:Q",
+            "Highlight:N",
             scale=alt.Scale(
-                domain=[0, 100],
-                range=["#1e3a8a", "#2563eb", "#7c3aed", "#ff4d79"]
+                domain=["Top", "Others"],
+                range=["#ff4d79", "#5b5bd6"]  # highlight best
             ),
             legend=None
-        )
+        ),
+        tooltip=["Attribute", "Score"]
     )
 
-    # ✅ VALUE LABELS
     text = bars.mark_text(
         align="left",
         baseline="middle",
@@ -436,9 +441,8 @@ with st.container(border=True):
 
     st.altair_chart(
         final_chart
-        .configure_view(
-            strokeOpacity=0  # remove box border
-        ),
+        .configure_view(strokeOpacity=0)
+        .configure(background='transparent'),  # ✅ REMOVE GREY BG
         use_container_width=True
     )
 # -----------------------------
