@@ -97,26 +97,28 @@ attr_map = {
     17: "Helps me move forward in my career/business"
 }
 
+def sort_month_key(month_str):
+    """Sort months chronologically by trying multiple date formats"""
+    formats = ["%b %Y", "%B %Y", "%Y-%m", "%m/%Y", "%b-%Y", "%B-%Y"]
+    for fmt in formats:
+        try:
+            return datetime.strptime(month_str, fmt)
+        except ValueError:
+            continue
+    # If no format matches, return the string as-is for fallback sorting
+    return month_str
+
 @st.cache_data
 def load_filters():
     df_temp = con.execute("SELECT DISTINCT Month FROM df WHERE Month IS NOT NULL").df()
     months_list = [str(x) for x in df_temp["Month"].dropna().tolist()]
     
     # Sort months chronologically
-    def sort_month_key(month_str):
-        try:
-            # Try to parse common month formats: "Jan 2024", "January 2024", "2024-01", etc.
-            for fmt in ["%b %Y", "%B %Y", "%Y-%m", "%m/%Y"]:
-                try:
-                    return datetime.strptime(month_str, fmt)
-                except ValueError:
-                    continue
-            # If no format matches, return as-is (will sort alphabetically)
-            return datetime.strptime(month_str, "%b %Y")
-        except:
-            return month_str
-    
-    months_list = sorted(months_list, key=sort_month_key)
+    try:
+        months_list = sorted(months_list, key=sort_month_key)
+    except Exception:
+        # Fallback to original order if sorting fails
+        pass
     
     df_country = con.execute("SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL").df()
     countries_list = [str(x) for x in df_country["Country_New"].dropna().tolist()]
