@@ -80,7 +80,37 @@ h1 {
     color: white !important;
     border-radius: 10px;
 }
+/* ===== FIX TEXT VISIBILITY ===== */
 
+label, .stMarkdown, .stText, .stCaption {
+    color: #e5e7eb !important;
+}
+
+/* Radio button text */
+div[role="radiogroup"] label {
+    color: #e5e7eb !important;
+    font-size: 14px;
+}
+
+/* Dropdown text */
+div[data-baseweb="select"] {
+    color: #e5e7eb !important;
+}
+
+/* Vega charts (axis text) */
+.vega-embed text {
+    fill: #e5e7eb !important;
+}
+
+/* Titles & headers */
+h1, h2, h3 {
+    color: #f8fafc !important;
+}
+
+/* Small text */
+small, span {
+    color: #9ca3af !important;
+}
 </style>
 """, unsafe_allow_html=True)
 # Clean, corporate title matching your specification
