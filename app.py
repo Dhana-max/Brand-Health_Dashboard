@@ -439,24 +439,24 @@ with st.container(border=True):
 
     final_chart = (bars + text).properties(height=280)
 
-           st.altair_chart(
-            final_chart
-            .configure_view(
-                strokeOpacity=0,
-                fill="transparent"   # ✅ REMOVE WHITE BACKGROUND
+               st.altair_chart(
+                final_chart
+                .configure_view(
+                    strokeOpacity=0,
+                    fill="transparent"   # ✅ REMOVE WHITE BACKGROUND
+                )
+                .configure(background='transparent')  # ✅ KEY FIX
+                .configure_axis(
+                    labelColor="#e5e7eb",
+                    titleColor="#e5e7eb",
+                    grid=False          # ✅ REMOVE GRID
+                )
+                .configure_legend(
+                    labelColor="#e5e7eb",
+                    titleColor="#e5e7eb"
+                ),
+                use_container_width=True
             )
-            .configure(background='transparent')  # ✅ KEY FIX
-            .configure_axis(
-                labelColor="#e5e7eb",
-                titleColor="#e5e7eb",
-                grid=False          # ✅ REMOVE GRID
-            )
-            .configure_legend(
-                labelColor="#e5e7eb",
-                titleColor="#e5e7eb"
-            ),
-            use_container_width=True
-        )
 # -----------------------------
 # TAB 2: GRAPHS VIEW
 # -----------------------------
