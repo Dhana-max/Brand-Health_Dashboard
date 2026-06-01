@@ -287,9 +287,10 @@ tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 # -----------------------------
 with tab1:
 
-    # Filters
+    # ---------------- FILTERS ----------------
     with st.container():
         f1, f2, f3, f4 = st.columns(4)
+
         selected_countries = f1.multiselect("🌍 Country", countries)
         selected_months = f2.multiselect("📅 Month", months)
         segment = f3.selectbox("👤 Segment", ["Total", "Male", "Female"])
@@ -301,7 +302,7 @@ with tab1:
 
     st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
 
-    # ✅ KPI SECTION
+    # ---------------- KPI ----------------
     col1, col2, col3, col4 = st.columns(4)
 
     val1 = f"{get_metric(f'Aided_Awareness_{code}_slice','yesno',where_clause,weight_col)}%"
@@ -321,14 +322,15 @@ with tab1:
     with col4:
         st.markdown(f'<div class="kpi-card kpi-orange"><div class="kpi-title">Conversion</div><div class="kpi-value">{val4}</div></div>', unsafe_allow_html=True)
 
-    # ✅ SPACE
+    # ---------------- SPACE ----------------
     st.markdown("<div style='margin-bottom:30px;'></div>", unsafe_allow_html=True)
 
-    # ✅ DONUT CENTERED
-    col_left, col_mid, col_right = st.columns([1,2,1])
+    # ---------------- DONUT ----------------
+    col_left, col_mid, col_right = st.columns([1, 2, 1])
 
     with col_mid:
         with st.container(border=True):
+
             st.subheader("🧩 Funnel Composition")
 
             awareness = get_metric(f"Aided_Awareness_{code}_slice","yesno",where_clause,weight_col)
@@ -351,112 +353,22 @@ with tab1:
 
             st.altair_chart(
                 donut_chart
-                .configure_view(strokeOpacity=0)
+                .configure_view(strokeOpacity=0, fill="transparent")
                 .configure(background='transparent')
-                .configure_axis(labelColor="#e5e7eb", titleColor="#e5e7eb")
+                .configure_axis(labelColor="#e5e7eb")
                 .configure_legend(labelColor="#e5e7eb"),
                 use_container_width=True
             )
 
-    # ✅ SPACE
+    # ---------------- SPACE ----------------
     st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
-   # ✅ ATTRIBUTES CLEAN PREMIUM VERSION
+    # ---------------- ATTRIBUTES ----------------
+    with st.container(border=True):
 
-st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
-
-with st.container(border=True):
-
-    st.markdown("""
-    <h3 style='color:#f8fafc; margin-bottom:4px;'>🎯 Strategic Pillars</h3>
-    <div style='color:#9ca3af; font-size:13px;'>Key drivers of brand perception</div>
-    """, unsafe_allow_html=True)
-
-    selected_pillar = st.radio(
-        "Select Pillar",
-        list(brand_pillars.keys()),
-        horizontal=True,
-        key="strategic_pillar_selector"
-    )
-
-    active_indices = brand_pillars[selected_pillar]
-
-    attr_data = []
-    for idx in active_indices:
-        score = get_metric(
-            f"Attributes_New_DP_{code}_Q12a_{idx}_slice",
-            "top2",
-            where_clause,
-            weight_col
-        )
-        if score > 0:  # ✅ REMOVE zero values
-            attr_data.append({
-                "Attribute": attr_map[idx],
-                "Score": score
-            })
-
-    df_matrix = pd.DataFrame(attr_data).sort_values("Score", ascending=True)
-
-    # ✅ Highlight best attribute
-    max_score = df_matrix["Score"].max()
-
-    df_matrix["Highlight"] = df_matrix["Score"].apply(
-        lambda x: "Top" if x == max_score else "Others"
-    )
-
-    bars = alt.Chart(df_matrix).mark_bar(
-        cornerRadiusEnd=12,
-        size=30
-    ).encode(
-        x=alt.X("Score:Q",
-                scale=alt.Scale(domain=[0, 100]),
-                axis=None
-        ),
-        y=alt.Y("Attribute:N",
-                sort=None,
-                axis=alt.Axis(labelColor="#e5e7eb", labelFontSize=13)
-        ),
-        color=alt.Color(
-            "Highlight:N",
-            scale=alt.Scale(
-                domain=["Top", "Others"],
-                range=["#ff4d79", "#5b5bd6"]  # highlight best
-            ),
-            legend=None
-        ),
-        tooltip=["Attribute", "Score"]
-    )
-
-    text = bars.mark_text(
-        align="left",
-        baseline="middle",
-        dx=6,
-        fontSize=13,
-        color="#f8fafc"
-    ).encode(
-        text=alt.Text("Score:Q", format=".1f")
-    )
-
-    final_chart = (bars + text).properties(height=280)
-
-               st.altair_chart(
-                final_chart
-                .configure_view(
-                    strokeOpacity=0,
-                    fill="transparent"   # ✅ REMOVE WHITE BACKGROUND
-                )
-                .configure(background='transparent')  # ✅ KEY FIX
-                .configure_axis(
-                    labelColor="#e5e7eb",
-                    titleColor="#e5e7eb",
-                    grid=False          # ✅ REMOVE GRID
-                )
-                .configure_legend(
-                    labelColor="#e5e7eb",
-                    titleColor="#e5e7eb"
-                ),
-                use_container_width=True
-            )
+        st.markdown("""
+        <h3 style='color:#f8fafc;'>🎯 Strategic Pillars</h3>
+        <div style='color:#9ca3af;'>Key drivers of brand perception</div>
 # -----------------------------
 # TAB 2: GRAPHS VIEW
 # -----------------------------
@@ -503,7 +415,20 @@ with tab2:
                 tooltip=["Month", "Metric", "val"]
             ).properties(height=400).interactive().configure_view(strokeOpacity=0)
             
-            st.altair_chart(multi_line_chart, use_container_width=True)
+            st.altair_chart(
+    multi_line_chart
+    .configure_view(strokeOpacity=0, fill="transparent")
+    .configure(background='transparent')
+    .configure_axis(
+        labelColor="#e5e7eb",
+        titleColor="#e5e7eb"
+    )
+    .configure_legend(
+        labelColor="#e5e7eb",
+        titleColor="#e5e7eb"
+    ),
+    use_container_width=True
+)
         else:
             st.warning("⚠️ No active dataset parameters match the selected analytical profile configuration metrics.")
 
