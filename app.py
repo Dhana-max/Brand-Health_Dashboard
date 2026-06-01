@@ -101,23 +101,34 @@ def load_filters():
     df_temp = con.execute("""
         SELECT DISTINCT Month 
         FROM df 
-        WHERE Month IS NOT NULL 
-        ORDER BY MONTH""").df()
-    months_raw = [str(x) for x in df_temp["Month"].dropna().tolist()]
-    
-    months_list = sorted(
-    months_raw,
-    key=lambda x: month_order_map.get(x[:3], 999)
-    )
+        WHERE Month IS NOT NULL
+    """).df()
 
-    
-    df_country = con.execute("SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL").df()
-    countries_list = [str(x) for x in df_country["Country_New"].dropna().tolist()]
-    
+    # Convert to list
+    months_raw = df_temp["Month"].astype(str).tolist()
+
+    # ✅ Parse full date (handles multiple years correctly)
+    temp_df = pd.DataFrame({"Month": months_raw})
+    temp_df["parsed"] = pd.to_datetime(temp_df["Month"], errors="coerce")
+
+    # ✅ Sort chronologically (year + month)
+    temp_df = temp_df.sort_values("parsed")
+
+    months_list = temp_df["Month"].tolist()
+
+    # Country remains same
+    df_country = con.execute("""
+        SELECT DISTINCT Country_New 
+        FROM df 
+        WHERE Country_New IS NOT NULL
+    """).df()
+
+    countries_list = df_country["Country_New"].dropna().astype(str).tolist()
+
     return months_list, countries_list
 
 months, countries = load_filters()
-
+    
 # -----------------------------
 # Secure Extraction of Brands Map
 # -----------------------------
