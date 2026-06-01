@@ -8,35 +8,75 @@ import altair as alt
 st.set_page_config(layout="wide")
 
 # 2. Premium Clean White Executive Theme Custom CSS Injector
-st.markdown(
+st. markdown(
     """
     <style>
-    /* Change the main app background to a crisp premium white */
+
+    /* ===== Premium App Background ===== */
     .stApp {
-        background-color: #ffffff !important;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 40%, #e9f0ff 100%);
     }
-    
-    /* Make custom KPI text display uniform inside containers */
+
+    /* ===== Main Container Padding ===== */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    /* ===== Card Styling (applies to st.container(border=True)) ===== */
+    div[data-testid="stContainer"] {
+        background: #ffffff;
+        border-radius: 18px;
+        border: 1px solid #e6e9ef;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+        padding: 18px;
+    }
+
+    /* ===== KPI Label ===== */
     .client-kpi-label {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
-        color: #6c757d;
+        color: #6b7280;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 2px;
+        letter-spacing: 0.8px;
+        margin-bottom: 4px;
     }
+
+    /* ===== KPI Value ===== */
     .client-kpi-value {
-        font-size: 34px;
-        font-weight: 700;
-        color: #212529;
+        font-size: 36px;
+        font-weight: 800;
+        color: #111827;
         margin-bottom: 8px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
+
+    /* ===== Section headers ===== */
+    h2, h3 {
+        color: #1f2937;
+        font-weight: 700;
+    }
+
+    /* ===== Tabs styling ===== */
+    button[data-baseweb="tab"] {
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #4f46e5;
+        border-bottom: 3px solid #4f46e5;
+    }
+
+    /* ===== Inputs (clean modern look) ===== */
+    .stSelectbox, .stMultiSelect, .stTextInput {
+        border-radius: 10px;
+    }
+
     </style>
     """,
     unsafe_allow_html=True
 )
-
 # Clean, corporate title matching your specification
 st.title("Consumer Brand Tracker Dashboard")
 
