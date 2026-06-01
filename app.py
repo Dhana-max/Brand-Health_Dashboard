@@ -477,8 +477,8 @@ with tab3:
 
                     st.success(
                         f"📈 {brand.title()} Awareness in {month_selected}: **{val_curr}%**\n\n"
-                        f"• MoM Change: **{mom if mom is not None else 'N/A'}%**  \n"
-                        f"• YoY Change: **{yoy if yoy is not None else 'N/A'}%**"
+                        f"• MoM Change: **{mom_text}**  \n"
+                        f"• YoY Change: **{yoy_text}** \n\n"
                         f"👉 Insight: {trend_comment}"
                     )
             # --------------------------------------
