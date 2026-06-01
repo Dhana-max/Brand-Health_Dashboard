@@ -427,7 +427,7 @@ with tab2:
     st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
     
     with st.container(border=True):
-        st.subheader("📊 Brand Health Funnel Trends Analytics")
+        st.subheader("📈 Trend Analysis (Time-based)")
         
         graph_where = build_where(g_months, g_country, g_segment)
         g_code = brand_map.get(g_brand_sel, 1)
