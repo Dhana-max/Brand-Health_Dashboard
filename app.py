@@ -98,11 +98,11 @@ attr_map = {
 
 @st.cache_data
 def load_filters():
-    df_temp = con.execute(""
+    df_temp = con.execute("""
         SELECT DISTINCT Month 
         FROM df 
         WHERE Month IS NOT NULL 
-        ORDER BY MONTH"").df()
+        ORDER BY MONTH""").df()
     months_list = [str(x) for x in df_temp["Month"].dropna().tolist()]
     
     df_country = con.execute("SELECT DISTINCT Country_New FROM df WHERE Country_New IS NOT NULL").df()
