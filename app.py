@@ -518,7 +518,7 @@ with tab1:
             .configure_view(strokeOpacity=0, fill="transparent")
             .configure(background='transparent')
             .configure_axis(labelColor="#e5e7eb", grid=False),
-            use_container_width=True
+            use_container_width=True,
             theme = None
         )
 # -----------------------------
