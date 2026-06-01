@@ -286,155 +286,116 @@ tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
 # TAB 1: EXECUTIVE DASHBOARD
 # -----------------------------
 with tab1:
-    # Segment Control Filters Row
+
+    # Filters
     with st.container():
         f1, f2, f3, f4 = st.columns(4)
-        with f1:
-            selected_countries = st.multiselect("🌍 Country", countries, key="main_country_input")
-        with f2:
-            selected_months = st.multiselect("📅 Month", months, key="main_month_input")
-        with f3:
-            segment = st.selectbox("👤 Segment", ["Total", "Male", "Female"], key="main_segment_input")
-        with f4:
-            brand_options = list(brand_map.keys())
-            selected_brand = st.selectbox("🏢 Brand", brand_options, key="main_brand_input")
+        selected_countries = f1.multiselect("🌍 Country", countries)
+        selected_months = f2.multiselect("📅 Month", months)
+        segment = f3.selectbox("👤 Segment", ["Total", "Male", "Female"])
+        selected_brand = f4.selectbox("🏢 Brand", list(brand_map.keys()))
 
     code = brand_map.get(selected_brand, 1)
     where_clause = build_where(selected_months, selected_countries, segment)
     weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
-    st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
-    
-    # Grid Layout with solid white background modular containers
+    st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
+
+    # ✅ KPI SECTION
     col1, col2, col3, col4 = st.columns(4)
-    
+
+    val1 = f"{get_metric(f'Aided_Awareness_{code}_slice','yesno',where_clause,weight_col)}%"
+    val2 = f"{get_metric(f'Brand_Favorability_{code}_slice','top2',where_clause,weight_col)}%"
+    val3 = f"{get_metric(f'Consideration_{code}_slice','top2',where_clause,weight_col)}%"
+    val4 = f"{get_metric(f'Consideration_Effect_{code}_slice','top2',where_clause,weight_col)}%"
+
     with col1:
-        val1 = f"{get_metric(f'Aided_Awareness_{code}_slice', 'yesno', where_clause, weight_col)}%"
-        st.markdown(f"""
-        <div class="kpi-card kpi-pink">
-            <div class="kpi-title">Total Awareness</div>
-            <div class="kpi-value">{val1}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-card kpi-pink"><div class="kpi-title">Awareness</div><div class="kpi-value">{val1}</div></div>', unsafe_allow_html=True)
 
     with col2:
-        val2 = f"{get_metric(f'Brand_Favorability_{code}_slice', 'top2', where_clause, weight_col)}%"
-        
-        st.markdown(f"""
-        <div class="kpi-card kpi-purple">
-            <div class="kpi-title">Brand Favorability</div>
-            <div class="kpi-value">{val2}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-card kpi-purple"><div class="kpi-title">Favorability</div><div class="kpi-value">{val2}</div></div>', unsafe_allow_html=True)
 
     with col3:
-        val3 = f"{get_metric(f'Consideration_{code}_slice', 'top2', where_clause, weight_col)}%"
-
-        st.markdown(f"""
-        <div class="kpi-card kpi-blue">
-            <div class="kpi-title">Consideration Rate</div>
-            <div class="kpi-value">{val3}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown(f'<div class="kpi-card kpi-blue"><div class="kpi-title">Consideration</div><div class="kpi-value">{val3}</div></div>', unsafe_allow_html=True)
 
     with col4:
-        val4 = f"{get_metric(f'Consideration_Effect_{code}_slice', 'top2', where_clause, weight_col)}%"
-        
-        st.markdown(f"""
-        <div class="kpi-card kpi-orange">
-            <div class="kpi-title">Conversion Effect</div>
-            <div class="kpi-value">{val4}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="kpi-card kpi-orange"><div class="kpi-title">Conversion</div><div class="kpi-value">{val4}</div></div>', unsafe_allow_html=True)
 
-    st.markdown("<div style='margin-top: 25px; margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-    # ✅ Spacing before donut
+    # ✅ SPACE
+    st.markdown("<div style='margin-bottom:30px;'></div>", unsafe_allow_html=True)
+
+    # ✅ DONUT CENTERED
+    col_left, col_mid, col_right = st.columns([1,2,1])
+
+    with col_mid:
+        with st.container(border=True):
+            st.subheader("🧩 Funnel Composition")
+
+            awareness = get_metric(f"Aided_Awareness_{code}_slice","yesno",where_clause,weight_col)
+            favorability = get_metric(f"Brand_Favorability_{code}_slice","top2",where_clause,weight_col)
+            consideration = get_metric(f"Consideration_{code}_slice","top2",where_clause,weight_col)
+            conversion = get_metric(f"Consideration_Effect_{code}_slice","top2",where_clause,weight_col)
+
+            donut_df = pd.DataFrame({
+                "metric": ["Awareness","Favorability","Consideration","Conversion"],
+                "value": [awareness,favorability,consideration,conversion]
+            })
+
+            donut_chart = alt.Chart(donut_df).mark_arc(innerRadius=75).encode(
+                theta=alt.Theta("value:Q"),
+                color=alt.Color("metric:N",
+                    scale=alt.Scale(range=["#ff4d79","#7c3aed","#0ea5e9","#f59e0b"])
+                ),
+                tooltip=["metric","value"]
+            ).properties(height=340)
+
+            st.altair_chart(
+                donut_chart
+                .configure_view(strokeOpacity=0)
+                .configure(background='transparent')
+                .configure_axis(labelColor="#e5e7eb", titleColor="#e5e7eb")
+                .configure_legend(labelColor="#e5e7eb"),
+                use_container_width=True
+            )
+
+    # ✅ SPACE
     st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
-    # ✅ DONUT SECTION
+    # ✅ ATTRIBUTES FULL WIDTH
     with st.container(border=True):
-        st.subheader("🧩 Funnel Composition")
+        st.subheader("🎯 Strategic Pillars")
 
-    # Fetch KPI values
-    awareness = get_metric(f"Aided_Awareness_{code}_slice", "yesno", where_clause, weight_col)
-    favorability = get_metric(f"Brand_Favorability_{code}_slice", "top2", where_clause, weight_col)
-    consideration = get_metric(f"Consideration_{code}_slice", "top2", where_clause, weight_col)
-    conversion = get_metric(f"Consideration_Effect_{code}_slice", "top2", where_clause, weight_col)
-
-    # Prepare data
-    donut_df = pd.DataFrame({
-        "metric": ["Awareness", "Favorability", "Consideration", "Conversion"],
-        "value": [awareness, favorability, consideration, conversion]
-    })
-
-    # Donut chart
-    donut_chart = alt.Chart(donut_df).mark_arc(innerRadius=75).encode(
-        theta=alt.Theta(field="value", type="quantitative"),
-        color=alt.Color(
-            field="metric",
-            type="nominal",
-            scale=alt.Scale(range=[
-                "#ff4d79",  # pink
-                "#7c3aed",  # purple
-                "#0ea5e9",  # blue
-                "#f59e0b"   # orange
-            ]),
-            legend=alt.Legend(title="Funnel Metrics", orient="bottom")
-        ),
-        tooltip=[
-            alt.Tooltip("metric:N", title="Metric"),
-            alt.Tooltip("value:Q", title="Score (%)")
-        ]
-    ).properties(height=340)
-
-    # Display chart
-    st.altair_chart(
-        donut_chart
-        .configure_view(strokeOpacity=0)
-        .configure(background='transparent'),
-        .configure_axis(
-    labelColor="#e5e7eb",
-    titleColor="#e5e7eb"
-)
-.configure_legend(
-    labelColor="#e5e7eb",
-    titleColor="#e5e7eb"
-),
-
-        use_container_width=True
-    )
-    # Strategic Pillars Component Wrapper
-    with st.container(border=True):
-        st.subheader("🎯 Strategic Pillars Core Breakdown")
         selected_pillar = st.radio(
-            label="Select Operational Strategic Pillar To Deep-Dive:",
-            options=list(brand_pillars.keys()),
-            horizontal=True,
-            key="strategic_pillar_selector"
+            "Select Pillar",
+            list(brand_pillars.keys()),
+            horizontal=True
         )
-        
+
         active_indices = brand_pillars[selected_pillar]
+
         attr_data = []
         for idx in active_indices:
-            score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice", "top2", where_clause, weight_col)
-            attr_data.append({"Strategic Statement Pillar": attr_map[idx], "Agreement Score (%)": score})
-        
-        df_matrix = pd.DataFrame(attr_data).sort_values(by="Agreement Score (%)", ascending=False)
-        
-        attr_chart = alt.Chart(df_matrix).mark_bar(
-            cornerRadiusTopRight=4,
-            cornerRadiusBottomRight=4,
-            size=22
-        ).encode(
-            x=alt.X("Agreement Score (%):Q", title="Top-2 Box Agreement Score (%)", scale=alt.Scale(domain=[0, 100])),
-            y=alt.Y("Strategic Statement Pillar:N", sort="-x", title=None),
-            color=alt.Color("Agreement Score (%):Q", scale=alt.Scale(scheme="purples"), legend=None),
-            tooltip=["Strategic Statement Pillar", "Agreement Score (%)"]
-        ).properties(height=220).configure_view(strokeOpacity=0)
-        
-        st.altair_chart(attr_chart, use_container_width=True)
+            score = get_metric(f"Attributes_New_DP_{code}_Q12a_{idx}_slice","top2",where_clause,weight_col)
+            attr_data.append({
+                "Attribute": attr_map[idx],
+                "Score": score
+            })
 
+        df_matrix = pd.DataFrame(attr_data).sort_values("Score", ascending=False)
+
+        attr_chart = alt.Chart(df_matrix).mark_bar(size=22).encode(
+            x="Score:Q",
+            y=alt.Y("Attribute:N", sort='-x'),
+            color=alt.Color("Score:Q", scale=alt.Scale(scheme="purpleblue")),
+            tooltip=["Attribute","Score"]
+        ).properties(height=250)
+
+        st.altair_chart(
+            attr_chart
+            .configure_axis(labelColor="#e5e7eb")
+            .configure_view(strokeOpacity=0),
+            use_container_width=True
+        )
 # -----------------------------
 # TAB 2: GRAPHS VIEW
 # -----------------------------
