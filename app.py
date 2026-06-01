@@ -123,19 +123,21 @@ div[role="radiogroup"] {
 
 /* Each option */
 div[role="radiogroup"] label {
-    background: transparent;
+    background: rgba(255,255,255,0.05);
     padding: 8px 16px;
     border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.08);
-    color: #9ca3af !important;
+    color: #d1d5db !important;
     cursor: pointer;
-    transition: 0.25s ease;
+    opacity: 0.85;
+    transition: 0.3s ease;
 }
 
 /* Hover effect */
 div[role="radiogroup"] label:hover {
     background: rgba(124, 58, 237, 0.2);
-    color: #f8fafc !important;
+    color: #ffffff !important;
+    opacity: 1;
 }
 
 /* Selected pill */
@@ -144,6 +146,7 @@ div[role="radiogroup"] input:checked + div {
     border: none;
     color: white !important;
     box-shadow: 0 0 10px rgba(124,58,237,0.6);
+    opacity: 1;
 }
 
 /* Hide default radio circle */
@@ -516,6 +519,7 @@ with tab1:
             .configure(background='transparent')
             .configure_axis(labelColor="#e5e7eb", grid=False),
             use_container_width=True
+            theme = None
         )
 # -----------------------------
 # TAB 2: GRAPHS VIEW
