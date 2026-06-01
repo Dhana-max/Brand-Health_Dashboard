@@ -331,9 +331,9 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<div style='margin-top: 25px; margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-    # ✅ Spacing before donut
-st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 25px; margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+        # ✅ Spacing before donut
+        st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
     # ✅ DONUT SECTION
         with st.container(border=True):
