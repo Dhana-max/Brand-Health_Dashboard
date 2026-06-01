@@ -468,10 +468,18 @@ with tab3:
                     except:
                         yoy = None
 
+                    mom_text = f"+{mom}%" if mom and mom > 0 else f"{mom}%"
+                    yoy_text = f"+{yoy}%" if yoy and yoy > 0 else f"{yoy}%"
+
+                    trend_comment = ""
+                    if mom is not None:
+                        trend_comment = "📈 Increasing momentum" if mom > 0 else "📉 Declining trend"
+
                     st.success(
                         f"📈 {brand.title()} Awareness in {month_selected}: **{val_curr}%**\n\n"
                         f"• MoM Change: **{mom if mom is not None else 'N/A'}%**  \n"
                         f"• YoY Change: **{yoy if yoy is not None else 'N/A'}%**"
+                        f"👉 Insight: {trend_comment}"
                     )
             # --------------------------------------
             # ✅ CASE 3: Single Brand Awareness
