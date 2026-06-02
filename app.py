@@ -301,6 +301,8 @@ months, countries = load_filters()
 # -----------------------------
 # Secure Extraction of Brands Map
 # -----------------------------
+# ✅ Global allowed brands (for "Select All")
+GLOBAL_BRANDS = ["LinkedIn", "Indeed", "Google", "TikTok", "Twitter", "Facebook"]
 brand_rows = map_df[map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)]
 brand_map = {}
 for _, r in brand_rows.iterrows():
@@ -417,9 +419,26 @@ with tab1:
         selected_countries = f1.multiselect("🌍 Country", countries)
         selected_months = f2.multiselect("📅 Month", months)
         segment = f3.selectbox("👤 Segment", ["Total", "Male", "Female"])
-        selected_brand = f4.selectbox("🏢 Brand", list(brand_map.keys()))
+        # ✅ Brand filtering logic
+if len(selected_countries) == 0 or len(selected_countries) > 1:
+    # "Select All" scenario
+    filtered_brand_map = {
+        k: v for k, v in brand_map.items() if k in GLOBAL_BRANDS
+    }
+else:
+    # Single country → show all available brands
+    filtered_brand_map = brand_map
 
-    code = brand_map.get(selected_brand, 1)
+# Safety fallback
+if not filtered_brand_map:
+    filtered_brand_map = brand_map
+
+selected_brand = f4.selectbox(
+    "🏢 Brand",
+    list(filtered_brand_map.keys())
+)
+
+    code = filtered_brand_map.get(selected_brand, 1)
     where_clause = build_where(selected_months, selected_countries, segment)
     weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
