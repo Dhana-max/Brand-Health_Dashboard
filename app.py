@@ -302,7 +302,7 @@ months, countries = load_filters()
 # Secure Extraction of Brands Map
 # -----------------------------
 # ✅ Global allowed brands (for "Select All")
-GLOBAL_BRANDS = ["LinkedIn", "Indeed", "Google", "TikTok", "Twitter\X", "Facebook"]
+GLOBAL_BRANDS = ["LinkedIn", "Indeed", "Google", "TikTok", "Twitter \ X", "Facebook"]
 brand_rows = map_df[map_df["Variable"].astype(str).str.contains("Aided_Awareness_", na=False)]
 brand_map = {}
 for _, r in brand_rows.iterrows():
