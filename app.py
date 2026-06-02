@@ -439,10 +439,10 @@ selected_brand = f4.selectbox(
 )
 
 code = filtered_brand_map.get(selected_brand, 1)
-    where_clause = build_where(selected_months, selected_countries, segment)
-    weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+where_clause = build_where(selected_months, selected_countries, segment)
+weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
-    st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
 
     # ---------------- KPI ----------------
     col1, col2, col3, col4 = st.columns(4)
