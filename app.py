@@ -121,17 +121,24 @@ div[role="radiogroup"] {
     border-radius: 12px;
 }
 
-/* Each option */
+/* ✅ FIX: Unselected pills visible */
 div[role="radiogroup"] label {
-    background: rgba(255,255,255,0.05);
-    padding: 8px 16px;
+    background: rgba(255,255,255,0.10);  /* brighter */
+    padding: 10px 16px;
     border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.08);
-    color: #d1d5db !important;
+    border: 1px solid rgba(255,255,255,0.15);
+
+    color: #e5e7eb !important;   /* brighter text */
+    opacity: 1 !important;       /* remove fade completely */
+
     cursor: pointer;
-    opacity: 0.85;
-    transition: 0.3s ease;
+    transition: all 0.25s ease;
 }
+/* ✅ Force all inner text/icons visible */
+div[role="radiogroup"] label * {
+    color: #e5e7eb !important;
+}
+
 
 /* Hover effect */
 div[role="radiogroup"] label:hover {
@@ -148,7 +155,9 @@ div[role="radiogroup"] label:has(input:checked) {
     opacity: 1 !important;
     box-shadow: 0 0 12px rgba(124,58,237,0.7);
 }
-
+div[role="radiogroup"] label:has(input:checked) * {
+    color: #ffffff !important;
+}
 /* Hide default radio circle */
 div[role="radiogroup"] input {
     display: none;
