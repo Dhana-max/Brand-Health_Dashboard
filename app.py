@@ -414,37 +414,37 @@ with tab1:
 
     # ---------------- FILTERS ----------------
     with st.container():
-    f1, f2, f3, f4 = st.columns(4)
+     f1, f2, f3, f4 = st.columns(4)
 
-    selected_countries = f1.multiselect("🌍 Country", countries)
-    selected_months = f2.multiselect("📅 Month", months)
-    segment = f3.selectbox("👤 Segment", ["Total", "Male", "Female"])
+     selected_countries = f1.multiselect("🌍 Country", countries)
+     selected_months = f2.multiselect("📅 Month", months)
+     segment = f3.selectbox("👤 Segment", ["Total", "Male", "Female"])
 
     # ✅ Brand filtering logic
-    if len(selected_countries) == 0 or len(selected_countries) > 1:
+     if len(selected_countries) == 0 or len(selected_countries) > 1:
         # "Select All" scenario
         filtered_brand_map = {
             k: v for k, v in brand_map.items() if k in GLOBAL_BRANDS
         }
-    else:
+     else:
         # Single country → show all brands
         filtered_brand_map = brand_map
 
     # Safety fallback
-    if not filtered_brand_map:
+     if not filtered_brand_map:
         filtered_brand_map = brand_map
 
-    selected_brand = f4.selectbox(
+     selected_brand = f4.selectbox(
         "🏢 Brand",
         list(filtered_brand_map.keys())
     )
 
-    code = filtered_brand_map.get(selected_brand, 1)
+     code = filtered_brand_map.get(selected_brand, 1)
 
-    where_clause = build_where(selected_months, selected_countries, segment)
-    weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
+     where_clause = build_where(selected_months, selected_countries, segment)
+     weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
-    st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
+     st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
 
     # ---------------- KPI ----------------
     col1, col2, col3, col4 = st.columns(4)
