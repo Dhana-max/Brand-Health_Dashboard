@@ -423,12 +423,12 @@ with tab1:
     # ✅ Brand filtering logic
      if len(selected_countries) == 0 or len(selected_countries) > 1:
     # ✅ Robust matching (fix Twitter issue + future-proof)
-    filtered_brand_map = {
-        k: v for k, v in brand_map.items() 
-        if any(g.lower() in k.lower() for g in GLOBAL_BRANDS)
+        filtered_brand_map = {
+            k: v for k, v in brand_map.items() 
+            if any(g.lower() in k.lower() for g in GLOBAL_BRANDS)
     }
-    else:
-    filtered_brand_map = brand_map
+     else:
+       filtered_brand_map = brand_map
 
 
     # Safety fallback
