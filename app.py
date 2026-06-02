@@ -140,13 +140,13 @@ div[role="radiogroup"] label:hover {
     opacity: 1;
 }
 
-/* Selected pill */
-div[role="radiogroup"] input:checked + div {
-    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+/* ✅ Selected radio pill FIX */
+div[role="radiogroup"] label:has(input:checked) {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
     border: none;
-    color: white !important;
-    box-shadow: 0 0 10px rgba(124,58,237,0.6);
-    opacity: 1;
+    color: #ffffff !important;
+    opacity: 1 !important;
+    box-shadow: 0 0 12px rgba(124,58,237,0.7);
 }
 
 /* Hide default radio circle */
