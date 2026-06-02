@@ -174,6 +174,36 @@ div[role="radiogroup"] div {
     font-size: 13px;
     margin-bottom: 6px;
 }
+/* ✅ FIX: Streamlit Tabs Text Visibility */
+
+/* Tab container */
+div[data-baseweb="tab-list"] {
+    gap: 20px;
+}
+
+/* All tabs (default state) */
+button[data-baseweb="tab"] {
+    color: #9ca3af !important;   /* brighter gray */
+    font-weight: 600;
+    opacity: 1 !important;       /* remove fading */
+    transition: all 0.25s ease;
+}
+
+/* Hover effect */
+button[data-baseweb="tab"]:hover {
+    color: #ffffff !important;
+}
+
+/* ✅ ACTIVE tab */
+button[aria-selected="true"] {
+    color: #ff4d79 !important;   /* matches your pink highlight */
+}
+
+/* Optional: make underline stronger */
+button[aria-selected="true"]::after {
+    background-color: #ff4d79 !important;
+    height: 3px;
+}
 </style>
 """, unsafe_allow_html=True)
 # Clean, corporate title matching your specification
