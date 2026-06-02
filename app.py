@@ -438,7 +438,7 @@ selected_brand = f4.selectbox(
     list(filtered_brand_map.keys())
 )
 
-    code = filtered_brand_map.get(selected_brand, 1)
+            code = filtered_brand_map.get(selected_brand, 1)
     where_clause = build_where(selected_months, selected_countries, segment)
     weight_col = "Weight_Post" if len(selected_countries) == 1 else "Global_weight_Stacked"
 
