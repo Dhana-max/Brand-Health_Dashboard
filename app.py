@@ -435,7 +435,7 @@ with tab1:
         ])
     }
      elif any(c in ["India"] for c in selected_countries):
-    filtered_brand_map = {
+        filtered_brand_map = {
         k: v for k, v in brand_map.items()
         if any(g.lower() in k.lower() for g in [
             "LinkedIn", "Indeed", "Google", "Facebook", "YouTube", "Instagram", "Twitter", "Naukri"
