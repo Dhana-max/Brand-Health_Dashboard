@@ -431,7 +431,7 @@ with tab1:
         filtered_brand_map = {
             k: v for k, v in brand_map.items()
             if any(g.lower() in k.lower() for g in [
-                "LinkedIn", "Indeed", "Google", "TikTok", "Twitter", "Facebook", "YouTube", "Instagram"
+                "LinkedIn", "Indeed", "Google", "TikTok", "Twitter", "Facebook", "YouTube", "Instagram", "Glassdoor", "Snapchat"
         ])
     }
      else:
