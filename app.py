@@ -427,6 +427,13 @@ with tab1:
             k: v for k, v in brand_map.items() 
             if any(g.lower() in k.lower() for g in GLOBAL_BRANDS)
     }
+     elif any(c in ["US", "UK"] for c in selected_countries):
+    filtered_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in [
+            "LinkedIn", "Indeed", "Google", "TikTok", "Twitter", "Facebook", "YouTube", "Instagram"
+        ])
+    }
      else:
        filtered_brand_map = brand_map
 
