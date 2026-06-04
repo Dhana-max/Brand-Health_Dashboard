@@ -435,7 +435,7 @@ with tab1:
         ])
     }
      else:
-       filtered_brand_map = brand_map
+         filtered_brand_map = brand_map
 
 
     # Safety fallback
