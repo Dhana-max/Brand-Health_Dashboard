@@ -441,6 +441,22 @@ with tab1:
             "LinkedIn", "Indeed", "Google", "Facebook", "YouTube", "Instagram", "Twitter", "Naukri"
         ])
     }   
+     elif any(c in ["Germany"] for c in selected_countries):
+    filtered_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in [
+            "LinkedIn", "Indeed", "Google", "Facebook", "Xing", "Stepstone",
+            "Twitter", "Naukri", "Monster", "Stellenanzeigen.de", "TikTok"
+        ])
+    }
+     elif any(c in ["France"] for c in selected_countries):
+    filtered_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in [
+            "LinkedIn", "Indeed", "Google", "Facebook", "YouTube", "Instagram",
+            "Twitter", "HelloWork", "TikTok", "Welcome to the Jungle"
+        ])
+    }
      else:
          filtered_brand_map = brand_map
 
