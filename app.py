@@ -434,6 +434,13 @@ with tab1:
                 "LinkedIn", "Indeed", "Google", "TikTok", "Twitter", "Facebook", "YouTube", "Instagram", "Glassdoor", "Snapchat"
         ])
     }
+     elif any(c in ["India"] for c in selected_countries):
+    filtered_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in [
+            "LinkedIn", "Indeed", "Google", "Facebook", "YouTube", "Instagram", "Twitter", "Naukri"
+        ])
+    }   
      else:
          filtered_brand_map = brand_map
 
