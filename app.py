@@ -616,6 +616,57 @@ with tab1:
 # TAB 2: GRAPHS VIEW
 # -----------------------------
 with tab2:
+    # ✅ Apply SAME brand filtering logic as dashboard
+if len(g_country) == 0 or len(g_country) > 1:
+    filtered_graph_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in GLOBAL_BRANDS)
+    }
+
+elif any(c in ["US", "UK"] for c in g_country):
+    filtered_graph_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in [
+            "LinkedIn", "Indeed", "Google", "TikTok", "Twitter",
+            "Facebook", "YouTube", "Instagram", "Glassdoor", "Snapchat"
+        ])
+    }
+
+elif any(c in ["India"] for c in g_country):
+    filtered_graph_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in [
+            "LinkedIn", "Indeed", "Google", "Facebook", "YouTube",
+            "Instagram", "Twitter", "Naukri"
+        ])
+    }
+
+elif any(c in ["Germany"] for c in g_country):
+    filtered_graph_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in [
+            "LinkedIn", "Indeed", "Google", "Facebook", "Xing",
+            "Stepstone", "Twitter", "Monster", "Stellenanzeigen.de", "TikTok"
+        ])
+    }
+
+elif any(c in ["France"] for c in g_country):
+    filtered_graph_brand_map = {
+        k: v for k, v in brand_map.items()
+        if any(g.lower() in k.lower() for g in [
+            "LinkedIn", "Indeed", "Google", "Facebook", "YouTube",
+            "Instagram", "Twitter", "HelloWork", "TikTok",
+            "Welcome to the Jungle"
+        ])
+    }
+
+else:
+    filtered_graph_brand_map = brand_map
+
+# safety fallback
+if not filtered_graph_brand_map:
+    filtered_graph_brand_map = brand_map
+
     with st.container():
         colg1, colg2, colg3, colg4 = st.columns(4)
         with colg1:
@@ -625,7 +676,7 @@ with tab2:
         with colg3:
             g_segment = st.selectbox("Segment Select (Trends Visuals)", ["Total", "Male", "Female"], key="graph_segment_input")
         with colg4:
-            g_brand_sel = st.selectbox("Select Target Brand (Trends Visuals)", list(brand_map.keys()), key="graph_brand_input")
+            g_brand_sel = st.selectbox("Select Target Brand (Trends Visuals)", list(iltered_graph_brand_map.keys()), key="graph_brand_input")
 
     st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
     
@@ -633,7 +684,7 @@ with tab2:
         st.subheader("📈 Trend Analysis (Time-based)")
         
         graph_where = build_where(g_months, g_country, g_segment)
-        g_code = brand_map.get(g_brand_sel, 1)
+        g_code = filtered_graph_brand_map.get(g_brand_sel, 1)
         
         metrics_to_plot = [
             {"label": "Total Awareness", "col": f"Aided_Awareness_{g_code}_slice", "type": "yesno"},
@@ -657,7 +708,11 @@ with tab2:
                 color=alt.Color("Metric:N", legend=alt.Legend(title="Brand Funnel Layer")),
                 tooltip=["Month", "Metric", "val"]
             ).properties(height=400).interactive().configure_view(strokeOpacity=0)
-            
+            graph_mode = st.radio(
+    "Select Analysis Mode",
+    ["📈 Trend View", "⚔️ Brand Comparison", "📊 Trend Comparison"],
+    horizontal=True
+)
             st.altair_chart(
     multi_line_chart
     .configure_view(strokeOpacity=0, fill="transparent")
