@@ -809,7 +809,21 @@ with tab2:
                 color=alt.Color("Month:N", legend=alt.Legend(title="Time Period")),
 
                 # ✅ Separate KPI charts (NO SCROLL, side-by-side)
-                column=alt.Column("Metric:N", title="KPI"),
+                
+                chart = alt.Chart(df_comp).mark_line(point=True, size=3, interpolate="monotone").encode(
+    
+                    x=alt.X("Brand:N", title="Brand"),
+                    y=alt.Y("Value:Q", title="Score (%)"),
+    
+                    color=alt.Color("Month:N", legend=alt.Legend(title="Time Period")),
+
+                    # ✅ KEY FIX → stack vertically (NO SCROLL)
+                    row=alt.Row("Metric:N", title="KPI"),
+
+                    tooltip=["Brand", "Metric", "Month", "Value"]
+
+                    ).properties(height=250)
+
 
                 tooltip=["Brand", "Metric", "Month", "Value"]
 
