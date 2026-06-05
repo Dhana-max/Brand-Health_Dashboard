@@ -798,7 +798,7 @@ with tab2:
     
         if 'comp_data' in locals() and len(comp_data) > 0:
 
-        df_comp = pd.DataFrame(comp_data)
+            df_comp = pd.DataFrame(comp_data)
 chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
     x=alt.X("Month:O", sort=months, title="Time"),
     y=alt.Y("Value:Q", title="Score (%)"),
