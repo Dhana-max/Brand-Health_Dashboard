@@ -804,7 +804,20 @@ with tab2:
             x=alt.X("Month:O", sort=months, title="Time"),
             y=alt.Y("Value:Q", title="Score (%)"),
             color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
-            strokeDash=alt.StrokeDash("Metric:N", legend=alt.Legend(title="KPI")),
+            chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
+
+    x=alt.X("Month:O", sort=months, title="Time"),
+
+    y=alt.Y("Value:Q", title="Score (%)"),
+
+    color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
+
+    # ✅ SPLIT BY KPI (THIS IS THE FIX)
+    column=alt.Column("Metric:N", title="KPI"),
+
+    tooltip=["Brand", "Metric", "Month", "Value"]
+
+).properties(height=350)
             tooltip=["Brand", "Metric", "Month", "Value"]
         ).properties(height=420).interactive()
 
