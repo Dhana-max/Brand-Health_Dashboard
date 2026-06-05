@@ -758,18 +758,24 @@ with tab2:
     # -------------------------
     elif graph_mode == "⚔️ Brand Comparison":
 
-        metrics_map = {
-            "Awareness": ("Aided_Awareness_{}_slice", "yesno"),
-            "Favorability": ("Brand_Favorability_{}_slice", "top2"),
-            "Consideration": ("Consideration_{}_slice", "top2"),
-            "Conversion": ("Consideration_Effect_{}_slice", "top2")
-        }
+    metrics_map = {
+        "Awareness": ("Aided_Awareness_{}_slice", "yesno"),
+        "Favorability": ("Brand_Favorability_{}_slice", "top2"),
+        "Consideration": ("Consideration_{}_slice", "top2"),
+        "Conversion": ("Consideration_Effect_{}_slice", "top2")
+    }
 
-        comp_data = []
+    comp_data = []
 
-        for brand_name, code in brand_codes:
+    # ✅ Loop per brand + per month (IMPORTANT FIX)
+    for brand_name, code in brand_codes:
+
+        for month in (g_months if g_months else months):
+
+            temp_where = build_where([month], g_country, g_segment)
 
             for kpi in selected_kpis:
+
                 if kpi == "Attributes":
                     continue
 
@@ -778,29 +784,42 @@ with tab2:
                 val = get_metric(
                     pattern.format(code),
                     mtype,
-                    graph_where,
+                    temp_where,
                     "Global_weight_Stacked"
                 )
 
                 comp_data.append({
                     "Brand": brand_name,
                     "Metric": kpi,
+                    "Month": month,
                     "Value": val
                 })
 
-        if comp_data:
-            df_comp = pd.DataFrame(comp_data)
+    if comp_data:
+        df_comp = pd.DataFrame(comp_data)
 
-            chart = alt.Chart(df_comp).mark_bar().encode(
-                x="Metric:N",
-                y="Value:Q",
-                color="Brand:N",
-                tooltip=["Brand","Metric","Value"]
-            ).properties(height=400)
+        chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
 
-            st.altair_chart(chart, use_container_width=True)
-        else:
-            st.warning("⚠️ No data available")
+            # ✅ X-axis = Month (time comparison)
+            x=alt.X("Month:O", sort=months, title="Time"),
+
+            # ✅ Y-axis = metric value
+            y=alt.Y("Value:Q", title="Score (%)"),
+
+            # ✅ Brand = color
+            color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
+
+            # ✅ KPI = line style
+            strokeDash=alt.StrokeDash("Metric:N", legend=alt.Legend(title="KPI")),
+
+            tooltip=["Brand", "Metric", "Month", "Value"]
+
+        ).properties(height=420).interactive()
+
+        st.altair_chart(chart, use_container_width=True)
+
+    else:
+        st.warning("⚠️ No data available")
 # -----------------------------
 # TAB 3: CHATBOT VIEW
 # -----------------------------
