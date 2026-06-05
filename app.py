@@ -796,22 +796,22 @@ with tab2:
         if 'comp_data' in locals() and len(comp_data) > 0:
 
             df_comp = pd.DataFrame(comp_data)
-chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
-    x=alt.X("Month:O", sort=months, title="Time"),
-    y=alt.Y("Value:Q", title="Score (%)"),
-    color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
+            chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
+                x=alt.X("Month:O", sort=months, title="Time"),
+                y=alt.Y("Value:Q", title="Score (%)"),
+                color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
 
     # ✅ Split KPI into separate panels
-    column=alt.Column("Metric:N", title="KPI"),
+                column=alt.Column("Metric:N", title="KPI"),
 
-    tooltip=["Brand", "Metric", "Month", "Value"]
-).properties(height=350).interactive()
+                tooltip=["Brand", "Metric", "Month", "Value"]
+            ).properties(height=350).interactive()
 
         
-st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, use_container_width=True)
 
-    else:
-        st.warning("⚠️ No data available")
+        else:
+            st.warning("⚠️ No data available")
 # -----------------------------
 # TAB 3: CHATBOT VIEW
 # -----------------------------
