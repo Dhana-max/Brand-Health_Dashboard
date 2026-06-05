@@ -758,7 +758,7 @@ with tab2:
     # -------------------------
     elif graph_mode == "⚔️ Brand Comparison":
 
-    metrics_map = {
+        metrics_map = {
         "Awareness": ("Aided_Awareness_{}_slice", "yesno"),
         "Favorability": ("Brand_Favorability_{}_slice", "top2"),
         "Consideration": ("Consideration_{}_slice", "top2"),
