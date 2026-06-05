@@ -613,120 +613,194 @@ with tab1:
             theme = None
         )
 # -----------------------------
-# TAB 2: GRAPHS VIEW
+# TAB 2: GRAPHS VIEW (UPDATED)
 # -----------------------------
 with tab2:
-    # ✅ Apply SAME brand filtering logic as dashboard
+
+    # ===== FILTER ROW =====
     with st.container():
-        colg1, colg2, colg3, colg4 = st.columns(4)
+        colg1, colg2, colg3, colg4, colg5 = st.columns(5)
+
         with colg1:
-            g_country = st.multiselect("Filter Country (Trends Visuals)", countries, key="graph_country_input")
+            g_country = st.multiselect("🌍 Country", countries, key="graph_country_input")
+
         with colg2:
-            g_months = st.multiselect("Filter Month (Trends Visuals)", months, key="graph_month_input")
+            g_months = st.multiselect("📅 Month", months, key="graph_month_input")
+
         with colg3:
-            g_segment = st.selectbox("Segment Select (Trends Visuals)", ["Total", "Male", "Female"], key="graph_segment_input")
-    if len(g_country) == 0 or len(g_country) > 1:
-        filtered_graph_brand_map = {
-            k: v for k, v in brand_map.items()
-            if any(g.lower() in k.lower() for g in GLOBAL_BRANDS)
-    }
+            g_segment = st.selectbox("👤 Segment", ["Total", "Male", "Female"], key="graph_segment_input")
 
-    elif any(c in ["US", "UK"] for c in g_country):
-        filtered_graph_brand_map = {
-            k: v for k, v in brand_map.items()
-            if any(g.lower() in k.lower() for g in [
-            "LinkedIn", "Indeed", "Google", "TikTok", "Twitter",
-            "Facebook", "YouTube", "Instagram", "Glassdoor", "Snapchat"
-        ])
-    }
-
-    elif any(c in ["India"] for c in g_country):
-        filtered_graph_brand_map = {
-            k: v for k, v in brand_map.items()
-            if any(g.lower() in k.lower() for g in [
-            "LinkedIn", "Indeed", "Google", "Facebook", "YouTube",
-            "Instagram", "Twitter", "Naukri"
-        ])
-    }
-
-    elif any(c in ["Germany"] for c in g_country):
-        filtered_graph_brand_map = {
-            k: v for k, v in brand_map.items()
-            if any(g.lower() in k.lower() for g in [
-            "LinkedIn", "Indeed", "Google", "Facebook", "Xing",
-            "Stepstone", "Twitter", "Monster", "Stellenanzeigen.de", "TikTok"
-        ])
-    }
-
-    elif any(c in ["France"] for c in g_country):
-        filtered_graph_brand_map = {
-            k: v for k, v in brand_map.items()
-            if any(g.lower() in k.lower() for g in [
-            "LinkedIn", "Indeed", "Google", "Facebook", "YouTube",
-            "Instagram", "Twitter", "HelloWork", "TikTok",
-            "Welcome to the Jungle"
-        ])
-    }
-
-    else:
-        filtered_graph_brand_map = brand_map
-
-# safety fallback
-    if not filtered_graph_brand_map:
-        filtered_graph_brand_map = brand_map
-    g_brand_sel = st.selectbox("Select Target Brand (Trends Visuals)", list(filtered_graph_brand_map.keys()), key="graph_brand_input")
-    g_code = filtered_graph_brand_map.get(g_brand_sel, 1)
-    st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
-    
-    with st.container(border=True):
-        st.subheader("📈 Trend Analysis (Time-based)")
-        
-        graph_where = build_where(g_months, g_country, g_segment)
-        
-        metrics_to_plot = [
-            {"label": "Total Awareness", "col": f"Aided_Awareness_{g_code}_slice", "type": "yesno"},
-            {"label": "Brand Favorability", "col": f"Brand_Favorability_{g_code}_slice", "type": "top2"},
-            {"label": "Consideration Rate", "col": f"Consideration_{g_code}_slice", "type": "top2"},
-            {"label": "Conversion Effect", "col": f"Consideration_Effect_{g_code}_slice", "type": "top2"},
-        ]
-        
-        trend_list = []
-        for m_info in metrics_to_plot:
-            tdf = get_sparkline_data(m_info["col"], m_info["type"], graph_where, "Global_weight_Stacked")
-            tdf["Metric"] = m_info["label"]
-            trend_list.append(tdf)
-            
-        df_trends = pd.concat(trend_list, ignore_index=True)
-        
-        if not df_trends.empty and df_trends['val'].sum() > 0:
-            multi_line_chart = alt.Chart(df_trends).mark_line(point=True, size=3).encode(
-                x=alt.X("Month:O", title="Timeline Tracking Phase", sort=months),
-                y=alt.Y("val:Q", title="Percentage Share Score (%)", scale=alt.Scale(zero=False)),
-                color=alt.Color("Metric:N", legend=alt.Legend(title="Brand Funnel Layer")),
-                tooltip=["Month", "Metric", "val"]
-            ).properties(height=400).interactive().configure_view(strokeOpacity=0)
+        with colg4:
             graph_mode = st.radio(
-    "Select Analysis Mode",
-    ["📈 Trend View", "⚔️ Brand Comparison", "📊 Trend Comparison"],
-    horizontal=True
-)
-            st.altair_chart(
-    multi_line_chart
-    .configure_view(strokeOpacity=0, fill="transparent")
-    .configure(background='transparent')
-    .configure_axis(
-        labelColor="#e5e7eb",
-        titleColor="#e5e7eb"
-    )
-    .configure_legend(
-        labelColor="#e5e7eb",
-        titleColor="#e5e7eb"
-    ),
-    use_container_width=True
-)
-        else:
-            st.warning("⚠️ No active dataset parameters match the selected analytical profile configuration metrics.")
+                "Mode",
+                ["📈 Trend View", "⚔️ Brand Comparison"],   # ✅ removed duplicate trend
+                horizontal=True
+            )
 
+        # ===== BRAND FILTER LOGIC =====
+        if len(g_country) == 0 or len(g_country) > 1:
+            filtered_graph_brand_map = {
+                k: v for k, v in brand_map.items()
+                if any(g.lower() in k.lower() for g in GLOBAL_BRANDS)
+            }
+
+        elif any(c in ["US", "UK"] for c in g_country):
+            filtered_graph_brand_map = {
+                k: v for k, v in brand_map.items()
+                if any(g.lower() in k.lower() for g in [
+                    "LinkedIn", "Indeed", "Google", "TikTok",
+                    "Twitter", "Facebook", "YouTube", "Instagram"
+                ])
+            }
+
+        elif "India" in g_country:
+            filtered_graph_brand_map = {
+                k: v for k, v in brand_map.items()
+                if any(g.lower() in k.lower() for g in [
+                    "LinkedIn", "Indeed", "Google", "Facebook",
+                    "YouTube", "Instagram", "Twitter", "Naukri"
+                ])
+            }
+
+        else:
+            filtered_graph_brand_map = brand_map
+
+        if not filtered_graph_brand_map:
+            filtered_graph_brand_map = brand_map
+
+        # ===== BRAND MULTI SELECT =====
+        with colg5:
+            g_brands = st.multiselect(
+                "🏢 Brands",
+                list(filtered_graph_brand_map.keys()),
+                default=list(filtered_graph_brand_map.keys())[:1]
+            )
+
+    # ===== KPI FILTER =====
+    kpi_options = ["Awareness","Favorability","Consideration","Conversion","Attributes"]
+
+    selected_kpis = st.multiselect(
+        "📊 KPI Metrics",
+        kpi_options,
+        default=["Awareness"]
+    )
+
+    st.markdown("<div style='margin-top: 20px; margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+
+    # ===== BASE FILTER =====
+    graph_where = build_where(g_months, g_country, g_segment)
+    brand_codes = [(b, filtered_graph_brand_map[b]) for b in g_brands]
+
+    # -------------------------
+    # ✅ TREND VIEW
+    # -------------------------
+    if graph_mode == "📈 Trend View":
+
+        trend_list = []
+
+        for brand_name, code in brand_codes:
+
+            for kpi in selected_kpis:
+
+                if kpi == "Awareness":
+                    col = f"Aided_Awareness_{code}_slice"
+                    tdf = get_sparkline_data(col, "yesno", graph_where, "Global_weight_Stacked")
+                    tdf["Metric"] = f"{brand_name} - Awareness"
+                    trend_list.append(tdf)
+
+                elif kpi == "Favorability":
+                    col = f"Brand_Favorability_{code}_slice"
+                    tdf = get_sparkline_data(col, "top2", graph_where, "Global_weight_Stacked")
+                    tdf["Metric"] = f"{brand_name} - Favorability"
+                    trend_list.append(tdf)
+
+                elif kpi == "Consideration":
+                    col = f"Consideration_{code}_slice"
+                    tdf = get_sparkline_data(col, "top2", graph_where, "Global_weight_Stacked")
+                    tdf["Metric"] = f"{brand_name} - Consideration"
+                    trend_list.append(tdf)
+
+                elif kpi == "Conversion":
+                    col = f"Consideration_Effect_{code}_slice"
+                    tdf = get_sparkline_data(col, "top2", graph_where, "Global_weight_Stacked")
+                    tdf["Metric"] = f"{brand_name} - Conversion"
+                    trend_list.append(tdf)
+
+                # ✅ ATTRIBUTES (ALL ATTRIBUTES SHOWN)
+                elif kpi == "Attributes":
+
+                    for idx, attr_name in attr_map.items():
+                        col = f"Attributes_New_DP_{code}_Q12a_{idx}_slice"
+
+                        tdf_attr = get_sparkline_data(
+                            col, "top2", graph_where, "Global_weight_Stacked"
+                        )
+
+                        tdf_attr["Metric"] = f"{brand_name} - {attr_name}"
+                        trend_list.append(tdf_attr)
+
+        if trend_list:
+            df_trends = pd.concat(trend_list, ignore_index=True)
+
+            chart = alt.Chart(df_trends).mark_line(point=True).encode(
+                x=alt.X("Month:O", sort=months),
+                y="val:Q",
+                color="Metric:N",
+                tooltip=["Month","Metric","val"]
+            ).properties(height=420).interactive()
+
+            st.altair_chart(chart, use_container_width=True)
+        else:
+            st.warning("⚠️ No data available")
+
+    # -------------------------
+    # ✅ BRAND COMPARISON
+    # -------------------------
+    elif graph_mode == "⚔️ Brand Comparison":
+
+        metrics_map = {
+            "Awareness": ("Aided_Awareness_{}_slice", "yesno"),
+            "Favorability": ("Brand_Favorability_{}_slice", "top2"),
+            "Consideration": ("Consideration_{}_slice", "top2"),
+            "Conversion": ("Consideration_Effect_{}_slice", "top2")
+        }
+
+        comp_data = []
+
+        for brand_name, code in brand_codes:
+
+            for kpi in selected_kpis:
+                if kpi == "Attributes":
+                    continue
+
+                pattern, mtype = metrics_map[kpi]
+
+                val = get_metric(
+                    pattern.format(code),
+                    mtype,
+                    graph_where,
+                    "Global_weight_Stacked"
+                )
+
+                comp_data.append({
+                    "Brand": brand_name,
+                    "Metric": kpi,
+                    "Value": val
+                })
+
+        if comp_data:
+            df_comp = pd.DataFrame(comp_data)
+
+            chart = alt.Chart(df_comp).mark_bar().encode(
+                x="Metric:N",
+                y="Value:Q",
+                color="Brand:N",
+                tooltip=["Brand","Metric","Value"]
+            ).properties(height=400)
+
+            st.altair_chart(chart, use_container_width=True)
+        else:
+            st.warning("⚠️ No data available")
 # -----------------------------
 # TAB 3: CHATBOT VIEW
 # -----------------------------
