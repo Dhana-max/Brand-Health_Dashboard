@@ -796,16 +796,25 @@ with tab2:
         if 'comp_data' in locals() and len(comp_data) > 0:
 
             df_comp = pd.DataFrame(comp_data)
+            
             chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
-                x=alt.X("Month:O", sort=months, title="Time"),
-                y=alt.Y("Value:Q", title="Score (%)"),
-                color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
 
-    # ✅ Split KPI into separate panels
+                # ✅ X = BRAND (your requirement)
+                x=alt.X("Brand:N", title="Brand"),
+
+                # ✅ Y = KPI value
+                y=alt.Y("Value:Q", title="Score (%)"),
+
+                # ✅ Lines = MONTH (time comparison)
+                color=alt.Color("Month:N", legend=alt.Legend(title="Time Period")),
+
+                # ✅ Separate KPI charts (NO SCROLL, side-by-side)
                 column=alt.Column("Metric:N", title="KPI"),
 
                 tooltip=["Brand", "Metric", "Month", "Value"]
-            ).properties(height=350).interactive()
+
+            ).properties(height=380).interactive()
+
 
         
             st.altair_chart(chart, use_container_width=True)
