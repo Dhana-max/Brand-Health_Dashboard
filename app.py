@@ -796,31 +796,21 @@ with tab2:
                     })
 
     
-    if 'comp_data' in locals() and len(comp_data) > 0:
+        if 'comp_data' in locals() and len(comp_data) > 0:
 
         df_comp = pd.DataFrame(comp_data)
-
-        chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
-            x=alt.X("Month:O", sort=months, title="Time"),
-            y=alt.Y("Value:Q", title="Score (%)"),
-            color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
-            chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
-
+chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
     x=alt.X("Month:O", sort=months, title="Time"),
-
     y=alt.Y("Value:Q", title="Score (%)"),
-
     color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
 
-    # ✅ SPLIT BY KPI (THIS IS THE FIX)
+    # ✅ Split KPI into separate panels
     column=alt.Column("Metric:N", title="KPI"),
 
     tooltip=["Brand", "Metric", "Month", "Value"]
+).properties(height=350).interactive()
 
-).properties(height=350)
-            tooltip=["Brand", "Metric", "Month", "Value"]
-        ).properties(height=420).interactive()
-
+        
         st.altair_chart(chart, use_container_width=True)
 
     else:
