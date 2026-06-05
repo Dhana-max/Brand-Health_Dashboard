@@ -763,7 +763,7 @@ with tab2:
         "Favorability": ("Brand_Favorability_{}_slice", "top2"),
         "Consideration": ("Consideration_{}_slice", "top2"),
         "Conversion": ("Consideration_Effect_{}_slice", "top2")
-        }
+    }
 
         comp_data = []
 
@@ -795,25 +795,17 @@ with tab2:
                         "Value": val
                     })
 
-    if comp_data:
+    
+    if len(comp_data) > 0:
+
         df_comp = pd.DataFrame(comp_data)
 
         chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
-
-            # ✅ X-axis = Month (time comparison)
             x=alt.X("Month:O", sort=months, title="Time"),
-
-            # ✅ Y-axis = metric value
             y=alt.Y("Value:Q", title="Score (%)"),
-
-            # ✅ Brand = color
             color=alt.Color("Brand:N", legend=alt.Legend(title="Brand")),
-
-            # ✅ KPI = line style
             strokeDash=alt.StrokeDash("Metric:N", legend=alt.Legend(title="KPI")),
-
             tooltip=["Brand", "Metric", "Month", "Value"]
-
         ).properties(height=420).interactive()
 
         st.altair_chart(chart, use_container_width=True)
