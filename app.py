@@ -741,9 +741,12 @@ with tab2:
 
         if trend_list:
             df_trends = pd.concat(trend_list, ignore_index=True)
+            
+            if g_months:
+                df_trends = df_trends[df_trends["Month"].isin(g_months)]
 
             chart = alt.Chart(df_trends).mark_line(point=True).encode(
-                x=alt.X("Month:O", sort=months),
+                x=alt.X("Month:O", sort=g_months if g_months else months),
                 y="val:Q",
                 color="Metric:N",
                 tooltip=["Month","Metric","val"]
