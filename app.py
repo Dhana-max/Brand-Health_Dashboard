@@ -674,7 +674,7 @@ with tab2:
 # safety fallback
     if not filtered_graph_brand_map:
         filtered_graph_brand_map = brand_map
-    g_brand_sel = st.selectbox("Select Target Brand (Trends Visuals)", list(iltered_graph_brand_map.keys()), key="graph_brand_input")
+    g_brand_sel = st.selectbox("Select Target Brand (Trends Visuals)", list(filtered_graph_brand_map.keys()), key="graph_brand_input")
     g_code = filtered_graph_brand_map.get(g_brand_sel, 1)
     st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
     
