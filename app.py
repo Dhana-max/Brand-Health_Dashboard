@@ -749,7 +749,7 @@ with tab2:
                 tooltip=["Month","Metric","val"]
             ).properties(height=420).interactive()
 
-            st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
         else:
             st.warning("⚠️ No data available")
 
