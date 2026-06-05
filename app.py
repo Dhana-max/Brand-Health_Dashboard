@@ -751,7 +751,7 @@ with tab2:
 
         st.altair_chart(chart, use_container_width=True)
     else:
-            st.warning("⚠️ No data available")
+        st.warning("⚠️ No data available")
 
     # -------------------------
     # ✅ BRAND COMPARISON
