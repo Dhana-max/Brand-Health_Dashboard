@@ -617,6 +617,14 @@ with tab1:
 # -----------------------------
 with tab2:
     # ✅ Apply SAME brand filtering logic as dashboard
+    with st.container():
+        colg1, colg2, colg3, colg4 = st.columns(4)
+        with colg1:
+            g_country = st.multiselect("Filter Country (Trends Visuals)", countries, key="graph_country_input")
+        with colg2:
+            g_months = st.multiselect("Filter Month (Trends Visuals)", months, key="graph_month_input")
+        with colg3:
+            g_segment = st.selectbox("Segment Select (Trends Visuals)", ["Total", "Male", "Female"], key="graph_segment_input")
     if len(g_country) == 0 or len(g_country) > 1:
         filtered_graph_brand_map = {
             k: v for k, v in brand_map.items()
@@ -666,25 +674,14 @@ with tab2:
 # safety fallback
     if not filtered_graph_brand_map:
         filtered_graph_brand_map = brand_map
-
-    with st.container():
-        colg1, colg2, colg3, colg4 = st.columns(4)
-        with colg1:
-            g_country = st.multiselect("Filter Country (Trends Visuals)", countries, key="graph_country_input")
-        with colg2:
-            g_months = st.multiselect("Filter Month (Trends Visuals)", months, key="graph_month_input")
-        with colg3:
-            g_segment = st.selectbox("Segment Select (Trends Visuals)", ["Total", "Male", "Female"], key="graph_segment_input")
-        with colg4:
-            g_brand_sel = st.selectbox("Select Target Brand (Trends Visuals)", list(iltered_graph_brand_map.keys()), key="graph_brand_input")
-
+    g_brand_sel = st.selectbox("Select Target Brand (Trends Visuals)", list(iltered_graph_brand_map.keys()), key="graph_brand_input")
+    g_code = filtered_graph_brand_map.get(g_brand_sel, 1)
     st.markdown("<div style='margin-top: 15px; margin-bottom: 25px;'></div>", unsafe_allow_html=True)
     
     with st.container(border=True):
         st.subheader("📈 Trend Analysis (Time-based)")
         
         graph_where = build_where(g_months, g_country, g_segment)
-        g_code = filtered_graph_brand_map.get(g_brand_sel, 1)
         
         metrics_to_plot = [
             {"label": "Total Awareness", "col": f"Aided_Awareness_{g_code}_slice", "type": "yesno"},
