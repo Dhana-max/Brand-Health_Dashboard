@@ -763,37 +763,37 @@ with tab2:
         "Favorability": ("Brand_Favorability_{}_slice", "top2"),
         "Consideration": ("Consideration_{}_slice", "top2"),
         "Conversion": ("Consideration_Effect_{}_slice", "top2")
-    }
+        }
 
-    comp_data = []
+        comp_data = []
 
     # ✅ Loop per brand + per month (IMPORTANT FIX)
-    for brand_name, code in brand_codes:
+        for brand_name, code in brand_codes:
 
-        for month in (g_months if g_months else months):
+            for month in (g_months if g_months else months):
+    
+                temp_where = build_where([month], g_country, g_segment)
 
-            temp_where = build_where([month], g_country, g_segment)
+                for kpi in selected_kpis:
 
-            for kpi in selected_kpis:
+                    if kpi == "Attributes":
+                        continue
 
-                if kpi == "Attributes":
-                    continue
+                    pattern, mtype = metrics_map[kpi]
 
-                pattern, mtype = metrics_map[kpi]
+                    val = get_metric(
+                        pattern.format(code),
+                        mtype,
+                        temp_where,
+                        "Global_weight_Stacked"
+                    )
 
-                val = get_metric(
-                    pattern.format(code),
-                    mtype,
-                    temp_where,
-                    "Global_weight_Stacked"
-                )
-
-                comp_data.append({
-                    "Brand": brand_name,
-                    "Metric": kpi,
-                    "Month": month,
-                    "Value": val
-                })
+                    comp_data.append({
+                        "Brand": brand_name,
+                        "Metric": kpi,
+                        "Month": month,
+                        "Value": val
+                    })
 
     if comp_data:
         df_comp = pd.DataFrame(comp_data)
