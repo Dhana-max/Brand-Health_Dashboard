@@ -808,7 +808,7 @@ chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
 ).properties(height=350).interactive()
 
         
-        st.altair_chart(chart, use_container_width=True)
+st.altair_chart(chart, use_container_width=True)
 
     else:
         st.warning("⚠️ No data available")
