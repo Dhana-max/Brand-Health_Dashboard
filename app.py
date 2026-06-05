@@ -643,7 +643,7 @@ with tab2:
             )
 
             if "✅ Select All" in g_months:
-            g_months = months
+                g_months = months
 
 
         with colg3:
