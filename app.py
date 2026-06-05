@@ -622,10 +622,29 @@ with tab2:
         colg1, colg2, colg3, colg4, colg5 = st.columns(5)
 
         with colg1:
-            g_country = st.multiselect("🌍 Country", countries, key="graph_country_input")
+            country_options = ["✅ Select All"] + countries
+            g_country = st.multiselect(
+                "🌍 Country",
+                country_options,
+                default=["✅ Select All"]
+            )
+
+            # ✅ Logic
+            if "✅ Select All" in g_country:
+                g_country = countries
+
 
         with colg2:
-            g_months = st.multiselect("📅 Month", months, key="graph_month_input")
+            month_options = ["✅ Select All"] + months
+            g_months = st.multiselect(
+                "📅 Month",
+                month_options,
+                default=["✅ Select All"]
+            )
+
+            if "✅ Select All" in g_months:
+            g_months = months
+
 
         with colg3:
             g_segment = st.selectbox("👤 Segment", ["Total", "Male", "Female"], key="graph_segment_input")
