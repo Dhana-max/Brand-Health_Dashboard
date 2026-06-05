@@ -796,7 +796,7 @@ with tab2:
                     })
 
     
-    if len(comp_data) > 0:
+    if 'comp_data' in locals() and len(comp_data) > 0:
 
         df_comp = pd.DataFrame(comp_data)
 
