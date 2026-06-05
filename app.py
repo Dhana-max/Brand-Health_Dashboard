@@ -617,55 +617,55 @@ with tab1:
 # -----------------------------
 with tab2:
     # ✅ Apply SAME brand filtering logic as dashboard
-if len(g_country) == 0 or len(g_country) > 1:
-    filtered_graph_brand_map = {
-        k: v for k, v in brand_map.items()
-        if any(g.lower() in k.lower() for g in GLOBAL_BRANDS)
+    if len(g_country) == 0 or len(g_country) > 1:
+        filtered_graph_brand_map = {
+            k: v for k, v in brand_map.items()
+            if any(g.lower() in k.lower() for g in GLOBAL_BRANDS)
     }
 
-elif any(c in ["US", "UK"] for c in g_country):
-    filtered_graph_brand_map = {
-        k: v for k, v in brand_map.items()
-        if any(g.lower() in k.lower() for g in [
+    elif any(c in ["US", "UK"] for c in g_country):
+        filtered_graph_brand_map = {
+            k: v for k, v in brand_map.items()
+            if any(g.lower() in k.lower() for g in [
             "LinkedIn", "Indeed", "Google", "TikTok", "Twitter",
             "Facebook", "YouTube", "Instagram", "Glassdoor", "Snapchat"
         ])
     }
 
-elif any(c in ["India"] for c in g_country):
-    filtered_graph_brand_map = {
-        k: v for k, v in brand_map.items()
-        if any(g.lower() in k.lower() for g in [
+    elif any(c in ["India"] for c in g_country):
+        filtered_graph_brand_map = {
+            k: v for k, v in brand_map.items()
+            if any(g.lower() in k.lower() for g in [
             "LinkedIn", "Indeed", "Google", "Facebook", "YouTube",
             "Instagram", "Twitter", "Naukri"
         ])
     }
 
-elif any(c in ["Germany"] for c in g_country):
-    filtered_graph_brand_map = {
-        k: v for k, v in brand_map.items()
-        if any(g.lower() in k.lower() for g in [
+    elif any(c in ["Germany"] for c in g_country):
+        filtered_graph_brand_map = {
+            k: v for k, v in brand_map.items()
+            if any(g.lower() in k.lower() for g in [
             "LinkedIn", "Indeed", "Google", "Facebook", "Xing",
             "Stepstone", "Twitter", "Monster", "Stellenanzeigen.de", "TikTok"
         ])
     }
 
-elif any(c in ["France"] for c in g_country):
-    filtered_graph_brand_map = {
-        k: v for k, v in brand_map.items()
-        if any(g.lower() in k.lower() for g in [
+    elif any(c in ["France"] for c in g_country):
+        filtered_graph_brand_map = {
+            k: v for k, v in brand_map.items()
+            if any(g.lower() in k.lower() for g in [
             "LinkedIn", "Indeed", "Google", "Facebook", "YouTube",
             "Instagram", "Twitter", "HelloWork", "TikTok",
             "Welcome to the Jungle"
         ])
     }
 
-else:
-    filtered_graph_brand_map = brand_map
+    else:
+        filtered_graph_brand_map = brand_map
 
 # safety fallback
-if not filtered_graph_brand_map:
-    filtered_graph_brand_map = brand_map
+    if not filtered_graph_brand_map:
+        filtered_graph_brand_map = brand_map
 
     with st.container():
         colg1, colg2, colg3, colg4 = st.columns(4)
