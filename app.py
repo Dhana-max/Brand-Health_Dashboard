@@ -793,48 +793,38 @@ with tab2:
                     })
 
     
-        if 'comp_data' in locals() and len(comp_data) > 0:
+        
+        if len(comp_data) > 0:
 
             df_comp = pd.DataFrame(comp_data)
-            
-            chart = alt.Chart(df_comp).mark_line(point=True, size=3).encode(
 
-                # ✅ X = BRAND (your requirement)
+            chart = alt.Chart(df_comp).mark_line(
+                point=True,
+                size=3,
+                interpolate="monotone"
+            ).encode(
+
+        # ✅ Brands on X-axis
                 x=alt.X("Brand:N", title="Brand"),
 
-                # ✅ Y = KPI value
+        # ✅ Y-axis = value
                 y=alt.Y("Value:Q", title="Score (%)"),
 
-                # ✅ Lines = MONTH (time comparison)
+        # ✅ Lines = months (time comparison)
                 color=alt.Color("Month:N", legend=alt.Legend(title="Time Period")),
 
-                # ✅ Separate KPI charts (NO SCROLL, side-by-side)
-                
-            chart = alt.Chart(df_comp).mark_line(point=True, size=3, interpolate="monotone").encode(
-    
-                x=alt.X("Brand:N", title="Brand"),
-                y=alt.Y("Value:Q", title="Score (%)"),
-    
-                color=alt.Color("Month:N", legend=alt.Legend(title="Time Period")),
-
-                    # ✅ KEY FIX → stack vertically (NO SCROLL)
+        # ✅ KPI split vertically (NO SCROLL ✅)
                 row=alt.Row("Metric:N", title="KPI"),
 
+        # ✅ Tooltip
                 tooltip=["Brand", "Metric", "Month", "Value"]
 
             ).properties(height=250)
 
-
-                tooltip=["Brand", "Metric", "Month", "Value"]
-
-            ).properties(height=380).interactive()
-
-
-        
             st.altair_chart(chart, use_container_width=True)
 
-        else:
-            st.warning("⚠️ No data available")
+    else:
+        st.warning("⚠️ No data available")
 # -----------------------------
 # TAB 3: CHATBOT VIEW
 # -----------------------------
