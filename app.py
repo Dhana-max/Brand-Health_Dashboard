@@ -330,9 +330,9 @@ if page == "📊 Dashboard":
 
     # ---------------- KPI DONUTS ----------------
     def donut_chart(val):
-    df = pd.DataFrame({
-        "value": [val, max(0, 100 - val)],
-        "type": ["metric", "rest"]
+        df = pd.DataFrame({
+            "value": [val, max(0, 100 - val)],
+            "type": ["metric", "rest"]
     })
 
     base = alt.Chart(df).mark_arc(innerRadius=70).encode(
