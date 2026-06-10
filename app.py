@@ -11,199 +11,46 @@ st.set_page_config(layout="wide")
 st.markdown("""
 <style>
 
-/* ===== FULL DARK BACKGROUND ===== */
+/* Background */
 .stApp {
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    color: #e5e7eb;
+    background: #f5f6f8;
+    color: #222;
 }
 
-/* ===== GLASS CONTAINER ===== */
+/* Containers */
 div[data-testid="stContainer"] {
-    background: rgba(30, 41, 59, 0.6);
-    backdrop-filter: blur(14px);
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-    padding: 16px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    padding: 15px;
 }
 
-/* ===== TITLE ===== */
+/* Title */
 h1 {
-    color: #f8fafc;
-    font-weight: 800;
+    color: #1f2937;
 }
 
-/* ===== KPI CARDS ===== */
-.kpi-card {
-    padding: 18px;
-    border-radius: 16px;
-    color: white;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+/* Filters */
+.stSelectbox, .stMultiSelect {
+    background: white !important;
 }
 
-/* ===== NEON KPI COLORS ===== */
-.kpi-pink {
-    background: linear-gradient(135deg, #ff4d79, #ff2a6d);
-}
-.kpi-purple {
-    background: linear-gradient(135deg, #7c3aed, #4f46e5);
-}
-.kpi-blue {
-    background: linear-gradient(135deg, #0ea5e9, #2563eb);
-}
-.kpi-orange {
-    background: linear-gradient(135deg, #f59e0b, #fb923c);
-}
-
-/* KPI TEXT */
+/* KPI donut titles */
 .kpi-title {
-    font-size: 12px;
-    text-transform: uppercase;
-    opacity: 0.75;
-}
-.kpi-value {
-    font-size: 36px;
-    font-weight: 900;
-}
-
-/* Hover glow */
-.kpi-card:hover {
-    transform: translateY(-4px);
-    transition: 0.3s ease;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.6);
-}
-
-/* Inputs (dark) */
-.stSelectbox, .stMultiSelect, .stTextInput {
-    background: #1e293b !important;
-    color: white !important;
-    border-radius: 10px;
-}
-/* ===== FIX TEXT VISIBILITY ===== */
-
-label, .stMarkdown, .stText, .stCaption {
-    color: #e5e7eb !important;
-}
-
-/* Radio button text */
-div[role="radiogroup"] label {
-    color: #e5e7eb !important;
     font-size: 14px;
+    text-align: center;
+    color: #374151;
 }
 
-/* Dropdown text */
-div[data-baseweb="select"] {
-    color: #e5e7eb !important;
-}
-
-/* Vega charts (axis text) */
-.vega-embed text {
-    fill: #e5e7eb !important;
-}
-
-/* Titles & headers */
-h1, h2, h3 {
-    color: #f8fafc !important;
-}
-
-/* Small text */
-small, span {
-    color: #9ca3af !important;
-}
-/* ===== PILL SELECTOR (RADIO TRANSFORM) ===== */
-
-div[role="radiogroup"] {
-    display: flex;
-    gap: 10px;
-    background: rgba(255,255,255,0.04);
-    padding: 6px;
-    border-radius: 12px;
-}
-
-/* ✅ FIX: Unselected pills visible */
-div[role="radiogroup"] label {
-    background: rgba(255,255,255,0.10);  /* brighter */
-    padding: 10px 16px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.15);
-
-    color: #e5e7eb !important;   /* brighter text */
-    opacity: 1 !important;       /* remove fade completely */
-
-    cursor: pointer;
-    transition: all 0.25s ease;
-}
-/* ✅ Force all inner text/icons visible */
-div[role="radiogroup"] label * {
-    color: #e5e7eb !important;
-}
-
-
-/* Hover effect */
-div[role="radiogroup"] label:hover {
-    background: rgba(124, 58, 237, 0.2);
-    color: #ffffff !important;
-    opacity: 1;
-}
-
-/* ✅ Selected radio pill FIX */
-div[role="radiogroup"] label:has(input:checked) {
-    background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
-    border: none;
-    color: #ffffff !important;
-    opacity: 1 !important;
-    box-shadow: 0 0 12px rgba(124,58,237,0.7);
-}
-div[role="radiogroup"] label:has(input:checked) * {
-    color: #ffffff !important;
-}
-/* Hide default radio circle */
-div[role="radiogroup"] input {
-    display: none;
-}
-
-/* Label text spacing fix */
-div[role="radiogroup"] div {
-    padding: 4px 10px;
-}
-
-/* Section label */
-.pillar-label {
-    color: #9ca3af;
-    font-size: 13px;
-    margin-bottom: 6px;
-}
-/* ✅ FIX: Streamlit Tabs Text Visibility */
-
-/* Tab container */
-div[data-baseweb="tab-list"] {
-    gap: 20px;
-}
-
-/* All tabs (default state) */
-button[data-baseweb="tab"] {
-    color: #9ca3af !important;   /* brighter gray */
+/* Section headers */
+.section-header {
+    font-size: 16px;
     font-weight: 600;
-    opacity: 1 !important;       /* remove fading */
-    transition: all 0.25s ease;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
 }
 
-/* Hover effect */
-button[data-baseweb="tab"]:hover {
-    color: #ffffff !important;
-}
-
-/* ✅ ACTIVE tab */
-button[aria-selected="true"] {
-    color: #ff4d79 !important;   /* matches your pink highlight */
-}
-
-/* Optional: make underline stronger */
-button[aria-selected="true"]::after {
-    background-color: #ff4d79 !important;
-    height: 3px;
-}
 </style>
 """, unsafe_allow_html=True)
 # Clean, corporate title matching your specification
@@ -477,64 +324,36 @@ with tab1:
 
      st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
 
-    # ---------------- KPI ----------------
-    col1, col2, col3, col4 = st.columns(4)
+    # ---------------- KPI DONUTS ----------------
+    def donut_chart(val):
+        df = pd.DataFrame({
+            "value": [val, 100-val],
+            "type": ["metric", "rest"]
+        })
 
-    val1 = f"{get_metric(f'Aided_Awareness_{code}_slice','yesno',where_clause,weight_col)}%"
-    val2 = f"{get_metric(f'Brand_Favorability_{code}_slice','top2',where_clause,weight_col)}%"
-    val3 = f"{get_metric(f'Consideration_{code}_slice','top2',where_clause,weight_col)}%"
-    val4 = f"{get_metric(f'Consideration_Effect_{code}_slice','top2',where_clause,weight_col)}%"
-
-    with col1:
-        st.markdown(f'<div class="kpi-card kpi-pink"><div class="kpi-title">Awareness</div><div class="kpi-value">{val1}</div></div>', unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f'<div class="kpi-card kpi-purple"><div class="kpi-title">Favorability</div><div class="kpi-value">{val2}</div></div>', unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(f'<div class="kpi-card kpi-blue"><div class="kpi-title">Consideration</div><div class="kpi-value">{val3}</div></div>', unsafe_allow_html=True)
-
-    with col4:
-        st.markdown(f'<div class="kpi-card kpi-orange"><div class="kpi-title">Conversion</div><div class="kpi-value">{val4}</div></div>', unsafe_allow_html=True)
-
-    # ---------------- SPACE ----------------
-    st.markdown("<div style='margin-bottom:30px;'></div>", unsafe_allow_html=True)
-
-    # ---------------- DONUT ----------------
-    col_left, col_mid, col_right = st.columns([1, 2, 1])
-
-    with col_mid:
-        with st.container(border=True):
-
-            st.subheader("🧩 Funnel Composition")
-
-            awareness = get_metric(f"Aided_Awareness_{code}_slice","yesno",where_clause,weight_col)
-            favorability = get_metric(f"Brand_Favorability_{code}_slice","top2",where_clause,weight_col)
-            consideration = get_metric(f"Consideration_{code}_slice","top2",where_clause,weight_col)
-            conversion = get_metric(f"Consideration_Effect_{code}_slice","top2",where_clause,weight_col)
-
-            donut_df = pd.DataFrame({
-                "metric": ["Awareness","Favorability","Consideration","Conversion"],
-                "value": [awareness,favorability,consideration,conversion]
-            })
-
-            donut_chart = alt.Chart(donut_df).mark_arc(innerRadius=75).encode(
-                theta=alt.Theta("value:Q"),
-                color=alt.Color("metric:N",
-                    scale=alt.Scale(range=["#ff4d79","#7c3aed","#0ea5e9","#f59e0b"])
-                ),
-                tooltip=["metric","value"]
-            ).properties(height=340)
-
-            st.altair_chart(
-                donut_chart
-                .configure_view(strokeOpacity=0, fill="transparent")
-                .configure(background='transparent')
-                .configure_axis(labelColor="#e5e7eb")
-                .configure_legend(labelColor="#e5e7eb"),
-                use_container_width=True
+        return alt.Chart(df).mark_arc(innerRadius=65).encode(
+            theta="value",
+            color=alt.Color(
+                "type",
+                scale=alt.Scale(range=["#3b5ba9", "#e5e7eb"]),
+                legend=None
             )
+        ).properties(height=180)
 
+    k1, k2, k3, k4 = st.columns(4)
+
+    kpis = [
+        ("Aided Awareness", get_metric(f'Aided_Awareness_{code}_slice',"yesno",where_clause,weight_col)),
+        ("Brand Favorability", get_metric(f'Brand_Favorability_{code}_slice',"top2",where_clause,weight_col)),
+        ("Visitation Intent", get_metric(f'Consideration_{code}_slice',"top2",where_clause,weight_col)),
+        ("Increased Visitation", get_metric(f'Consideration_Effect_{code}_slice',"top2",where_clause,weight_col))
+    ]
+
+    for col, (title, value) in zip([k1,k2,k3,k4], kpis):
+        with col:
+            st.markdown(f"<div class='kpi-title'>{title}</div>", unsafe_allow_html=True)
+            st.altair_chart(donut_chart(value), use_container_width=True)
+            st.markdown(f"<h3 style='text-align:center'>{value:.1f}%</h3>", unsafe_allow_html=True)
     # ---------------- SPACE ----------------
     st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
 
