@@ -252,22 +252,29 @@ def create_sparkline_chart(df, color_line):
 # -----------------------------
 # Dynamic Navigation Tab Structure
 # -----------------------------
-tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"])
+
+page = st.sidebar.radio(
+    "Navigation",
+    ["📊 Dashboard", "📈 Graphs", "🤖 Chatbot"]
+)
+
 
 # -----------------------------
 # TAB 1: EXECUTIVE DASHBOARD
 # -----------------------------
-with tab1:
+if page == "📊 Dashboard":
 
     # ---------------- FILTERS ----------------
     with st.container():
      f1, f2, f3, f4 = st.columns(4)
 
-     selected_countries = f1.multiselect("🌍 Country", countries)
-     selected_months = f2.multiselect("📅 Month", months)
-     segment = f3.selectbox("👤 Segment", ["Total", "Male", "Female"])
-
-    # ✅ Brand filtering logic
+     with f1:
+        selected_countries = st.multiselect("🌍 Country", countries)
+     with f2:
+        selected_months = st.multiselect("📅 Month", months)
+     with f3:
+        segment = st.selectbox("👤 Segment", ["Total","Male","Female"])
+        # ✅ Brand filtering logic
      if len(selected_countries) == 0 or len(selected_countries) > 1:
     # ✅ Robust matching (fix Twitter issue + future-proof)
         filtered_brand_map = {
@@ -306,6 +313,8 @@ with tab1:
     }
      else:
          filtered_brand_map = brand_map
+     with f4:
+        selected_brand = st.selectbox("🏢 Brand", list(filtered_brand_map.keys()))
 
 
     # Safety fallback
@@ -327,18 +336,29 @@ with tab1:
     # ---------------- KPI DONUTS ----------------
     def donut_chart(val):
     df = pd.DataFrame({
-        "value": [val, 100-val],
+        "value": [val, max(0, 100 - val)],
         "type": ["metric", "rest"]
     })
 
-    chart = alt.Chart(df).mark_arc(innerRadius=65).encode(
-        theta="value",
+    base = alt.Chart(df).mark_arc(innerRadius=70).encode(
+        theta="value:Q",
         color=alt.Color(
-            "type",
+            "type:N",
             scale=alt.Scale(range=["#3b5ba9", "#e5e7eb"]),
             legend=None
         )
-    ).properties(height=180)
+    )
+
+    # ✅ TEXT INSIDE DONUT
+    text = alt.Chart(pd.DataFrame({"text": [f"{val:.1f}%"]})).mark_text(
+        size=28,
+        fontWeight="bold",
+        color="#111827"
+    ).encode(
+        text="text:N"
+    )
+
+    chart = (base + text).properties(height=200)
 
     return chart.configure_view(
         strokeOpacity=0,
@@ -346,6 +366,28 @@ with tab1:
     ).configure(
         background="transparent"
     )
+# ✅ KPI SECTION (THIS WAS MISSING)
+
+with st.container(border=True):
+    st.markdown("<div class='section-header'>Brand Funnel</div>", unsafe_allow_html=True)
+
+    k1, k2, k3, k4 = st.columns(4)
+
+    kpis = [
+        ("Aided Awareness", get_metric(f"Aided_Awareness_{code}_slice","yesno",where_clause,weight_col)),
+        ("Brand Favorability", get_metric(f"Brand_Favorability_{code}_slice","top2",where_clause,weight_col)),
+        ("Visitation Intent", get_metric(f"Consideration_{code}_slice","top2",where_clause,weight_col)),
+        ("Increased Visitation", get_metric(f"Consideration_Effect_{code}_slice","top2",where_clause,weight_col))
+    ]
+
+    for col, (title, value) in zip([k1, k2, k3, k4], kpis):
+        with col:
+            st.markdown(
+                f"<div style='text-align:center; font-weight:600; margin-bottom:6px'>{title}</div>",
+                unsafe_allow_html=True
+            )
+            st.altair_chart(donut_chart(value), use_container_width=True)
+
 # ---------------- ATTRIBUTES ----------------
     with st.container(border=True):
 
@@ -433,7 +475,7 @@ with tab1:
 # -----------------------------
 # TAB 2: GRAPHS VIEW (UPDATED)
 # -----------------------------
-with tab2:
+elif page == "📈 Graphs":
 
     # ===== FILTER ROW =====
     with st.container():
@@ -668,7 +710,7 @@ with tab2:
 # -----------------------------
 # TAB 3: CHATBOT VIEW
 # -----------------------------
-with tab3:
+elif page == "🤖 Chatbot":
     with st.container(border=True):
         st.subheader("🤖 AI Analytics Chatbot")
 
