@@ -326,38 +326,27 @@ with tab1:
 
     # ---------------- KPI DONUTS ----------------
     def donut_chart(val):
-        df = pd.DataFrame({
-            "value": [val, 100-val],
-            "type": ["metric", "rest"]
-        })
+    df = pd.DataFrame({
+        "value": [val, 100-val],
+        "type": ["metric", "rest"]
+    })
 
-        return alt.Chart(df).mark_arc(innerRadius=65).encode(
-            theta="value",
-            color=alt.Color(
-                "type",
-                scale=alt.Scale(range=["#3b5ba9", "#e5e7eb"]),
-                legend=None
-            )
-        ).properties(height=180)
+    chart = alt.Chart(df).mark_arc(innerRadius=65).encode(
+        theta="value",
+        color=alt.Color(
+            "type",
+            scale=alt.Scale(range=["#3b5ba9", "#e5e7eb"]),
+            legend=None
+        )
+    ).properties(height=180)
 
-    k1, k2, k3, k4 = st.columns(4)
-
-    kpis = [
-        ("Aided Awareness", get_metric(f'Aided_Awareness_{code}_slice',"yesno",where_clause,weight_col)),
-        ("Brand Favorability", get_metric(f'Brand_Favorability_{code}_slice',"top2",where_clause,weight_col)),
-        ("Visitation Intent", get_metric(f'Consideration_{code}_slice',"top2",where_clause,weight_col)),
-        ("Increased Visitation", get_metric(f'Consideration_Effect_{code}_slice',"top2",where_clause,weight_col))
-    ]
-
-    for col, (title, value) in zip([k1,k2,k3,k4], kpis):
-        with col:
-            st.markdown(f"<div class='kpi-title'>{title}</div>", unsafe_allow_html=True)
-            st.altair_chart(donut_chart(value), use_container_width=True)
-            st.markdown(f"<h3 style='text-align:center'>{value:.1f}%</h3>", unsafe_allow_html=True)
-    # ---------------- SPACE ----------------
-    st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_allow_html=True)
-
-    # ---------------- ATTRIBUTES ----------------
+    return chart.configure_view(
+        strokeOpacity=0,
+        fill="transparent"
+    ).configure(
+        background="transparent"
+    )
+# ---------------- ATTRIBUTES ----------------
     with st.container(border=True):
 
         st.markdown("""
