@@ -361,7 +361,7 @@ if page == "📊 Dashboard":
         background="transparent"
     )
 # ---------------- ATTRIBUTES ----------------
-    with st.container(border=True):
+     with st.container(border=True):
 
         st.markdown("""
         <h3 style='color:#f8fafc;'>🎯 Strategic Pillars</h3>
