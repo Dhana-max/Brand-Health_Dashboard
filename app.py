@@ -335,33 +335,33 @@ if page == "📊 Dashboard":
             "type": ["metric", "rest"]
     })
 
-    base = alt.Chart(df).mark_arc(innerRadius=70).encode(
-        theta="value:Q",
-        color=alt.Color(
-            "type:N",
-            scale=alt.Scale(range=["#3b5ba9", "#e5e7eb"]),
+        base = alt.Chart(df).mark_arc(innerRadius=70).encode(
+            theta="value:Q",
+            color=alt.Color(
+                "type:N",
+                scale=alt.Scale(range=["#3b5ba9", "#e5e7eb"]),
             legend=None
         )
     )
 
-    text = alt.Chart(pd.DataFrame({"text": [f"{val:.1f}%"]})).mark_text(
-        size=28,
-        fontWeight="bold",
-        color="#111827"
-    ).encode(
-        text="text:N"
+        text = alt.Chart(pd.DataFrame({"text": [f"{val:.1f}%"]})).mark_text(
+            size=28,
+            fontWeight="bold",
+            color="#111827"
+        ).encode(
+            text="text:N"
     )
 
-    chart = (base + text).properties(height=200)
+        chart = (base + text).properties(height=200)
 
-    return chart.configure_view(
-        strokeOpacity=0,
-        fill="transparent"
-    ).configure(
-        background="transparent"
-    )
+        return chart.configure_view(
+            strokeOpacity=0,
+            fill="transparent"
+        ).configure(
+            background="transparent"
+        )
 # ---------------- ATTRIBUTES ----------------
-with st.container(border=True):
+    with st.container(border=True):
 
         st.markdown("""
         <h3 style='color:#f8fafc;'>🎯 Strategic Pillars</h3>
