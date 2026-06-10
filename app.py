@@ -383,13 +383,23 @@ with tab1:
                 where_clause,
                 weight_col
             )
-            if score > 0:
+            if score is not None:
                 attr_data.append({
                     "Attribute": attr_map[idx],
                     "Score": score
                 })
 
-        df_matrix = pd.DataFrame(attr_data).sort_values("Score", ascending=True)
+        df_matrix = pd.DataFrame(attr_data)
+
+        # ✅ Prevent crash if empty
+        if df_matrix.empty or "Score" not in df_matrix.columns:
+            st.warning("⚠️ No attribute data available for selected filters")
+            df_matrix = pd.DataFrame({
+                "Attribute": ["No data"],
+                "Score": [0]
+    })
+
+        df_matrix = df_matrix.sort_values("Score", ascending=True)
 
         max_score = df_matrix["Score"].max()
         df_matrix["Highlight"] = df_matrix["Score"].apply(
