@@ -335,7 +335,7 @@ if page == "📊 Dashboard":
 
     # ---------------- KPI DONUTS ----------------
     def donut_chart(val):
-    df = pd.DataFrame({
+      df = pd.DataFrame({
         "value": [val, max(0, 100 - val)],
         "type": ["metric", "rest"]
     })
