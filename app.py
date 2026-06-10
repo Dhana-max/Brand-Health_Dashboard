@@ -321,11 +321,6 @@ if page == "📊 Dashboard":
      if not filtered_brand_map:
         filtered_brand_map = brand_map
 
-     selected_brand = f4.selectbox(
-        "🏢 Brand",
-        list(filtered_brand_map.keys())
-    )
-
      code = filtered_brand_map.get(selected_brand, 1)
 
      where_clause = build_where(selected_months, selected_countries, segment)
@@ -335,7 +330,7 @@ if page == "📊 Dashboard":
 
     # ---------------- KPI DONUTS ----------------
     def donut_chart(val):
-      df = pd.DataFrame({
+    df = pd.DataFrame({
         "value": [val, max(0, 100 - val)],
         "type": ["metric", "rest"]
     })
@@ -349,7 +344,6 @@ if page == "📊 Dashboard":
         )
     )
 
-    # ✅ TEXT INSIDE DONUT
     text = alt.Chart(pd.DataFrame({"text": [f"{val:.1f}%"]})).mark_text(
         size=28,
         fontWeight="bold",
@@ -366,30 +360,8 @@ if page == "📊 Dashboard":
     ).configure(
         background="transparent"
     )
-# ✅ KPI SECTION (THIS WAS MISSING)
-
-with st.container(border=True):
-    st.markdown("<div class='section-header'>Brand Funnel</div>", unsafe_allow_html=True)
-
-    k1, k2, k3, k4 = st.columns(4)
-
-    kpis = [
-        ("Aided Awareness", get_metric(f"Aided_Awareness_{code}_slice","yesno",where_clause,weight_col)),
-        ("Brand Favorability", get_metric(f"Brand_Favorability_{code}_slice","top2",where_clause,weight_col)),
-        ("Visitation Intent", get_metric(f"Consideration_{code}_slice","top2",where_clause,weight_col)),
-        ("Increased Visitation", get_metric(f"Consideration_Effect_{code}_slice","top2",where_clause,weight_col))
-    ]
-
-    for col, (title, value) in zip([k1, k2, k3, k4], kpis):
-        with col:
-            st.markdown(
-                f"<div style='text-align:center; font-weight:600; margin-bottom:6px'>{title}</div>",
-                unsafe_allow_html=True
-            )
-            st.altair_chart(donut_chart(value), use_container_width=True)
-
 # ---------------- ATTRIBUTES ----------------
-    with st.container(border=True):
+        with st.container(border=True):
 
         st.markdown("""
         <h3 style='color:#f8fafc;'>🎯 Strategic Pillars</h3>
